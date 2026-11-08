@@ -1792,10 +1792,8 @@ function renderLockScreen() {
       </div>
 
       <div style="margin-top:16px;padding:8px 10px;background:var(--soft);border-radius:8px;font-size:11px;color:var(--mute);line-height:1.4">
-        <b>Cashier PINs:</b><br>
-        Cashier 1: <code style="color:var(--brand);font-weight:700">1111</code> &bull; 
-        Cashier 2: <code style="color:var(--brand);font-weight:700">2222</code> &bull; 
-        Manager: <code style="color:var(--brand);font-weight:700">1234</code>
+        <i class="fa-solid fa-shield-halved" style="color:var(--brand);margin-right:4px"></i>
+        <b>Role-Based Access Protected:</b> Enter your assigned 4-digit PIN to access register.
       </div>
     </div>
   `;
@@ -2911,7 +2909,7 @@ function renderOrdersView() {
           <thead>
             <tr>
               <th>Order ID</th>
-              <th>Cashier</th>
+              <th>Tilled By</th>
               <th>Terminal</th>
               <th>Date</th>
               <th>Customer</th>
@@ -2926,7 +2924,12 @@ function renderOrdersView() {
             ${state.sales.length ? state.sales.map(s => `
               <tr>
                 <td><b>${s.order_id || s.receipt_number}</b></td>
-                <td><span style="font-weight:600">${s.salesperson || 'Cashier 1'}</span></td>
+                <td>
+                  <span class="user-chip" style="font-weight:700;font-size:11.5px">
+                    <i class="fa-solid fa-circle-user" style="color:var(--brand)"></i>
+                    ${s.tilled_by || s.salesperson || 'Staff'}
+                  </span>
+                </td>
                 <td><kbd class="kk">${s.terminal_id || 'TERM-01'}</kbd></td>
                 <td>${s.date}</td>
                 <td>${s.customer_name || 'Walk in'}</td>
@@ -2937,7 +2940,7 @@ function renderOrdersView() {
                 <td><button class="rs" onclick="previewPrintReceipt('${s.id}')">Print Receipt</button></td>
               </tr>
             `).join('') : `
-              <tr><td colspan="9" style="text-align:center;color:var(--mute);padding:30px">No sales recorded yet.</td></tr>
+              <tr><td colspan="10" style="text-align:center;color:var(--mute);padding:30px">No sales recorded yet.</td></tr>
             `}
           </tbody>
         </table>
@@ -3026,7 +3029,7 @@ function tickHTML(s, p) {
       <hr class="rc-hr">
       <div class="rc-r" style="font-size:10px"><span>Order No:</span><span class="rc-b">${s.order_id || s.receipt_number}</span></div>
       <div class="rc-r" style="font-size:10px"><span>Date:</span><span>${dt}</span></div>
-      <div class="rc-r" style="font-size:10px"><span>Salesperson:</span><span>${s.salesperson || cashier}</span></div>
+      <div class="rc-r" style="font-size:10px"><span>Tilled By:</span><span class="rc-b">${s.tilled_by || s.salesperson || cashier}</span></div>
       <div class="rc-r" style="font-size:10px"><span>Customer:</span><span>${cust}</span></div>
       <hr class="rc-hr">
       <table class="rc-tbl">

@@ -102,8 +102,7 @@ function formatEscPosReceipt(sale, options = {}) {
   p += CMD.ALIGN_LEFT;
   p += `Receipt #:  ${sale.receipt_number || sale.order_id || 'N/A'}\n`;
   p += `Date:       ${sale.date || new Date().toLocaleString()}\n`;
-  p += `Terminal:   ${sale.terminal_id || 'TERM-01'}\n`;
-  p += `Cashier:    ${sale.salesperson || 'Staff'}\n`;
+  p += `Tilled By:  ${sale.tilled_by || sale.salesperson || 'Staff'} (${sale.terminal_id || 'TERM-01'})\n`;
   p += `Customer:   ${sale.customer_name || 'Walk in Customer'}\n`;
   p += doubleDivider + '\n';
 

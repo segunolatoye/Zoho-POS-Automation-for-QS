@@ -710,10 +710,10 @@ const server = http.createServer(async (req, res) => {
       const users = fs.existsSync(usersPath)
         ? JSON.parse(fs.readFileSync(usersPath, 'utf8'))
         : [
-          { id: 'u1', name: 'Manager / Admin', pin: '1234', role: 'admin' },
-          { id: 'u5', name: 'Finance / Accounts', pin: '5555', role: 'finance' },
-          { id: 'u2', name: 'Cashier 1', pin: '1111', role: 'cashier', terminal_id: 'TERM-01' },
-          { id: 'u3', name: 'Cashier 2', pin: '2222', role: 'cashier', terminal_id: 'TERM-02' }
+          { id: 'u1', name: 'Manager / Admin', pin: '9545', role: 'admin' },
+          { id: 'u5', name: 'Finance / Accounts', pin: '6935', role: 'finance' },
+          { id: 'u2', name: 'Cashier 1', pin: '5713', role: 'cashier', terminal_id: 'TERM-01' },
+          { id: 'u3', name: 'Cashier 2', pin: '5917', role: 'cashier', terminal_id: 'TERM-02' }
         ];
 
       const user = users.find(u => String(u.pin).trim() === String(pin).trim());
@@ -953,10 +953,10 @@ const server = http.createServer(async (req, res) => {
       const users = fs.existsSync(usersPath)
         ? JSON.parse(fs.readFileSync(usersPath, 'utf8'))
         : [
-          { id: 'u1', name: 'Manager / Admin', pin: '1234', role: 'admin' },
-          { id: 'u5', name: 'Finance / Accounts', pin: '5555', role: 'finance' },
-          { id: 'u2', name: 'Cashier 1', pin: '1111', role: 'cashier', terminal_id: 'TERM-01' },
-          { id: 'u3', name: 'Cashier 2', pin: '2222', role: 'cashier', terminal_id: 'TERM-02' }
+          { id: 'u1', name: 'Manager / Admin', pin: '9545', role: 'admin' },
+          { id: 'u5', name: 'Finance / Accounts', pin: '6935', role: 'finance' },
+          { id: 'u2', name: 'Cashier 1', pin: '5713', role: 'cashier', terminal_id: 'TERM-01' },
+          { id: 'u3', name: 'Cashier 2', pin: '5917', role: 'cashier', terminal_id: 'TERM-02' }
         ];
 
       const activeUser = users.find(u => (saleData.user_id && u.id === saleData.user_id) || (saleData.user_name && u.name.toLowerCase() === saleData.user_name.toLowerCase()));
@@ -1027,19 +1027,19 @@ const server = http.createServer(async (req, res) => {
       }
       fs.writeFileSync(CATALOG_PATH, JSON.stringify(catalog, null, 2), 'utf8');
 
-      // 3. Issue Account-Named Order ID (Using Active Account Name)
+      // 3. Issue Sequential Retail Order ID & Explicit Till Tracking
       const term = saleData.terminal_id || activeUser.terminal_id || 'TERM-01';
-      const accountName = (activeUser.name || 'CASHIER').trim();
-      const accountPrefix = accountName.toUpperCase();
-      const userSalesCount = queue.filter(q => q.user_id === activeUser.id || q.salesperson === activeUser.name || (q.order_id && q.order_id.startsWith(accountPrefix))).length + 1;
-      const orderId = `${accountPrefix}-${String(userSalesCount).padStart(4, '0')}`;
+      const orderCount = queue.length + 1;
+      const orderId = `QS-${String(orderCount).padStart(5, '0')}`;
 
       const newSale = {
         id: `sale_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
         order_id: orderId,
         receipt_number: orderId,
+        tilled_by: activeUser.name,
         user_id: activeUser.id,
         salesperson: activeUser.name,
+        cashier_role: activeUser.role,
         terminal_id: term,
         customer_id: saleData.customer_id,
         customer_name: saleData.customer_name,
