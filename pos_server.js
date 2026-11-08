@@ -4,6 +4,8 @@ const path = require('path');
 const os = require('os');
 const dns = require('dns');
 const { chromium } = require('playwright-core');
+const hardwarePrinter = require('./modules/hardware_printer');
+const backupManager = require('./modules/backup_manager');
 
 function getLocalIpAddress() {
   const ifaces = os.networkInterfaces();
@@ -1049,8 +1051,18 @@ const server = http.createServer(async (req, res) => {
       queue.push(newSale);
       fs.writeFileSync(QUEUE_PATH, JSON.stringify(queue, null, 2), 'utf8');
 
+      // 4. Auto-kick Cash Drawer (RJ11 Pulse) on Cash transactions
+      const isCashSale = (newSale.payment_mode === 'CASH' || (newSale.payments && newSale.payments.some(p => (p.mode || '').toLowerCase() === 'cash')));
+      if (isCashSale && saleData.auto_kick_drawer !== false) {
+        hardwarePrinter.kickCashDrawer(saleData.printer_name || '').catch(() => {});
+      }
+
       res.writeHead(200);
-      return res.end(JSON.stringify({ success: true, sale: newSale }));
+      return res.end(JSON.stringify({ 
+        success: true, 
+        sale: newSale,
+        cash_drawer_kicked: isCashSale
+      }));
     } catch (err) {
       res.writeHead(500);
       return res.end(JSON.stringify({ success: false, message: err.message }));
@@ -1191,6 +1203,98 @@ const server = http.createServer(async (req, res) => {
     }));
   }
 
+  // 8a. GET /api/hardware/printers (Discover installed thermal and Windows printers)
+  if (req.method === 'GET' && pathname === '/api/hardware/printers') {
+    try {
+      const printers = await hardwarePrinter.getInstalledPrinters();
+      res.writeHead(200);
+      return res.end(JSON.stringify({ success: true, printers }));
+    } catch (err) {
+      res.writeHead(500);
+      return res.end(JSON.stringify({ success: false, message: err.message }));
+    }
+  }
+
+  // 8b. POST /api/hardware/open-drawer (Standard RJ11 ESC/POS pulse \x1B\x70\x00\x19\xFA)
+  if (req.method === 'POST' && pathname === '/api/hardware/open-drawer') {
+    try {
+      const body = await parseJsonBody(req);
+      const printerName = body.printer_name || '';
+      const result = await hardwarePrinter.kickCashDrawer(printerName);
+      res.writeHead(result.success ? 200 : 500);
+      return res.end(JSON.stringify(result));
+    } catch (err) {
+      res.writeHead(500);
+      return res.end(JSON.stringify({ success: false, message: err.message }));
+    }
+  }
+
+  // 8c. POST /api/hardware/print (Direct Raw ESC/POS Thermal Spooling - No Browser Dialog)
+  if (req.method === 'POST' && pathname === '/api/hardware/print') {
+    try {
+      const body = await parseJsonBody(req);
+      const sale = body.sale || body;
+      const printerName = body.printer_name || '';
+      const kickDrawer = body.open_drawer !== undefined
+        ? body.open_drawer
+        : (sale.payment_mode === 'CASH' || (sale.payments && sale.payments.some(p => (p.mode || '').toLowerCase() === 'cash')));
+
+      const buffer = hardwarePrinter.formatEscPosReceipt(sale, {
+        paper: body.paper || '80',
+        kickDrawer: kickDrawer
+      });
+
+      const result = await hardwarePrinter.printDirect(printerName, buffer);
+      res.writeHead(result.success ? 200 : 500);
+      return res.end(JSON.stringify(result));
+    } catch (err) {
+      res.writeHead(500);
+      return res.end(JSON.stringify({ success: false, message: err.message }));
+    }
+  }
+
+  // 9a. GET /api/backups (List all available database archives)
+  if (req.method === 'GET' && pathname === '/api/backups') {
+    try {
+      const backups = backupManager.listBackups();
+      res.writeHead(200);
+      return res.end(JSON.stringify({ success: true, backups }));
+    } catch (err) {
+      res.writeHead(500);
+      return res.end(JSON.stringify({ success: false, message: err.message }));
+    }
+  }
+
+  // 9b. POST /api/backup/now (Trigger instant on-demand backup)
+  if (req.method === 'POST' && pathname === '/api/backup/now') {
+    try {
+      const result = await backupManager.createBackup('manual cashier / admin trigger');
+      res.writeHead(result.success ? 200 : 500);
+      return res.end(JSON.stringify(result));
+    } catch (err) {
+      res.writeHead(500);
+      return res.end(JSON.stringify({ success: false, message: err.message }));
+    }
+  }
+
+  // 9c. GET /api/backups/:filename (Download database archive zip)
+  if (req.method === 'GET' && pathname.startsWith('/api/backups/')) {
+    const rawFilename = path.basename(decodeURIComponent(pathname.replace('/api/backups/', '')));
+    const filePath = path.join(backupManager.BACKUPS_DIR, rawFilename);
+    if (fs.existsSync(filePath) && filePath.endsWith('.zip')) {
+      const stat = fs.statSync(filePath);
+      res.writeHead(200, {
+        'Content-Type': 'application/zip',
+        'Content-Length': stat.size,
+        'Content-Disposition': `attachment; filename="${rawFilename}"`
+      });
+      return fs.createReadStream(filePath).pipe(res);
+    } else {
+      res.writeHead(404);
+      return res.end(JSON.stringify({ success: false, message: 'Backup file not found' }));
+    }
+  }
+
   res.writeHead(404);
   res.end(JSON.stringify({ error: 'Endpoint Not Found' }));
 });
@@ -1206,11 +1310,16 @@ function startServer() {
     console.log(`💾 Offline Mode: 100% active (Zero-decimal fixed carton/piece rates)`);
     console.log(`🔄 Auto-Sync: Ready to push sales to Zoho Books & Inventory`);
     console.log(`⏱️ Background Pull: Every 10 mins (Auto-reconnect watchdog active)`);
+    console.log(`🖨️ Hardware & Thermal Printer: ESC/POS Direct Spooler & RJ11 Drawer Active`);
+    console.log(`🛡️ Automated Data Protection: 11:59 PM Nightly Auto-Backup Armed`);
     console.log(`📁 Local Log: logs/zoho_sync.log`);
     console.log(`================================================================\n`);
 
     // Start background sync scheduler
     startSyncScheduler();
+
+    // Start nightly auto-backup scheduler (11:59 PM)
+    backupManager.startNightlyScheduler();
   });
 }
 

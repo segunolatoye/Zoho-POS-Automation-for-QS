@@ -27,3 +27,4 @@ if %ERRORLEVEL% EQU 0 (
     node pos_server.js
 )
 pause
+

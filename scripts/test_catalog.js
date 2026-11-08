@@ -72,6 +72,50 @@ try {
   assert(false, `Customer validation failed: ${e.message}`);
 }
 
+// 4. Verify Hardware Printer Module & ESC/POS Generator
+try {
+  const hardware = require('../modules/hardware_printer');
+  const mockSale = {
+    order_id: 'CASHIER 1-0001',
+    receipt_number: 'CASHIER 1-0001',
+    date: '2026-11-08 19:30:00',
+    terminal_id: 'TERM-01',
+    salesperson: 'Cashier 1',
+    customer_name: 'Walk in Customer',
+    payment_mode: 'CASH',
+    total: 25000,
+    amount_paid: 30000,
+    change: 5000,
+    line_items: [
+      { name: 'DANQUN SHOCK ABSORBER', quantity: 2, unit: 'CTN', unit_price: 12500, total: 25000 }
+    ]
+  };
+
+  const buffer = hardware.formatEscPosReceipt(mockSale, { paper: '80', kickDrawer: true });
+  assert(Buffer.isBuffer(buffer) && buffer.length > 100, `ESC/POS thermal binary buffer generated (${buffer.length} bytes)`);
+
+  // Verify Drawer Kick pulse (\x1B\x70\x00\x19\xFA) is present in the buffer
+  const hasKickPulse = buffer.includes(Buffer.from([0x1B, 0x70, 0x00, 0x19, 0xFA]));
+  assert(hasKickPulse, 'ESC/POS drawer kick pulse (\\x1B\\x70\\x00\\x19\\xFA) verified in binary stream');
+
+  // Verify cut paper command (\x1D\x56\x41\x03) is present
+  const hasCutCmd = buffer.includes(Buffer.from([0x1D, 0x56, 0x41, 0x03]));
+  assert(hasCutCmd, 'ESC/POS paper cut command (\\x1D\\x56\\x41\\x03) verified in binary stream');
+} catch (e) {
+  assert(false, `Hardware printer generator failed: ${e.message}`);
+}
+
+// 5. Verify Backup Manager Module & Archive Integrity
+try {
+  const backupMgr = require('../modules/backup_manager');
+  const backups = backupMgr.listBackups();
+  assert(Array.isArray(backups), `Backup manager lists database archives (Found: ${backups.length})`);
+  assert(typeof backupMgr.createBackup === 'function', 'Database auto-backup function operational');
+  assert(typeof backupMgr.startNightlyScheduler === 'function', '11:59 PM nightly scheduler armed');
+} catch (e) {
+  assert(false, `Backup manager validation failed: ${e.message}`);
+}
+
 console.log('\n====================================================');
 if (failed) {
   console.error('❌ CI TEST SUITE FAILED. Fix errors before deployment.');
@@ -80,3 +124,4 @@ if (failed) {
   console.log('✅ ALL CI TESTS PASSED SUCCESSFULLY!');
   process.exit(0);
 }
+

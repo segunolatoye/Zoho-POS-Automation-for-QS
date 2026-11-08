@@ -28,3 +28,4 @@ jobs:
 
       - name: Run POS Integrity Test Suite
         run: npm test
+
