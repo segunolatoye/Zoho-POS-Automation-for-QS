@@ -271,7 +271,7 @@ function buildCatalogItemFromZoho(z, unitGroupsMap) {
 // Pull customers, debts, new items, and live inventory from Zoho Cloud
 async function pullCloudDataFromZoho() {
   const startTime = Date.now();
-  writeSyncLog('INFO', 'Starting background pull from Zoho (Customers, Live Debts, New Items & Inventory)...');
+  writeSyncLog('INFO', 'Starting background pull from Zoho (Customers, Ledgers, New Items & Inventory)...');
 
   const { context, frame, headers, invOrgId } = await createZohoSession();
 
@@ -433,8 +433,7 @@ async function pullCloudDataFromZoho() {
     fs.renameSync(tmpCat, CATALOG_PATH);
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-    const debtStr = totalCustomerDebt.toLocaleString('en-NG', { minimumFractionDigits: 2 });
-    const summary = `Customers: ${formattedCustomers.length} (Debtors: ${debtorCount}, Total Debt: ₦${debtStr}) | Items: ${catalog.length} (Updated: ${updatedStockCount}, Added: ${newItemsAdded})`;
+    const summary = `Customers: ${formattedCustomers.length} | Items: ${catalog.length} (Updated: ${updatedStockCount}, Added: ${newItemsAdded})`;
 
     writeSyncLog('SUCCESS', `Pull sync completed in ${duration}s. ${summary}`);
 
@@ -453,7 +452,7 @@ async function pullCloudDataFromZoho() {
       total_catalog: catalog.length,
       zoho_items_count: allZohoItems.length,
       summary,
-      message: `Sync complete! Pulled ${formattedCustomers.length} customers (${debtorCount} with debt: ₦${debtStr}) and updated ${updatedStockCount} items (${newItemsAdded} new).`
+      message: `Sync complete! Pulled ${formattedCustomers.length} customers and updated ${updatedStockCount} items (${newItemsAdded} new).`
     };
   } finally {
     await context.close();

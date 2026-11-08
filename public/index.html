@@ -2038,7 +2038,7 @@ async function openSyncLogModal() {
       </div></div>
     `;
   } catch(e) {
-    alert('Failed to load sync status: ' + e.message);
+    toast('Failed to load sync status: ' + e.message);
   }
 }
 
@@ -2793,14 +2793,12 @@ async function chargeSale() {
 
     if (maxAvailableBase <= 0) {
       toast(`⛔ Checkout blocked: "${it.name}" is OUT OF STOCK. Remove it to proceed.`);
-      alert(`Cannot checkout: "${it.name}" is OUT OF STOCK. Please remove it from the cart.`);
       return;
     }
     if (requestedBase > maxAvailableBase) {
       const unitName = (unit.name || unit.unit_symbol || 'units').toUpperCase();
       const maxUnitsInSelected = Math.floor(maxAvailableBase / unitRatio);
       toast(`⛔ Checkout blocked: Insufficient stock for "${it.name}". Only ${maxUnitsInSelected} ${unitName} available.`);
-      alert(`Insufficient stock for "${it.name}".\nRequested: ${cartEntry.qty} ${unitName}\nAvailable: ${maxUnitsInSelected} ${unitName}`);
       return;
     }
   }
@@ -2918,10 +2916,10 @@ async function chargeSale() {
       }
       toast(`Receipt ${res.sale.receipt_number} saved & settled.`);
     } else {
-      alert('Error: ' + res.message);
+      toast('❌ Error: ' + res.message);
     }
   } catch(e) {
-    alert('Server communication error: ' + e.message);
+    toast('❌ Server communication error: ' + e.message);
   }
 }
 
@@ -3151,12 +3149,13 @@ async function triggerSync() {
   renderMain();
 
   try {
+    toast('☁️ Pushing pending sales to Zoho Books...');
     const r = await fetch('/api/sync', { method: 'POST' });
     const res = await r.json();
-    alert(res.message);
+    toast(res.message || 'Sync complete');
     await loadQueueStatus();
   } catch(e) {
-    alert('Sync error: ' + e.message);
+    toast('Sync error: ' + e.message);
   } finally {
     state.syncing = false;
     renderTop();
@@ -3172,18 +3171,19 @@ async function triggerPullSync() {
   renderMain();
 
   try {
+    toast('☁️ Pulling latest items & customers from Zoho...');
     const r = await fetch('/api/sync/pull', { method: 'POST' });
     const res = await r.json();
     if (res.success) {
       await loadCatalog();
       await loadCustomers();
       renderMain();
-      alert('✅ ' + (res.message || 'Synced customers & inventory successfully!'));
+      toast('✅ ' + (res.message || 'Synced items & customers successfully!'));
     } else {
-      alert('⚠️ ' + (res.message || 'Failed to pull from Zoho'));
+      toast('⚠️ ' + (res.message || 'Failed to pull from Zoho'));
     }
   } catch(e) {
-    alert('Pull Sync error: ' + e.message);
+    toast('Pull Sync error: ' + e.message);
   } finally {
     state.pulling = false;
     renderTop();
@@ -3548,10 +3548,10 @@ async function triggerManualBackup() {
       playSound('success');
       await refreshBackupsList();
     } else {
-      alert('Backup failed: ' + (res.message || 'Unknown error'));
+      toast('❌ Backup failed: ' + (res.message || 'Unknown error'));
     }
   } catch(e) {
-    alert('Error connecting to server: ' + e.message);
+    toast('❌ Error connecting to server: ' + e.message);
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -3610,7 +3610,7 @@ async function submitNewCust() {
   const name = ($('#nc-name')?.value || '').trim();
   const phone = ($('#nc-phone')?.value || '').trim();
   if (!name) {
-    alert('Please enter a customer or company name.');
+    toast('⚠️ Please enter a customer or company name.');
     return;
   }
   try {
@@ -3634,10 +3634,10 @@ async function submitNewCust() {
       renderMain();
       toast(`✅ Customer registered & selected: ${state.customer.name}`);
     } else {
-      alert('Error: ' + (res.message || 'Failed to save customer'));
+      toast('❌ Error: ' + (res.message || 'Failed to save customer'));
     }
   } catch(e) {
-    alert('Failed to register customer: ' + e.message);
+    toast('❌ Failed to register customer: ' + e.message);
   }
 }
 
@@ -3789,10 +3789,10 @@ async function savePriceUpdate() {
       renderMain();
       toast(`✅ Prices updated for ${activePMItem.name}`);
     } else {
-      alert('Error: ' + res.message);
+      toast('❌ Error: ' + res.message);
     }
   } catch(e) {
-    alert('Failed to update price: ' + e.message);
+    toast('❌ Failed to update price: ' + e.message);
   }
 }
 
@@ -3847,7 +3847,7 @@ async function openAccountsModal() {
       </div></div>
     `;
   } catch(e) {
-    alert('Failed to load accounts: ' + e.message);
+    toast('Failed to load accounts: ' + e.message);
   }
 }
 
@@ -3871,10 +3871,10 @@ async function renameAccountPrompt(userId, currentName) {
       openAccountsModal();
       renderTop();
     } else {
-      alert('Error: ' + res.message);
+      toast('❌ Error: ' + res.message);
     }
   } catch(e) {
-    alert('Failed to update name: ' + e.message);
+    toast('❌ Failed to update name: ' + e.message);
   }
 }
 
@@ -3883,7 +3883,7 @@ async function changePinPrompt(userId, userName) {
   if (!oldPin) return;
   const newPin = prompt(`Enter NEW 4-digit PIN for ${userName}:`);
   if (!newPin || newPin.length !== 4 || isNaN(newPin)) {
-    alert('PIN must be exactly 4 digits.');
+    toast('⚠️ PIN must be exactly 4 digits.');
     return;
   }
 
@@ -3895,13 +3895,13 @@ async function changePinPrompt(userId, userName) {
     }).then(r => r.json());
 
     if (res.success) {
-      alert(`✅ ${res.message}`);
+      toast(`✅ ${res.message}`);
       openAccountsModal();
     } else {
-      alert('Error: ' + res.message);
+      toast('❌ Error: ' + res.message);
     }
   } catch(e) {
-    alert('Failed to update PIN: ' + e.message);
+    toast('❌ Failed to update PIN: ' + e.message);
   }
 }
 
@@ -4031,12 +4031,12 @@ function openManagerOverrideModal({ reason, onApprove, onReject }) {
         if (typeof onApprove === 'function') onApprove(res.manager);
       } else {
         playSound('error');
-        alert(res.message || 'Invalid Manager PIN.');
+        toast('❌ ' + (res.message || 'Invalid Manager PIN.'));
         pinBuf = '';
         renderModal();
       }
     } catch (e) {
-      alert('Error verifying PIN: ' + e.message);
+      toast('❌ Error verifying PIN: ' + e.message);
     }
   };
 
@@ -4327,10 +4327,10 @@ async function submitStartShift() {
       closeModal();
       openShiftCloseModal();
     } else {
-      alert('Failed to open shift: ' + res.message);
+      toast('❌ Failed to open shift: ' + res.message);
     }
   } catch(e) {
-    alert('Error opening shift: ' + e.message);
+    toast('❌ Error opening shift: ' + e.message);
   }
 }
 
@@ -4377,7 +4377,7 @@ async function finalizeShiftClose() {
   if (!currentShiftData) return;
   const countedVal = $('#counted-cash')?.value;
   if (countedVal === undefined || countedVal === '') {
-    alert('Please count physical cash in drawer and enter the amount before closing shift.');
+    toast('⚠️ Please count physical cash in drawer and enter the amount before closing shift.');
     $('#counted-cash')?.focus();
     return;
   }
@@ -4411,10 +4411,10 @@ async function finalizeShiftClose() {
       // Lock register to PIN screen for next cashier
       setTimeout(lockRegister, 500);
     } else {
-      alert('Error closing shift: ' + res.message);
+      toast('❌ Error closing shift: ' + res.message);
     }
   } catch(e) {
-    alert('Error communicating with server: ' + e.message);
+    toast('❌ Error communicating with server: ' + e.message);
   }
 }
 
