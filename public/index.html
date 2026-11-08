@@ -1674,13 +1674,6 @@ function renderTop() {
         <span style="font-weight:800;font-size:9.5px;color:var(--brand);letter-spacing:0.06em">RETAIL OS v2.0</span>
       </div>
     </div>
-    <select class="reg-sel" onchange="changeTerminal(this.value)" aria-label="Terminal">
-      <option value="TERM-01" ${state.terminalId==='TERM-01'?'selected':''}>Terminal 1 (Cashier 1)</option>
-      <option value="TERM-02" ${state.terminalId==='TERM-02'?'selected':''}>Terminal 2 (Cashier 2)</option>
-      <option value="TERM-03" ${state.terminalId==='TERM-03'?'selected':''}>Terminal 3 (Cashier 3)</option>
-      <option value="TERM-04" ${state.terminalId==='TERM-04'?'selected':''}>Terminal 4 (Cashier 4)</option>
-      <option value="TERM-05" ${state.terminalId==='TERM-05'?'selected':''}>Terminal 5 (Floor/Mobile)</option>
-    </select>
     <div class="sp"></div>
     <span class="pill ${p>0?'off':''}"><i></i>${p>0 ? `${p} Offline Queued` : 'Online & Ready'}</span>
     <button class="btn p" onclick="triggerSync()" ${state.syncing?'disabled':''} title="Sync pending offline sales to Zoho">
