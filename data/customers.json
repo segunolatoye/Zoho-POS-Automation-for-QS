@@ -1,12 +1,12 @@
 [
   {
-    "id": "1560234000000102202",
-    "name": "Walk in Customer",
-    "company_name": "Walk in Customer",
-    "phone": "57667677667",
+    "id": "1560234000000095179",
+    "name": "Walk-in Customer",
+    "company_name": "",
+    "phone": "",
     "email": "",
     "outstanding": 0,
-    "display_name": "Walk in Customer"
+    "display_name": "Walk-in Customer"
   },
   {
     "id": "1560234000000100172",
@@ -2412,6 +2412,15 @@
     "display_name": "SAMSON STORE"
   },
   {
+    "id": "1560234000000446001",
+    "name": "Segun Olatoye",
+    "company_name": "",
+    "phone": "",
+    "email": "",
+    "outstanding": 0,
+    "display_name": "Segun Olatoye"
+  },
+  {
     "id": "1560234000000101964",
     "name": "SEMIAT",
     "company_name": "",
@@ -2736,15 +2745,6 @@
     "display_name": "VITALI SALES"
   },
   {
-    "id": "1560234000000095179",
-    "name": "Walk-in Customer",
-    "company_name": "",
-    "phone": "",
-    "email": "",
-    "outstanding": 0,
-    "display_name": "Walk-in Customer"
-  },
-  {
     "id": "1560234000000413785",
     "name": "walkin",
     "company_name": "",
@@ -2824,5 +2824,14 @@
     "email": "",
     "outstanding": 0,
     "display_name": "ZUNAS STORE"
+  },
+  {
+    "id": "1560234000000102202",
+    "name": "kay bee",
+    "company_name": "",
+    "phone": "57667677667",
+    "email": "",
+    "outstanding": 0,
+    "display_name": "kay bee"
   }
 ]

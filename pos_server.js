@@ -297,17 +297,17 @@ async function pullCloudDataFromZoho() {
     }
 
     const formattedCustomers = [];
-    const walkInId = '1560234000000102202';
-    const walkIn = allContacts.find(c => c.contact_id === walkInId || (c.contact_name && c.contact_name.toLowerCase().includes('walk in')));
+    const walkInId = '1560234000000095179';
+    const walkIn = allContacts.find(c => c.contact_id === walkInId || (c.contact_name && /walk\s*[-]?\s*in/i.test(c.contact_name)));
 
     formattedCustomers.push({
       id: walkIn ? walkIn.contact_id : walkInId,
-      name: walkIn ? (walkIn.company_name || walkIn.contact_name) : 'Walk in Customer',
-      company_name: walkIn?.company_name || 'Walk in Customer',
-      phone: walkIn?.phone || walkIn?.mobile || '',
-      email: walkIn?.email || '',
-      outstanding: Number(walkIn?.outstanding_receivable_amount) || 0,
-      display_name: 'Walk in Customer'
+      name: 'Walk-in Customer',
+      company_name: '',
+      phone: '',
+      email: '',
+      outstanding: 0,
+      display_name: 'Walk-in Customer'
     });
 
     let totalCustomerDebt = 0;
@@ -575,10 +575,16 @@ async function syncOfflineSalesToZoho() {
 
         // Resolve customer_id: if local temporary ID (loc_cust_...) or invalid, search or create in Zoho
         let targetCustomerId = sale.customer_id;
+        // Fix legacy walk-in ID 1560234000000102202 which was mistakenly mapped to 'kay bee' in Zoho
+        if (targetCustomerId === '1560234000000102202' && (!sale.customer_name || /walk\s*[-]?\s*in/i.test(sale.customer_name))) {
+          targetCustomerId = '1560234000000095179';
+          sale.customer_id = '1560234000000095179';
+        }
+
         if (!targetCustomerId || String(targetCustomerId).startsWith('loc_cust_')) {
           let resolvedId = null;
           const custName = sale.customer_name || 'Customer';
-          if (custName.toLowerCase() !== 'walk in customer') {
+          if (!/walk\s*[-]?\s*in/i.test(custName)) {
             try {
               // 1. Check if contact exists in Zoho by name
               const searchRes = await frame.evaluate(async ({ url, h }) => {
@@ -612,7 +618,7 @@ async function syncOfflineSalesToZoho() {
           }
 
           // Use resolved ID or fallback to standard Walk In Customer
-          targetCustomerId = resolvedId || '1560234000000102202';
+          targetCustomerId = resolvedId || '1560234000000095179';
           sale.customer_id = targetCustomerId;
         }
 
@@ -621,7 +627,7 @@ async function syncOfflineSalesToZoho() {
           date: sale.date,
           due_date: sale.date,
           reference_number: sale.receipt_number,
-          notes: (sale.customer_name && sale.customer_name !== 'Walk in Customer' && targetCustomerId === '1560234000000102202')
+          notes: (sale.customer_name && !/walk\s*[-]?\s*in/i.test(sale.customer_name) && targetCustomerId === '1560234000000095179')
             ? `Customer: ${sale.customer_name} | Tilled By: ${sale.tilled_by || sale.salesperson || ''}`
             : (sale.tilled_by ? `Tilled By: ${sale.tilled_by}` : ''),
           line_items: sale.line_items.map(l => {
@@ -913,7 +919,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'GET' && pathname === '/api/customers') {
     const custs = fs.existsSync(CUSTOMERS_PATH)
       ? JSON.parse(fs.readFileSync(CUSTOMERS_PATH, 'utf8'))
-      : [{ id: '1560234000000102202', name: 'Walk in Customer', display_name: 'Walk in Customer' }];
+      : [{ id: '1560234000000095179', name: 'Walk-in Customer', display_name: 'Walk-in Customer' }];
     res.writeHead(200);
     return res.end(JSON.stringify(custs));
   }

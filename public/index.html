@@ -1441,7 +1441,7 @@ let state = {
   user: JSON.parse(sessionStorage.getItem('pos_user') || 'null'),
   isLocked: !sessionStorage.getItem('pos_user'),
   pinInput: '',
-  customer: { id: '1560234000000102202', name: 'Walk in Customer' },
+  customer: { id: '1560234000000095179', name: 'Walk-in Customer' },
   cat: 'All',
   q: '',
   cart: {}, // id: { qty, unitIndex, customPrice }
@@ -2879,7 +2879,7 @@ function holdCurrentCart(silent = false) {
   state.managerPriceApproved = false;
   state.managerPriceApprovedBy = null;
   state.tender = '';
-  state.customer = { id: '1560234000000102202', name: 'Walk in Customer' };
+  state.customer = { id: '1560234000000095179', name: 'Walk-in Customer' };
   renderMain();
   if (!silent) {
     toast(`🛒 Cart parked on hold (${held.itemCount} items). Next customer ready!`);
