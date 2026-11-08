@@ -1677,8 +1677,9 @@ function renderTop() {
     <span class="pill ${p>0?'off':''}"><i></i>${p>0 ? `${p} Offline Queued` : 'Online & Ready'}</span>
     ${state.user ? `
       <div class="user-chip">
-        <i class="fa-solid fa-circle-user"></i>
+        <i class="fa-solid ${state.user.role === 'admin' ? 'fa-user-tie' : (state.user.role === 'finance' ? 'fa-scale-balanced' : 'fa-circle-user')}"></i>
         <span>${state.user.name}</span>
+        <span style="font-size:10px;text-transform:uppercase;padding:1px 6px;border-radius:4px;font-weight:700;${state.user.role === 'admin' ? 'background:var(--brand);color:#fff' : (state.user.role === 'finance' ? 'background:#0284c7;color:#fff' : 'background:var(--soft);color:var(--mute)')}">${state.user.role}</span>
       </div>
       <button class="btn" onclick="openAccountsModal()" title="Manage POS Cashier Accounts & PINs"><i class="fa-solid fa-users-gear"></i> Accounts</button>
       <button class="btn" onclick="openShiftCloseModal()" title="Shift Close & Z-Report (Ctrl+E)"><i class="fa-solid fa-file-invoice-dollar" style="color:var(--brand)"></i> Shift / Z-Report</button>
@@ -3639,11 +3640,11 @@ function handleDiscountChange(val) {
     return;
   }
 
-  // Discount > 5% requested
-  if (state.user && state.user.role === 'admin') {
+  // Discount > 5% requested (Manager / Finance privilege check)
+  if (state.user && (state.user.role === 'admin' || state.user.role === 'finance' || state.user.role === 'manager')) {
     state.disc = num;
     state.managerDiscountApproved = true;
-    state.managerApprovedBy = state.user.name;
+    state.managerApprovedBy = `${state.user.name} (${state.user.role.toUpperCase()})`;
     $('#cart').innerHTML = renderCartHTML();
     return;
   }
@@ -3659,8 +3660,8 @@ function handleDiscountChange(val) {
     onApprove: (manager) => {
       state.disc = num;
       state.managerDiscountApproved = true;
-      state.managerApprovedBy = manager.name;
-      toast(`Manager discount (${num}%) authorized by ${manager.name}.`);
+      state.managerApprovedBy = `${manager.name} (${manager.role.toUpperCase()})`;
+      toast(`Discount (${num}%) authorized by ${manager.name}.`);
       playSound('beep');
       $('#cart').innerHTML = renderCartHTML();
     },
@@ -3682,11 +3683,11 @@ function openManagerOverrideModal({ reason, onApprove, onReject }) {
           <div style="width:56px;height:56px;border-radius:50%;background:rgba(239,68,68,0.1);color:var(--bad);display:inline-flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:12px">
             <i class="fa-solid fa-user-shield"></i>
           </div>
-          <h3 style="margin:0 0 6px;font-size:18px">Manager Override Required</h3>
+          <h3 style="margin:0 0 6px;font-size:18px">Manager / Finance Override</h3>
           <p style="margin:0 0 16px;color:var(--mute);font-size:13px">${reason || 'Authorization required for this action.'}</p>
 
           <div style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:16px">
-            <div style="font-size:11px;color:var(--mute);margin-bottom:4px">ENTER 4-DIGIT MANAGER PIN</div>
+            <div style="font-size:11px;color:var(--mute);margin-bottom:4px">ENTER 4-DIGIT MANAGER OR FINANCE PIN</div>
             <div style="font-family:monospace;font-size:28px;letter-spacing:10px;font-weight:700;color:var(--ink);min-height:36px">
               ${'●'.repeat(pinBuf.length) || '<span style="color:var(--mute);font-size:14px;letter-spacing:0">Enter PIN</span>'}
             </div>

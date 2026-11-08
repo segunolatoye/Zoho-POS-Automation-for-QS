@@ -6,6 +6,12 @@
     "role": "admin"
   },
   {
+    "id": "u5",
+    "name": "Finance / Accounts",
+    "pin": "5555",
+    "role": "finance"
+  },
+  {
     "id": "u2",
     "name": "Cashier 1",
     "pin": "1111",

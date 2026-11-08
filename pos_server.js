@@ -711,6 +711,7 @@ const server = http.createServer(async (req, res) => {
         ? JSON.parse(fs.readFileSync(usersPath, 'utf8'))
         : [
           { id: 'u1', name: 'Manager / Admin', pin: '1234', role: 'admin' },
+          { id: 'u5', name: 'Finance / Accounts', pin: '5555', role: 'finance' },
           { id: 'u2', name: 'Cashier 1', pin: '1111', role: 'cashier', terminal_id: 'TERM-01' },
           { id: 'u3', name: 'Cashier 2', pin: '2222', role: 'cashier', terminal_id: 'TERM-02' }
         ];
@@ -953,6 +954,7 @@ const server = http.createServer(async (req, res) => {
         ? JSON.parse(fs.readFileSync(usersPath, 'utf8'))
         : [
           { id: 'u1', name: 'Manager / Admin', pin: '1234', role: 'admin' },
+          { id: 'u5', name: 'Finance / Accounts', pin: '5555', role: 'finance' },
           { id: 'u2', name: 'Cashier 1', pin: '1111', role: 'cashier', terminal_id: 'TERM-01' },
           { id: 'u3', name: 'Cashier 2', pin: '2222', role: 'cashier', terminal_id: 'TERM-02' }
         ];
@@ -1306,17 +1308,17 @@ const server = http.createServer(async (req, res) => {
       const pin = String(body.pin || '').trim();
       const usersPath = path.join(DATA_DIR, 'pos_users.json');
       const users = fs.existsSync(usersPath) ? JSON.parse(fs.readFileSync(usersPath, 'utf8')) : [];
-      const manager = users.find(u => u.pin === pin && u.role === 'admin');
+      const manager = users.find(u => u.pin === pin && (u.role === 'admin' || u.role === 'finance' || u.role === 'manager'));
       if (manager) {
         res.writeHead(200);
         return res.end(JSON.stringify({
           success: true,
           manager: { id: manager.id, name: manager.name, role: manager.role },
-          message: `Manager override authorized by ${manager.name}.`
+          message: `Manager override authorized by ${manager.name} (${manager.role.toUpperCase()}).`
         }));
       } else {
         res.writeHead(403);
-        return res.end(JSON.stringify({ success: false, message: 'Invalid Manager PIN. Authorization denied.' }));
+        return res.end(JSON.stringify({ success: false, message: 'Invalid Manager / Finance PIN. Authorization denied.' }));
       }
     } catch (err) {
       res.writeHead(500);

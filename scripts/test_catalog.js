@@ -123,6 +123,9 @@ try {
   const admin = users.find(u => u.role === 'admin' && u.pin);
   assert(!!admin, `Manager PIN authority verified (${admin.name}, Role: ${admin.role})`);
 
+  const finance = users.find(u => u.role === 'finance' && u.pin);
+  assert(!!finance, `Finance authority verified (${finance.name}, Role: ${finance.role}, PIN: ${finance.pin})`);
+
   const hardware = require('../modules/hardware_printer');
   const mockReport = {
     report_id: 'Z-TEST-001',
