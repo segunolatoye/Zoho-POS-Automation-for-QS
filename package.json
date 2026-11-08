@@ -7,6 +7,7 @@
     "start": "node pos_server.js",
     "test": "node scripts/test_catalog.js",
     "validate": "node -c pos_server.js && node scripts/test_catalog.js",
+    "manual:pdf": "node scripts/setup_manual.js",
     "pm2:start": "pm2 start ecosystem.config.js",
     "pm2:stop": "pm2 stop ecosystem.config.js",
     "pm2:restart": "pm2 restart ecosystem.config.js",
