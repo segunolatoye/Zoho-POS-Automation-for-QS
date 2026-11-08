@@ -282,7 +282,7 @@ button { cursor: pointer; transition: all 0.15s ease; }
 /* Body Layout */
 .body {
   display: grid;
-  grid-template-columns: 216px 1fr;
+  grid-template-columns: 220px 1fr;
   min-height: 0;
 }
 
@@ -290,26 +290,28 @@ button { cursor: pointer; transition: all 0.15s ease; }
 .nav {
   background: var(--panel);
   border-right: 1px solid var(--line);
-  padding: 16px 12px;
+  padding: 12px 10px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 3px;
+  overflow-y: auto;
 }
 
 .nav button {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   text-align: left;
-  padding: 10px 14px;
+  padding: 8px 10px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--mute);
   border: 1px solid transparent;
   background: none;
   position: relative;
   transition: all 0.15s ease;
+  cursor: pointer;
 }
 .nav button:hover {
   background: var(--bg);
@@ -325,10 +327,10 @@ button { cursor: pointer; transition: all 0.15s ease; }
 .nav .gl {
   display: block;
   color: var(--mute);
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
-  padding: 4px 12px 6px;
+  padding: 6px 10px 4px;
   letter-spacing: .06em;
 }
 
@@ -1681,25 +1683,19 @@ function renderTop() {
     </select>
     <div class="sp"></div>
     <span class="pill ${p>0?'off':''}"><i></i>${p>0 ? `${p} Offline Queued` : 'Online & Ready'}</span>
+    <button class="btn p" onclick="triggerSync()" ${state.syncing?'disabled':''} title="Sync pending offline sales to Zoho">
+      ${state.syncing ? '<span class="spin"></span>Syncing…' : `<i class="fa-solid fa-rotate"></i> Sync${p ? ' ('+p+')' : ''}`}
+    </button>
     ${state.user ? `
       <div class="user-chip">
         <i class="fa-solid ${state.user.role === 'admin' ? 'fa-user-tie' : (state.user.role === 'finance' ? 'fa-scale-balanced' : 'fa-circle-user')}"></i>
         <span>${state.user.name}</span>
         <span style="font-size:10px;text-transform:uppercase;padding:1px 6px;border-radius:4px;font-weight:700;${state.user.role === 'admin' ? 'background:var(--brand);color:#fff' : (state.user.role === 'finance' ? 'background:#0284c7;color:#fff' : 'background:var(--soft);color:var(--mute)')}">${state.user.role}</span>
       </div>
-      <button class="btn" onclick="openAccountsModal()" title="Manage POS Cashier Accounts & PINs"><i class="fa-solid fa-users-gear"></i> Accounts</button>
-      <button class="btn" onclick="openShiftCloseModal()" title="Shift Close & Z-Report (Ctrl+E)"><i class="fa-solid fa-file-invoice-dollar" style="color:var(--brand)"></i> Shift / Z-Report</button>
       <button class="btn" onclick="lockRegister()" title="Switch User / Lock Portal"><i class="fa-solid fa-arrow-right-from-bracket"></i> Lock</button>
     ` : `
       <button class="btn p" onclick="state.isLocked=true;renderLockScreen();"><i class="fa-solid fa-lock"></i> Login with PIN</button>
     `}
-    <button class="btn" onclick="openPriceManager()"><i class="fa-solid fa-tags" style="color:var(--warn)"></i> Price Manager</button>
-    <button class="btn" id="btn-pull-top" onclick="triggerPullSync()" ${state.pulling?'disabled':''} title="Pull latest customers and live inventory stock from Zoho Cloud">
-      ${state.pulling ? '<span class="spin"></span>Pulling Zoho…' : '<i class="fa-solid fa-cloud-arrow-down" style="color:var(--brand)"></i> Pull from Zoho'}
-    </button>
-    <button class="btn p" onclick="triggerSync()" ${state.syncing?'disabled':''}>
-      ${state.syncing ? '<span class="spin"></span>Syncing…' : `<i class="fa-solid fa-rotate"></i> Sync to Zoho${p ? ' ('+p+')' : ''}`}
-    </button>
     <button class="btn icon-btn" onclick="toggleTheme()" title="Switch Light/Dark Theme (F10)" aria-label="Theme toggle">
       ${(state.theme === 'dark' || (state.theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches))
         ? '<i class="fa-solid fa-sun" style="color:#f59f00;font-size:15px"></i>'
@@ -1884,17 +1880,65 @@ function toggleTheme() {
 // Nav Bar
 function renderNav() {
   const p = state.pendingCount;
-  const I = d => `<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  const isManagerOrFinance = state.user && (state.user.role === 'admin' || state.user.role === 'finance' || state.user.role === 'manager');
+
   $('#nav').innerHTML = `
     <small class="gl">Workspace</small>
-    <button class="${state.view==='sell'?'on':''}" onclick="goView('sell')">
-      ${I('<path d="M3 4h2l2 9h9l2-6H6"/><circle cx="9" cy="17" r="1"/><circle cx="16" cy="17" r="1"/>')}Sell<kbd>F2</kbd>
+    <button class="${state.view==='sell'?'on':''}" onclick="goView('sell')" title="Retail POS Checkout Register (F2)">
+      <i class="fa-solid fa-cash-register" style="font-size:13px;width:16px;text-align:center"></i>
+      <span>Sell Register</span>
+      <kbd>F2</kbd>
     </button>
-    <button class="${state.view==='orders'?'on':''}" onclick="goView('orders')">
-      ${I('<path d="M5 3h10v14H5zM8 7h4M8 10h4M8 13h3"/>')}Orders${p ? `<span class="badge">${p}</span>` : ''}
+    <button class="${state.view==='orders'?'on':''}" onclick="goView('orders')" title="View recent orders and reprint receipts (F3)">
+      <i class="fa-solid fa-receipt" style="font-size:13px;width:16px;text-align:center"></i>
+      <span>Orders</span>
+      ${p ? `<span class="badge">${p}</span>` : ''}
+      <kbd>F3</kbd>
     </button>
-    <div class="nb">
-      <small class="gl">Wi-Fi Multi-Terminal</small>
+
+    <small class="gl" style="margin-top:10px">Operations</small>
+    <button onclick="openShiftCloseModal()" title="Daily Shift Close & Z-Report Cash Reconciliation (Ctrl+E)">
+      <i class="fa-solid fa-file-invoice-dollar" style="font-size:13px;width:16px;text-align:center;color:var(--brand)"></i>
+      <span>Shift / Z-Report</span>
+      <kbd>Ctrl+E</kbd>
+    </button>
+    <button onclick="openPriceManager()" title="Product Live Price Manager (F7)">
+      <i class="fa-solid fa-tags" style="font-size:13px;width:16px;text-align:center;color:var(--warn)"></i>
+      <span>Price Manager</span>
+      <kbd>F7</kbd>
+    </button>
+    <button onclick="openCustomerModal()" title="Select customer ledger or check debtor balances (F4)">
+      <i class="fa-solid fa-users" style="font-size:13px;width:16px;text-align:center;color:#0284c7"></i>
+      <span>Customers</span>
+      <kbd>F4</kbd>
+    </button>
+    <button onclick="handleHoldRecallKey()" title="Park current cart on hold or recall parked carts (F5)">
+      <i class="fa-solid fa-clock-rotate-left" style="font-size:13px;width:16px;text-align:center"></i>
+      <span>Held Carts</span>
+      ${state.heldCarts.length ? `<span class="badge" style="background:var(--warn);color:#fff">${state.heldCarts.length}</span>` : ''}
+      <kbd>F5</kbd>
+    </button>
+
+    <small class="gl" style="margin-top:10px">Management & Cloud</small>
+    <button onclick="openAccountsModal()" title="Manage POS Cashier Accounts & 4-Digit PINs">
+      <i class="fa-solid fa-users-gear" style="font-size:13px;width:16px;text-align:center"></i>
+      <span>Cashier PINs</span>
+    </button>
+    <button id="btn-pull-top" onclick="triggerPullSync()" ${state.pulling?'disabled':''} title="Pull latest customers and live inventory stock from Zoho Cloud">
+      <i class="fa-solid fa-cloud-arrow-down" style="font-size:13px;width:16px;text-align:center;color:var(--brand)"></i>
+      <span>${state.pulling ? 'Pulling Zoho…' : 'Pull from Zoho'}</span>
+    </button>
+    <button onclick="openBackupsModal()" title="View and download automated database backups">
+      <i class="fa-solid fa-shield-halved" style="font-size:13px;width:16px;text-align:center"></i>
+      <span>Data Backups</span>
+    </button>
+    <button onclick="openSyncLogModal()" title="View Zoho Background Sync Engine logs">
+      <i class="fa-solid fa-file-waveform" style="font-size:13px;width:16px;text-align:center;color:#6366f1"></i>
+      <span>Sync Logs</span>
+    </button>
+
+    <div class="nb" style="margin-top:auto">
+      <small class="gl" style="padding:0 0 4px">Wi-Fi Terminal Hub</small>
       <div class="row"><span>IP to Open</span><b style="color:var(--brand);font-family:monospace;font-size:11px">${state.lanIp || '192.168.100.18'}:3001</b></div>
       <div class="row"><span>Waiting Sync</span><b>${p}</b></div>
       <div class="row"><span>Hub Server</span><b style="color:var(--brand)">Active</b></div>
