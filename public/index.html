@@ -4529,6 +4529,7 @@ document.addEventListener('keydown', e => {
   const k = e.key;
   if (k === 'F1') {
     e.preventDefault();
+    const isManagerOrFinance = state.user && (state.user.role === 'admin' || state.user.role === 'finance' || state.user.role === 'manager');
     $('#ov').innerHTML = `
       <div class="ov"><div class="modal">
         <h3>Cashier Keyboard Shortcuts</h3>
@@ -4539,7 +4540,7 @@ document.addEventListener('keydown', e => {
           <div class="row"><kbd class="kk">F4</kbd> <span>Select Customer</span></div>
           <div class="row"><kbd class="kk">F5</kbd> <span>Hold / Recall Parked Cart</span></div>
           <div class="row"><kbd class="kk">F6</kbd> <span>Cycle Payment Method (Cash, POS, Transfer, Split)</span></div>
-          <div class="row"><kbd class="kk">F7</kbd> <span>Open Price Manager</span></div>
+          ${isManagerOrFinance ? '<div class="row"><kbd class="kk">F7</kbd> <span>Open Price Manager</span></div>' : ''}
           <div class="row"><kbd class="kk">F8</kbd> <span>Charge / Complete Sale</span></div>
           <div class="row"><kbd class="kk">F9</kbd> <span>Push Sales to Zoho (Shift+F9: Pull Stock & Cust)</span></div>
           <div class="row"><kbd class="kk">F10</kbd> <span>Toggle Theme</span></div>
