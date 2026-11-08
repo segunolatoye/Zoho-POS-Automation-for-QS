@@ -332,8 +332,13 @@ async function pullCloudDataFromZoho() {
     }
 
     if (formattedCustomers.length > 0) {
+      // Preserve any locally created customers that haven't been synced to Zoho yet
+      const existingCusts = fs.existsSync(CUSTOMERS_PATH) ? JSON.parse(fs.readFileSync(CUSTOMERS_PATH, 'utf8')) : [];
+      const localOnly = existingCusts.filter(c => c.is_local_created && String(c.id).startsWith('loc_cust_'));
+      const mergedCustomers = [...formattedCustomers, ...localOnly];
+
       const tmpCust = `${CUSTOMERS_PATH}.tmp`;
-      fs.writeFileSync(tmpCust, JSON.stringify(formattedCustomers, null, 2), 'utf8');
+      fs.writeFileSync(tmpCust, JSON.stringify(mergedCustomers, null, 2), 'utf8');
       fs.renameSync(tmpCust, CUSTOMERS_PATH);
     }
 
@@ -567,11 +572,58 @@ async function syncOfflineSalesToZoho() {
       try {
         console.log(`Syncing receipt ${sale.receipt_number} to Zoho...`);
         sale.sync_attempts = (sale.sync_attempts || 0) + 1;
+
+        // Resolve customer_id: if local temporary ID (loc_cust_...) or invalid, search or create in Zoho
+        let targetCustomerId = sale.customer_id;
+        if (!targetCustomerId || String(targetCustomerId).startsWith('loc_cust_')) {
+          let resolvedId = null;
+          const custName = sale.customer_name || 'Customer';
+          if (custName.toLowerCase() !== 'walk in customer') {
+            try {
+              // 1. Check if contact exists in Zoho by name
+              const searchRes = await frame.evaluate(async ({ url, h }) => {
+                const r = await fetch(url, { headers: h });
+                return await r.json();
+              }, { url: `/posapi/api/v1/contacts?organization_id=${invOrgId}&contact_name=${encodeURIComponent(custName)}`, h: headers });
+
+              if (searchRes.code === 0 && Array.isArray(searchRes.contacts) && searchRes.contacts.length > 0) {
+                const matched = searchRes.contacts.find(c => c.contact_name && c.contact_name.toLowerCase() === custName.toLowerCase()) || searchRes.contacts[0];
+                resolvedId = matched.contact_id;
+                console.log(`  -> Found existing Zoho customer for "${custName}": ${resolvedId}`);
+              } else {
+                // 2. Create customer in Zoho
+                const createRes = await frame.evaluate(async ({ url, h, b }) => {
+                  const r = await fetch(url, { method: 'POST', headers: h, body: JSON.stringify(b) });
+                  return await r.json();
+                }, {
+                  url: `/posapi/api/v1/contacts?organization_id=${invOrgId}`,
+                  h: headers,
+                  b: { contact_name: custName, customer_name: custName }
+                });
+
+                if (createRes.code === 0 && createRes.contact) {
+                  resolvedId = createRes.contact.contact_id;
+                  console.log(`  -> Created new Zoho customer for "${custName}": ${resolvedId}`);
+                }
+              }
+            } catch (errCust) {
+              console.warn(`  ⚠️ Could not resolve customer in Zoho: ${errCust.message}`);
+            }
+          }
+
+          // Use resolved ID or fallback to standard Walk In Customer
+          targetCustomerId = resolvedId || '1560234000000102202';
+          sale.customer_id = targetCustomerId;
+        }
+
         const invPayload = {
-          customer_id: sale.customer_id || '1560234000000102202',
+          customer_id: targetCustomerId,
           date: sale.date,
           due_date: sale.date,
           reference_number: sale.receipt_number,
+          notes: (sale.customer_name && sale.customer_name !== 'Walk in Customer' && targetCustomerId === '1560234000000102202')
+            ? `Customer: ${sale.customer_name} | Tilled By: ${sale.tilled_by || sale.salesperson || ''}`
+            : (sale.tilled_by ? `Tilled By: ${sale.tilled_by}` : ''),
           line_items: sale.line_items.map(l => {
             const itemLine = {
               item_id: l.item_id,

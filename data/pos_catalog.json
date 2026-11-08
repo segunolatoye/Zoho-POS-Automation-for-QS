@@ -15566,8 +15566,8 @@
     "bulk_unit": "carton",
     "unit_group": "",
     "retail_price": 500,
-    "carton_price": 500,
-    "stock": 0,
+    "carton_price": 9000,
+    "stock": 200,
     "upc": "",
     "sku": "",
     "units": [

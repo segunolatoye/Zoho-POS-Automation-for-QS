@@ -214,5 +214,50 @@
     "zoho_invoice_number": "KI-00091",
     "zoho_payment_id": "1560234000000434218",
     "synced_at": "2026-11-08T09:27:35.783Z"
+  },
+  {
+    "id": "sale_1794171554582_8ojn",
+    "order_id": "QS-00007",
+    "receipt_number": "QS-00007",
+    "tilled_by": "Manager / Admin",
+    "user_id": "u1",
+    "salesperson": "Manager / Admin",
+    "cashier_role": "admin",
+    "terminal_id": "TERM-01",
+    "customer_id": "loc_cust_1794171550234",
+    "customer_name": "Segun Olatoye",
+    "date": "2026-11-08",
+    "payment_mode": "Cash",
+    "payments": [
+      {
+        "mode": "Cash",
+        "amount": 2000
+      }
+    ],
+    "amount_paid": 19500,
+    "change": 17500,
+    "subtotal": 2000,
+    "discount": 0,
+    "manager_override": false,
+    "manager_override_by": null,
+    "total": 2000,
+    "line_items": [
+      {
+        "item_id": "1560234000000274718",
+        "name": "Test",
+        "unit": "pack",
+        "unit_display": "PACK",
+        "unit_conversion_id": "",
+        "quantity": 4,
+        "rate": 500,
+        "list_price": 500,
+        "is_custom_price": false,
+        "total": 2000
+      }
+    ],
+    "status": "PENDING_SYNC",
+    "created_at": "2026-11-08T20:59:14.582Z",
+    "sync_attempts": 2,
+    "last_sync_error": "Invalid value passed for Select Customer"
   }
 ]
