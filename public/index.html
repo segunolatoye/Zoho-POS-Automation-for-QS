@@ -2491,11 +2491,47 @@ function setPaymentMode(mode) {
   $('#cart').innerHTML = renderCartHTML();
 }
 
+function handleTenderInput(val) {
+  state.tender = val;
+  updateTenderUI();
+}
+
+function updateTenderUI() {
+  const t = calcTotals();
+  const tend = parseFloat(state.tender) || 0;
+  const short = state.pay === 'Cash' && state.tender !== '' && tend < t.total;
+  
+  const changeRow = $('#change-due-row');
+  if (changeRow) {
+    if (state.tender !== '' && !short) {
+      changeRow.style.display = 'flex';
+      const changeVal = $('#change-due-val');
+      if (changeVal) changeVal.textContent = NGN(tend - t.total);
+    } else {
+      changeRow.style.display = 'none';
+    }
+  }
+
+  const btn = $('#btn-charge');
+  if (btn) {
+    let chargeDisabled = !t.n;
+    let chargeButtonLabel = 'Charge ' + NGN(t.total) + ' (F8)';
+    if (state.pay === 'Cash') {
+      if (short) {
+        chargeDisabled = true;
+        chargeButtonLabel = 'Cash received is too low';
+      }
+    }
+    btn.disabled = chargeDisabled;
+    btn.innerHTML = chargeButtonLabel;
+  }
+}
+
 function updateSplitAmount(field, val) {
   if (!state.split) state.split = { cash: 0, moniepoint: 0, transfer: 0 };
   const p = parseFloat(val);
   state.split[field] = isNaN(p) ? 0 : Math.max(0, Math.round(p));
-  $('#cart').innerHTML = renderCartHTML();
+  updateSplitUI();
 }
 
 function fillSplitRemaining(field) {
@@ -2507,7 +2543,37 @@ function fillSplitRemaining(field) {
   }
   const rem = Math.max(0, Math.round(t.total - otherAlloc));
   state.split[field] = rem;
-  $('#cart').innerHTML = renderCartHTML();
+  const inputEl = $(`#split-${field}`);
+  if (inputEl) inputEl.value = rem || '';
+  updateSplitUI();
+}
+
+function updateSplitUI() {
+  const t = calcTotals();
+  const sc = parseFloat(state.split?.cash) || 0;
+  const sm = parseFloat(state.split?.moniepoint) || 0;
+  const st = parseFloat(state.split?.transfer) || 0;
+  const splitTotal = sc + sm + st;
+  const splitDiff = t.total - splitTotal;
+  const splitBalanced = Math.abs(splitDiff) < 1;
+
+  const statusEl = $('#split-status-badge');
+  if (statusEl) {
+    statusEl.className = `split-status ${splitBalanced ? 'ok' : (splitDiff > 0 ? 'warn' : 'err')}`;
+    statusEl.textContent = splitBalanced ? '✓ Balanced' : (splitDiff > 0 ? `₦${splitDiff.toLocaleString()} remaining` : `₦${(-splitDiff).toLocaleString()} excess`);
+  }
+
+  const btn = $('#btn-charge');
+  if (btn) {
+    let chargeDisabled = !t.n;
+    let chargeButtonLabel = `Charge ${NGN(t.total)} (Split Tender)`;
+    if (!splitBalanced) {
+      chargeDisabled = true;
+      chargeButtonLabel = splitDiff > 0 ? `Allocate remaining ₦${splitDiff.toLocaleString()}` : `Over-allocated by ₦${(-splitDiff).toLocaleString()}`;
+    }
+    btn.disabled = chargeDisabled;
+    btn.innerHTML = chargeButtonLabel;
+  }
 }
 
 function renderCartHTML() {
@@ -2623,12 +2689,12 @@ function renderCartHTML() {
           </div>
           <div class="row">
             <span>Cash Received</span>
-            <input id="tender" style="width:115px;font-weight:700;font-size:13px" type="number" min="0" placeholder="${Math.round(t.total)}" value="${state.tender}" oninput="state.tender=this.value;$('#cart').innerHTML=renderCartHTML();">
+            <input id="tender" style="width:115px;font-weight:700;font-size:13px" type="number" min="0" placeholder="${Math.round(t.total)}" value="${state.tender}" oninput="handleTenderInput(this.value)">
           </div>
         </div>
-        ${state.tender !== '' && !short ? `
-          <div class="row" style="padding:2px 0"><span>Change Due</span><b style="color:var(--brand);font-size:15px">${NGN(tend - t.total)}</b></div>
-        ` : ''}
+        <div class="row" id="change-due-row" style="padding:2px 0;display:${state.tender !== '' && !short ? 'flex' : 'none'}">
+          <span>Change Due</span><b id="change-due-val" style="color:var(--brand);font-size:15px">${NGN(tend - t.total)}</b>
+        </div>
       ` : ''}
       <div class="row t"><span>Total</span><span>${NGN(t.total)}</span></div>
     </div>
@@ -2644,7 +2710,7 @@ function renderCartHTML() {
       <div class="split-box">
         <div class="split-hdr">
           <span>Split Payment Distribution</span>
-          <span class="split-status ${splitBalanced ? 'ok' : (splitDiff > 0 ? 'warn' : 'err')}">
+          <span id="split-status-badge" class="split-status ${splitBalanced ? 'ok' : (splitDiff > 0 ? 'warn' : 'err')}">
             ${splitBalanced ? '✓ Balanced' : (splitDiff > 0 ? `₦${splitDiff.toLocaleString()} remaining` : `₦${(-splitDiff).toLocaleString()} excess`)}
           </span>
         </div>
@@ -2652,7 +2718,7 @@ function renderCartHTML() {
           <label><i class="fa-solid fa-money-bill-1" style="color:var(--brand)"></i> Cash</label>
           <div class="split-wrap">
             <span>₦</span>
-            <input type="number" min="0" value="${state.split?.cash || ''}" placeholder="0" oninput="updateSplitAmount('cash', this.value)">
+            <input id="split-cash" type="number" min="0" value="${state.split?.cash || ''}" placeholder="0" oninput="updateSplitAmount('cash', this.value)">
             <button type="button" class="split-fill" onclick="fillSplitRemaining('cash')">Fill</button>
           </div>
         </div>
@@ -2660,7 +2726,7 @@ function renderCartHTML() {
           <label><i class="fa-solid fa-credit-card" style="color:#2B6CB0"></i> Moniepoint</label>
           <div class="split-wrap">
             <span>₦</span>
-            <input type="number" min="0" value="${state.split?.moniepoint || ''}" placeholder="0" oninput="updateSplitAmount('moniepoint', this.value)">
+            <input id="split-moniepoint" type="number" min="0" value="${state.split?.moniepoint || ''}" placeholder="0" oninput="updateSplitAmount('moniepoint', this.value)">
             <button type="button" class="split-fill" onclick="fillSplitRemaining('moniepoint')">Fill</button>
           </div>
         </div>
@@ -2668,14 +2734,14 @@ function renderCartHTML() {
           <label><i class="fa-solid fa-building-columns" style="color:#B8741A"></i> First Bank</label>
           <div class="split-wrap">
             <span>₦</span>
-            <input type="number" min="0" value="${state.split?.transfer || ''}" placeholder="0" oninput="updateSplitAmount('transfer', this.value)">
+            <input id="split-transfer" type="number" min="0" value="${state.split?.transfer || ''}" placeholder="0" oninput="updateSplitAmount('transfer', this.value)">
             <button type="button" class="split-fill" onclick="fillSplitRemaining('transfer')">Fill</button>
           </div>
         </div>
       </div>
     ` : ''}
 
-    <button class="charge" onclick="chargeSale()" ${chargeDisabled ? 'disabled' : ''}>
+    <button id="btn-charge" class="charge" onclick="chargeSale()" ${chargeDisabled ? 'disabled' : ''}>
       ${chargeButtonLabel}
     </button>
   `;
@@ -2844,7 +2910,9 @@ function setQuickTender(type, val) {
     const cur = parseFloat(state.tender) || 0;
     state.tender = String(cur + val);
   }
-  $('#cart').innerHTML = renderCartHTML();
+  const el = $('#tender');
+  if (el) el.value = state.tender;
+  updateTenderUI();
 }
 
 // Hold / Park & Recall Cart Engine
