@@ -109,3 +109,4 @@ if ($success) {
     Write-Error "Failed to write raw bytes to printer: $PrinterName"
     exit 1
 }
+
