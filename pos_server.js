@@ -39,10 +39,14 @@ const connectedTerminals = new Map(); // clientIp -> terminalId
 const LOGS_DIR = path.join(__dirname, 'logs');
 const SYNC_LOG_PATH = path.join(LOGS_DIR, 'zoho_sync.log');
 const UNIT_GROUPS_PATH = path.join(DATA_DIR, 'unit_groups_cache.json');
+const SHIFTS_PATH = path.join(DATA_DIR, 'shift_reports.json');
+const ACTIVE_SHIFTS_PATH = path.join(DATA_DIR, 'active_shifts.json');
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(LOGS_DIR)) fs.mkdirSync(LOGS_DIR, { recursive: true });
 if (!fs.existsSync(QUEUE_PATH)) fs.writeFileSync(QUEUE_PATH, JSON.stringify([], null, 2), 'utf8');
+if (!fs.existsSync(SHIFTS_PATH)) fs.writeFileSync(SHIFTS_PATH, JSON.stringify([], null, 2), 'utf8');
+if (!fs.existsSync(ACTIVE_SHIFTS_PATH)) fs.writeFileSync(ACTIVE_SHIFTS_PATH, JSON.stringify({}, null, 2), 'utf8');
 
 function formatLocalTime(d = new Date()) {
   const pad = n => String(n).padStart(2, '0');
@@ -1292,6 +1296,202 @@ const server = http.createServer(async (req, res) => {
     } else {
       res.writeHead(404);
       return res.end(JSON.stringify({ success: false, message: 'Backup file not found' }));
+    }
+  }
+
+  // 10a. POST /api/users/verify-manager-pin (Validate Manager Override PIN for Discounts > 5%)
+  if (req.method === 'POST' && pathname === '/api/users/verify-manager-pin') {
+    try {
+      const body = await parseJsonBody(req);
+      const pin = String(body.pin || '').trim();
+      const usersPath = path.join(DATA_DIR, 'pos_users.json');
+      const users = fs.existsSync(usersPath) ? JSON.parse(fs.readFileSync(usersPath, 'utf8')) : [];
+      const manager = users.find(u => u.pin === pin && u.role === 'admin');
+      if (manager) {
+        res.writeHead(200);
+        return res.end(JSON.stringify({
+          success: true,
+          manager: { id: manager.id, name: manager.name, role: manager.role },
+          message: `Manager override authorized by ${manager.name}.`
+        }));
+      } else {
+        res.writeHead(403);
+        return res.end(JSON.stringify({ success: false, message: 'Invalid Manager PIN. Authorization denied.' }));
+      }
+    } catch (err) {
+      res.writeHead(500);
+      return res.end(JSON.stringify({ success: false, message: err.message }));
+    }
+  }
+
+  // 10b. GET /api/shifts/active (Get current active shift for terminal/cashier)
+  if (req.method === 'GET' && pathname === '/api/shifts/active') {
+    try {
+      const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+      const term = parsedUrl.searchParams.get('terminal_id') || 'TERM-01';
+      const activeShifts = fs.existsSync(ACTIVE_SHIFTS_PATH) ? JSON.parse(fs.readFileSync(ACTIVE_SHIFTS_PATH, 'utf8')) : {};
+      const active = activeShifts[term] || null;
+      res.writeHead(200);
+      return res.end(JSON.stringify({ success: true, active_shift: active }));
+    } catch (err) {
+      res.writeHead(500);
+      return res.end(JSON.stringify({ success: false, message: err.message }));
+    }
+  }
+
+  // 10c. POST /api/shifts/open (Open shift and record morning cash float)
+  if (req.method === 'POST' && pathname === '/api/shifts/open') {
+    try {
+      const body = await parseJsonBody(req);
+      const term = body.terminal_id || 'TERM-01';
+      const activeShifts = fs.existsSync(ACTIVE_SHIFTS_PATH) ? JSON.parse(fs.readFileSync(ACTIVE_SHIFTS_PATH, 'utf8')) : {};
+      const shift = {
+        shift_id: `SHIFT-${Date.now().toString(36).toUpperCase()}`,
+        terminal_id: term,
+        cashier_id: body.cashier_id || 'u2',
+        cashier_name: body.cashier_name || 'Cashier 1',
+        opening_float: parseFloat(body.opening_float) || 0,
+        opened_at: new Date().toISOString(),
+        opened_at_local: formatLocalTime(),
+        status: 'OPEN'
+      };
+      activeShifts[term] = shift;
+      fs.writeFileSync(ACTIVE_SHIFTS_PATH, JSON.stringify(activeShifts, null, 2), 'utf8');
+      res.writeHead(200);
+      return res.end(JSON.stringify({ success: true, shift, message: `Shift opened with float of ₦${shift.opening_float.toLocaleString()}` }));
+    } catch (err) {
+      res.writeHead(500);
+      return res.end(JSON.stringify({ success: false, message: err.message }));
+    }
+  }
+
+  // 10d. POST /api/shifts/close (Close shift, compute reconciliation variance, save Z-Report)
+  if (req.method === 'POST' && pathname === '/api/shifts/close') {
+    try {
+      const body = await parseJsonBody(req);
+      const term = body.terminal_id || 'TERM-01';
+      const activeShifts = fs.existsSync(ACTIVE_SHIFTS_PATH) ? JSON.parse(fs.readFileSync(ACTIVE_SHIFTS_PATH, 'utf8')) : {};
+      const current = activeShifts[term] || {
+        opening_float: parseFloat(body.opening_float) || 0,
+        opened_at_local: formatLocalTime(),
+        cashier_name: body.cashier_name || 'Cashier'
+      };
+
+      const queue = fs.existsSync(QUEUE_PATH) ? JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8')) : [];
+      // Filter sales for this terminal / cashier since opened_at
+      const shiftStart = current.opened_at ? new Date(current.opened_at) : new Date(Date.now() - 24 * 3600 * 1000);
+      const shiftSales = queue.filter(s => {
+        const saleDate = new Date(s.created_at || s.date);
+        return saleDate >= shiftStart && (!s.terminal_id || s.terminal_id === term);
+      });
+
+      let cashTotal = 0, cashCount = 0;
+      let cardTotal = 0, cardCount = 0;
+      let transferTotal = 0, transferCount = 0;
+      let creditTotal = 0, creditCount = 0;
+      let grossRev = 0;
+
+      for (const s of shiftSales) {
+        grossRev += (parseFloat(s.total) || 0);
+        const mode = (s.payment_mode || 'CASH').toLowerCase();
+        if (mode === 'cash') {
+          cashTotal += (parseFloat(s.total) || 0);
+          cashCount++;
+        } else if (mode.includes('moniepoint') || mode.includes('card') || mode.includes('pos')) {
+          cardTotal += (parseFloat(s.total) || 0);
+          cardCount++;
+        } else if (mode.includes('transfer') || mode.includes('bank')) {
+          transferTotal += (parseFloat(s.total) || 0);
+          transferCount++;
+        } else if (mode.includes('credit') || mode.includes('debt') || mode.includes('account')) {
+          creditTotal += (parseFloat(s.total) || 0);
+          creditCount++;
+        } else if (mode === 'split' && Array.isArray(s.payments)) {
+          for (const p of s.payments) {
+            const pMode = (p.mode || '').toLowerCase();
+            const pAmt = parseFloat(p.amount) || 0;
+            if (pMode === 'cash') { cashTotal += pAmt; cashCount++; }
+            else if (pMode.includes('card') || pMode.includes('moniepoint')) { cardTotal += pAmt; cardCount++; }
+            else if (pMode.includes('transfer')) { transferTotal += pAmt; transferCount++; }
+            else { creditTotal += pAmt; creditCount++; }
+          }
+        } else {
+          cashTotal += (parseFloat(s.total) || 0);
+          cashCount++;
+        }
+      }
+
+      const openingFloat = current.opening_float || 0;
+      const expectedCash = openingFloat + cashTotal;
+      const countedCash = parseFloat(body.counted_cash) || 0;
+      const variance = countedCash - expectedCash;
+
+      const zReport = {
+        report_id: `Z-${Date.now().toString(36).toUpperCase()}`,
+        terminal_id: term,
+        cashier_id: body.cashier_id || current.cashier_id || 'u2',
+        cashier_name: body.cashier_name || current.cashier_name || 'Staff',
+        opened_at: current.opened_at_local || formatLocalTime(shiftStart),
+        closed_at: formatLocalTime(),
+        total_sales: shiftSales.length,
+        gross_revenue: grossRev,
+        opening_float: openingFloat,
+        cash_total: cashTotal,
+        cash_count: cashCount,
+        card_total: cardTotal,
+        card_count: cardCount,
+        transfer_total: transferTotal,
+        transfer_count: transferCount,
+        credit_total: creditTotal,
+        credit_count: creditCount,
+        expected_cash: expectedCash,
+        counted_cash: countedCash,
+        variance: variance,
+        status: variance === 0 ? 'BALANCED' : (variance > 0 ? 'OVER' : 'SHORT'),
+        created_at: new Date().toISOString()
+      };
+
+      const history = fs.existsSync(SHIFTS_PATH) ? JSON.parse(fs.readFileSync(SHIFTS_PATH, 'utf8')) : [];
+      history.push(zReport);
+      fs.writeFileSync(SHIFTS_PATH, JSON.stringify(history, null, 2), 'utf8');
+
+      // Clear active shift for terminal
+      delete activeShifts[term];
+      fs.writeFileSync(ACTIVE_SHIFTS_PATH, JSON.stringify(activeShifts, null, 2), 'utf8');
+
+      res.writeHead(200);
+      return res.end(JSON.stringify({ success: true, report: zReport, message: 'Shift closed successfully.' }));
+    } catch (err) {
+      res.writeHead(500);
+      return res.end(JSON.stringify({ success: false, message: err.message }));
+    }
+  }
+
+  // 10e. GET /api/shifts/history (List previous closed Z-reports)
+  if (req.method === 'GET' && pathname === '/api/shifts/history') {
+    try {
+      const history = fs.existsSync(SHIFTS_PATH) ? JSON.parse(fs.readFileSync(SHIFTS_PATH, 'utf8')) : [];
+      res.writeHead(200);
+      return res.end(JSON.stringify({ success: true, reports: history.reverse() }));
+    } catch (err) {
+      res.writeHead(500);
+      return res.end(JSON.stringify({ success: false, message: err.message }));
+    }
+  }
+
+  // 10f. POST /api/hardware/print-zreport (Send ESC/POS thermal Z-Report to USB receipt printer)
+  if (req.method === 'POST' && pathname === '/api/hardware/print-zreport') {
+    try {
+      const body = await parseJsonBody(req);
+      const report = body.report || body;
+      const printerName = body.printer_name || '';
+      const buffer = hardwarePrinter.formatEscPosZReport(report, { paper: body.paper || '80' });
+      const result = await hardwarePrinter.printDirect(printerName, buffer);
+      res.writeHead(result.success ? 200 : 500);
+      return res.end(JSON.stringify(result));
+    } catch (err) {
+      res.writeHead(500);
+      return res.end(JSON.stringify({ success: false, message: err.message }));
     }
   }
 

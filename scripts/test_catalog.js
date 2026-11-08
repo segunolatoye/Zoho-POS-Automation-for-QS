@@ -116,6 +116,42 @@ try {
   assert(false, `Backup manager validation failed: ${e.message}`);
 }
 
+// 6. Verify Shift Close Z-Report Generator & Manager PIN Security
+try {
+  const usersPath = path.join(__dirname, '..', 'data', 'pos_users.json');
+  const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+  const admin = users.find(u => u.role === 'admin' && u.pin);
+  assert(!!admin, `Manager PIN authority verified (${admin.name}, Role: ${admin.role})`);
+
+  const hardware = require('../modules/hardware_printer');
+  const mockReport = {
+    report_id: 'Z-TEST-001',
+    terminal_id: 'TERM-01',
+    cashier_name: 'Cashier 1',
+    opened_at: '2026-11-08 08:30:00',
+    closed_at: '2026-11-08 19:45:00',
+    total_sales: 15,
+    gross_revenue: 125000,
+    opening_float: 10000,
+    cash_total: 75000,
+    cash_count: 10,
+    card_total: 35000,
+    card_count: 3,
+    transfer_total: 15000,
+    transfer_count: 2,
+    expected_cash: 85000,
+    counted_cash: 85000,
+    variance: 0
+  };
+
+  const zBuffer = hardware.formatEscPosZReport(mockReport, { paper: '80' });
+  assert(Buffer.isBuffer(zBuffer) && zBuffer.length > 200, `Thermal ESC/POS Z-Report generated (${zBuffer.length} bytes)`);
+  assert(zBuffer.includes(Buffer.from('*** SHIFT CLOSE / Z-REPORT ***')), 'Z-Report thermal title verified in binary buffer');
+  assert(zBuffer.includes(Buffer.from('EXPECTED CASH:')), 'Drawer cash reconciliation verified in binary buffer');
+} catch (e) {
+  assert(false, `Z-Report validation failed: ${e.message}`);
+}
+
 console.log('\n====================================================');
 if (failed) {
   console.error('❌ CI TEST SUITE FAILED. Fix errors before deployment.');

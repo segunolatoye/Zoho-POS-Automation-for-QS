@@ -173,6 +173,92 @@ function formatEscPosReceipt(sale, options = {}) {
   return Buffer.from(p, 'binary');
 }
 
+function formatEscPosZReport(report, options = {}) {
+  const width = options.paper === '58' ? 32 : 42;
+  const divider = '-'.repeat(width);
+  const doubleDivider = '='.repeat(width);
+
+  let p = '';
+  p += CMD.RESET;
+
+  // Header
+  p += CMD.ALIGN_CENTER;
+  p += CMD.BOLD_ON + CMD.DOUBLE_HEIGHT_ON;
+  p += 'QUALITY SUPERSTORES\n';
+  p += CMD.NORMAL_TEXT;
+  p += '16, Ogo Oluwa St, Ketere Market,\nSango, Ogun State\n';
+  p += CMD.BOLD_ON;
+  p += '*** SHIFT CLOSE / Z-REPORT ***\n';
+  p += CMD.BOLD_OFF;
+  p += divider + '\n';
+
+  // Metadata
+  p += CMD.ALIGN_LEFT;
+  p += `Report ID:    ${report.report_id || 'Z-' + Date.now().toString(36).toUpperCase()}\n`;
+  p += `Terminal:     ${report.terminal_id || 'TERM-01'}\n`;
+  p += `Cashier:      ${report.cashier_name || 'Staff'}\n`;
+  p += `Shift Start:  ${report.opened_at || 'N/A'}\n`;
+  p += `Shift Closed: ${report.closed_at || new Date().toLocaleString()}\n`;
+  p += doubleDivider + '\n';
+
+  // Sales Summary
+  p += CMD.BOLD_ON;
+  p += 'SALES REVENUE SUMMARY\n';
+  p += CMD.BOLD_OFF;
+  p += padRight('Total Completed Sales:', width - 10) + padLeft(String(report.total_sales || 0), 10) + '\n';
+  p += padRight('Gross Sales Revenue:', width - 16) + padLeft(formatNaira(report.gross_revenue || 0), 16) + '\n';
+  p += divider + '\n';
+
+  // Payment Breakdown
+  p += CMD.BOLD_ON;
+  p += 'TENDER BREAKDOWN\n';
+  p += CMD.BOLD_OFF;
+  p += padRight(`Cash (${report.cash_count || 0} sales):`, width - 15) + padLeft(formatNaira(report.cash_total || 0), 15) + '\n';
+  p += padRight(`Moniepoint (${report.card_count || 0} sales):`, width - 15) + padLeft(formatNaira(report.card_total || 0), 15) + '\n';
+  p += padRight(`First Bank (${report.transfer_count || 0} sales):`, width - 15) + padLeft(formatNaira(report.transfer_total || 0), 15) + '\n';
+  if ((report.credit_total || 0) > 0) {
+    p += padRight(`Credit/Debt (${report.credit_count || 0} sales):`, width - 15) + padLeft(formatNaira(report.credit_total || 0), 15) + '\n';
+  }
+  p += doubleDivider + '\n';
+
+  // Cash Drawer Balancing
+  p += CMD.BOLD_ON;
+  p += 'CASH RECONCILIATION\n';
+  p += CMD.BOLD_OFF;
+  p += padRight('Opening Cash Float:', width - 15) + padLeft(formatNaira(report.opening_float || 0), 15) + '\n';
+  p += padRight('(+) Cash Collected:', width - 15) + padLeft(formatNaira(report.cash_total || 0), 15) + '\n';
+  p += divider + '\n';
+  const expectedCash = (report.opening_float || 0) + (report.cash_total || 0);
+  p += CMD.BOLD_ON;
+  p += padRight('EXPECTED CASH:', width - 16) + padLeft(formatNaira(expectedCash), 16) + '\n';
+  p += padRight('COUNTED CASH:', width - 16) + padLeft(formatNaira(report.counted_cash || 0), 16) + '\n';
+  p += CMD.BOLD_OFF;
+
+  const variance = (report.counted_cash || 0) - expectedCash;
+  let varLabel = 'BALANCED (₦0.00)';
+  if (variance > 0) varLabel = `OVER (+${formatNaira(variance)})`;
+  if (variance < 0) varLabel = `SHORT (-${formatNaira(Math.abs(variance))})`;
+
+  p += CMD.BOLD_ON + CMD.DOUBLE_HEIGHT_ON;
+  p += padRight('VARIANCE:', width - 16) + padLeft(varLabel, 16) + '\n';
+  p += CMD.NORMAL_TEXT;
+  p += doubleDivider + '\n';
+
+  // Signatures
+  p += '\n';
+  p += 'Cashier Signature:\n\n';
+  p += '________________________________________\n\n';
+  p += 'Store Manager Signature:\n\n';
+  p += '________________________________________\n\n';
+
+  p += CMD.ALIGN_CENTER;
+  p += 'Shift officially closed and verified.\n';
+  p += '\n\n\n';
+  p += CMD.FEED_AND_CUT;
+
+  return Buffer.from(p, 'binary');
+}
+
 function printDirect(printerName, buffer) {
   return new Promise((resolve) => {
     const base64 = buffer.toString('base64');
@@ -195,5 +281,7 @@ module.exports = {
   getInstalledPrinters,
   kickCashDrawer,
   formatEscPosReceipt,
+  formatEscPosZReport,
   printDirect
 };
+
