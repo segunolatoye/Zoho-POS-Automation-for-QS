@@ -2772,6 +2772,7 @@ async function chargeSale() {
     customer_id: state.customer.id,
     customer_name: state.customer.name,
     salesperson: state.user.name,
+    tilled_by: state.user.name,
     date: new Date().toISOString().split('T')[0],
     payment_mode: paymentModeDisplay,
     payments: paymentArray,
@@ -3103,7 +3104,7 @@ function tickHTML(s, p) {
   const addr = p.address || '16, Ogo Oluwa St, Ketere Market, Sango, Ogun State';
   const phones = p.phones || '0803 456 7890, 0812 345 6789';
   const branch = p.branch || 'KETERE BRANCH';
-  const cashier = s.salesperson || p.salesperson || getTerminalLabel(s.terminal_id) || 'Cashier 1';
+  const cashier = s.tilled_by || s.salesperson || (state.user ? state.user.name : '') || 'Staff';
   const cust = s.customer_name || 'Walk in';
 
   const paid = s.amount_paid !== undefined ? Number(s.amount_paid) : (
@@ -3669,7 +3670,7 @@ async function openAccountsModal() {
           <button class="btn" onclick="closeModal()">✕</button>
         </div>
         <p style="font-size:12px;color:var(--mute);margin:0 0 16px">
-          Each account's name is used as the Order ID prefix on receipts and Zoho Books (e.g. <b>${currentName.toUpperCase()}-0001</b>).
+          Each staff member's account name is printed as <b>Tilled By</b> on receipts and recorded on all Zoho Books invoices.
         </p>
 
         <div style="display:grid;gap:10px;margin-bottom:16px">
@@ -3704,7 +3705,7 @@ async function openAccountsModal() {
 }
 
 async function renameAccountPrompt(userId, currentName) {
-  const newName = prompt(`Enter new account name for "${currentName}":\n(This will be your Order ID prefix on receipts and Zoho, e.g. ${currentName.toUpperCase()}-0001)`, currentName);
+  const newName = prompt(`Enter new account name for "${currentName}":\n(This will appear as "Tilled By" on receipts and Zoho Books)`, currentName);
   if (!newName || !newName.trim() || newName.trim() === currentName) return;
 
   try {
@@ -4491,8 +4492,27 @@ document.addEventListener('keydown', e => {
   }
 });
 
+async function refreshCurrentUser() {
+  if (!state.user || !state.user.id) return;
+  try {
+    const r = await fetch('/api/auth/users');
+    const users = await r.json();
+    if (Array.isArray(users)) {
+      const match = users.find(u => u.id === state.user.id);
+      if (match && (match.name !== state.user.name || match.role !== state.user.role)) {
+        state.user.name = match.name;
+        state.user.role = match.role;
+        sessionStorage.setItem('pos_user', JSON.stringify(state.user));
+        renderTop();
+        renderLockScreen();
+      }
+    }
+  } catch(e) {}
+}
+
 // App Bootstrap
 document.addEventListener('DOMContentLoaded', async () => {
+  await refreshCurrentUser();
   renderLockScreen();
   await initTerminal();
   await loadInstalledPrinters();

@@ -627,6 +627,7 @@ async function syncOfflineSalesToZoho() {
           date: sale.date,
           due_date: sale.date,
           reference_number: sale.receipt_number,
+          salesperson_name: sale.tilled_by || sale.salesperson || '',
           notes: (sale.customer_name && !/walk\s*[-]?\s*in/i.test(sale.customer_name) && targetCustomerId === '1560234000000095179')
             ? `Customer: ${sale.customer_name} | Tilled By: ${sale.tilled_by || sale.salesperson || ''}`
             : (sale.tilled_by ? `Tilled By: ${sale.tilled_by}` : ''),
@@ -1026,7 +1027,10 @@ const server = http.createServer(async (req, res) => {
           { id: 'u3', name: 'Cashier 2', pin: '5917', role: 'cashier', terminal_id: 'TERM-02' }
         ];
 
-      const activeUser = users.find(u => (saleData.user_id && u.id === saleData.user_id) || (saleData.user_name && u.name.toLowerCase() === saleData.user_name.toLowerCase()));
+      const activeUser = users.find(u => (saleData.user_id && u.id === saleData.user_id) || 
+                                         (saleData.user_name && u.name.toLowerCase() === saleData.user_name.toLowerCase()) ||
+                                         (saleData.tilled_by && u.name.toLowerCase() === saleData.tilled_by.toLowerCase()) ||
+                                         (saleData.salesperson && u.name.toLowerCase() === saleData.salesperson.toLowerCase()));
       if (!activeUser) {
         res.writeHead(401);
         return res.end(JSON.stringify({
@@ -1034,6 +1038,7 @@ const server = http.createServer(async (req, res) => {
           message: 'Unauthorized: You must login with a valid cashier PIN to post sales.'
         }));
       }
+      const tillerName = activeUser.name;
 
       let catalog = [];
       if (fs.existsSync(CATALOG_PATH)) {
@@ -1154,9 +1159,9 @@ const server = http.createServer(async (req, res) => {
         id: `sale_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
         order_id: orderId,
         receipt_number: orderId,
-        tilled_by: activeUser.name,
+        tilled_by: tillerName,
         user_id: activeUser.id,
-        salesperson: activeUser.name,
+        salesperson: tillerName,
         cashier_role: activeUser.role,
         terminal_id: term,
         customer_id: saleData.customer_id,
