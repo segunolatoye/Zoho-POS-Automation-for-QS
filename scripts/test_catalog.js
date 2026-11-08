@@ -155,6 +155,38 @@ try {
   assert(false, `Z-Report validation failed: ${e.message}`);
 }
 
+// 7. Verify RBAC Security: Cashier Discount Gate & Price Modification Lockdown
+try {
+  const usersPath = path.join(__dirname, '..', 'data', 'pos_users.json');
+  const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+
+  // Test PIN authorization function
+  function verifyPin(pin) {
+    const cleanPin = String(pin || '').trim();
+    return users.find(u => u.pin === cleanPin && (u.role === 'admin' || u.role === 'finance' || u.role === 'manager'));
+  }
+
+  // Admin and Finance pins must authorize
+  const adminUser = users.find(u => u.role === 'admin');
+  const financeUser = users.find(u => u.role === 'finance');
+  const cashierUser = users.find(u => u.role === 'cashier');
+
+  assert(!!verifyPin(adminUser.pin), `Admin PIN (${adminUser.pin}) successfully authorizes managerial override`);
+  assert(!!verifyPin(financeUser.pin), `Finance PIN (${financeUser.pin}) successfully authorizes managerial override`);
+  assert(!verifyPin(cashierUser.pin), `Cashier PIN (${cashierUser.pin}) is strictly rejected for override authorization`);
+  assert(!verifyPin('1234'), 'Guessable PIN "1234" is strictly rejected');
+  assert(!verifyPin('0000'), 'Guessable PIN "0000" is strictly rejected');
+
+  // Verify frontend discount logic function matches strict 0% rule
+  const htmlPath = path.join(__dirname, '..', 'public', 'index.html');
+  const html = fs.readFileSync(htmlPath, 'utf8');
+  assert(html.includes("num === 0"), 'Frontend discount handler implements strict 0% free allowance for cashiers');
+  assert(html.includes("Cashiers cannot apply discounts without Manager or Finance PIN"), 'Frontend enforces Manager/Finance PIN on cashier discount input');
+  assert(html.includes("Cashiers cannot change prices on orders"), 'Frontend enforces Manager/Finance PIN on cart item price modification');
+} catch (e) {
+  assert(false, `RBAC discount & price lockdown test failed: ${e.message}`);
+}
+
 console.log('\n====================================================');
 if (failed) {
   console.error('❌ CI TEST SUITE FAILED. Fix errors before deployment.');

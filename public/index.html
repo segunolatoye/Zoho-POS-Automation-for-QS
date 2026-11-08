@@ -2362,12 +2362,22 @@ function setCartPrice(id, val) {
 
 function resetCartPrice(id) {
   if (state.cart[id]) state.cart[id].customPrice = null;
+  const hasOtherCustom = Object.values(state.cart).some(c => c.customPrice !== null);
+  if (!hasOtherCustom) {
+    state.managerPriceApproved = false;
+    state.managerPriceApprovedBy = null;
+  }
   $('#cart').innerHTML = renderCartHTML();
 }
 
 function removeCartItem(id) {
   if (state.cart[id]) {
     delete state.cart[id];
+  }
+  const hasOtherCustom = Object.values(state.cart).some(c => c.customPrice !== null);
+  if (!hasOtherCustom) {
+    state.managerPriceApproved = false;
+    state.managerPriceApprovedBy = null;
   }
   $('#cart').innerHTML = renderCartHTML();
   $('#grid').innerHTML = renderCatalogHTML();
@@ -2376,6 +2386,25 @@ function removeCartItem(id) {
 function editCartItemPrice(id) {
   const L = getCartLine(id);
   if (!L) return;
+
+  const isCashier = !state.user || state.user.role === 'cashier';
+  if (isCashier) {
+    openManagerOverrideModal({
+      reason: `Cashiers cannot change prices on orders. Manager or Finance PIN required to edit rate for "${L.item.name}".`,
+      onApprove: (manager) => {
+        promptPriceChange(id, L, manager);
+      },
+      onReject: () => {
+        toast('❌ Price modification cancelled: Cashiers cannot modify item prices.');
+      }
+    });
+    return;
+  }
+
+  promptPriceChange(id, L, null);
+}
+
+function promptPriceChange(id, L, authorizedBy) {
   const isCustom = L.price !== L.listPrice;
   const promptText = isCustom
     ? `Current custom price: ₦${L.price.toLocaleString()} (List: ₦${L.listPrice.toLocaleString()})\nEnter new price per ${L.unit.name || 'unit'}, or leave empty to reset:`
@@ -2385,10 +2414,16 @@ function editCartItemPrice(id) {
     const trimmed = val.trim();
     if (trimmed === '' || (isCustom && parseFloat(trimmed) === L.listPrice)) {
       resetCartPrice(id);
+      toast(`Reset "${L.item.name}" to standard catalog price.`);
     } else {
       const p = parseFloat(trimmed);
       if (!isNaN(p) && p >= 0) {
         setCartPrice(id, Math.round(p));
+        if (authorizedBy) {
+          state.managerPriceApproved = true;
+          state.managerPriceApprovedBy = `${authorizedBy.name} (${authorizedBy.role.toUpperCase()})`;
+        }
+        toast(`✅ Price updated to ₦${Math.round(p).toLocaleString()}${authorizedBy ? ' (Authorized by ' + authorizedBy.name + ')' : ''}`);
       }
     }
   }
@@ -2400,6 +2435,8 @@ function clearCart() {
   state.disc = 0;
   state.managerDiscountApproved = false;
   state.managerApprovedBy = null;
+  state.managerPriceApproved = false;
+  state.managerPriceApprovedBy = null;
   state.tender = '';
   $('#cart').innerHTML = renderCartHTML();
   $('#grid').innerHTML = renderCatalogHTML();
@@ -2475,6 +2512,7 @@ function renderCartHTML() {
       if (!L) return '';
       const units = getItemUnits(L.item);
       const ch = L.price !== L.listPrice;
+      const isCashier = !state.user || state.user.role === 'cashier';
       return `
         <div class="ln">
           <div class="nm" title="${L.item.name} (${L.unit.name || ''})">${L.item.name}</div>
@@ -2486,7 +2524,7 @@ function renderCartHTML() {
             <span>${L.qty}</span>
             <button onclick="addToCart('${id}')" aria-label="Plus">+</button>
           </div>
-          <b class="tot ${ch ? 'ch' : ''}" onclick="editCartItemPrice('${id}')" title="₦${L.price.toLocaleString()} each (Click to edit rate)">${NGN(L.total)}</b>
+          <b class="tot ${ch ? 'ch' : ''}" onclick="editCartItemPrice('${id}')" title="${isCashier ? `₦${L.price.toLocaleString()} each (Locked - Requires Manager/Finance PIN to change)` : `₦${L.price.toLocaleString()} each (Click to edit rate)`}">${NGN(L.total)}</b>
           <button class="del-btn" onclick="removeCartItem('${id}')" title="Remove item">×</button>
         </div>
       `;
@@ -2528,7 +2566,7 @@ function renderCartHTML() {
     <div class="sum">
       <div class="row"><span>Subtotal (${t.n} items)</span><span>${NGN(t.sub)}</span></div>
       <div class="row">
-        <span>Discount % ${state.managerApprovedBy ? `<small style="color:var(--brand);font-weight:700">(${state.managerApprovedBy})</small>` : ''}</span>
+        <span>Discount % ${state.managerApprovedBy ? `<small style="color:var(--brand);font-weight:700">(${state.managerApprovedBy})</small>` : ((!state.user || state.user.role === 'cashier') ? `<small style="color:var(--mute);font-size:10.5px;font-weight:600"><i class="fa-solid fa-lock" style="font-size:9px"></i> PIN req</small>` : '')}</span>
         <input id="disc" type="number" min="0" max="100" value="${state.disc}" onchange="handleDiscountChange(this.value)">
       </div>
       ${state.pay === 'Cash' ? `
@@ -2669,6 +2707,8 @@ async function chargeSale() {
       unit_conversion_id: L.unit.unit_conversion_id || '',
       quantity: L.qty,
       rate: L.price,
+      list_price: L.listPrice,
+      is_custom_price: L.price !== L.listPrice,
       total: L.total
     };
   });
@@ -2696,6 +2736,10 @@ async function chargeSale() {
     payments: paymentArray,
     amount_paid: amountPaid,
     change: changeDue,
+    subtotal: t.sub,
+    discount: state.disc || 0,
+    manager_override: !!(state.managerDiscountApproved || state.managerPriceApproved),
+    manager_override_by: state.managerApprovedBy || state.managerPriceApprovedBy || null,
     total: t.total,
     line_items: lineItems
   };
@@ -2724,6 +2768,8 @@ async function chargeSale() {
       state.disc = 0;
       state.managerDiscountApproved = false;
       state.managerApprovedBy = null;
+      state.managerPriceApproved = false;
+      state.managerPriceApprovedBy = null;
       state.tender = '';
       state.split = { cash: 0, moniepoint: 0, transfer: 0 };
       await loadQueueStatus();
@@ -2769,6 +2815,10 @@ function holdCurrentCart(silent = false) {
     customer: { ...state.customer },
     cart: JSON.parse(JSON.stringify(state.cart)),
     disc: state.disc,
+    managerDiscountApproved: state.managerDiscountApproved || false,
+    managerApprovedBy: state.managerApprovedBy || null,
+    managerPriceApproved: state.managerPriceApproved || false,
+    managerPriceApprovedBy: state.managerPriceApprovedBy || null,
     total: totals.total,
     itemCount: totals.n
   };
@@ -2776,6 +2826,10 @@ function holdCurrentCart(silent = false) {
   saveHeldCarts();
   state.cart = {};
   state.disc = 0;
+  state.managerDiscountApproved = false;
+  state.managerApprovedBy = null;
+  state.managerPriceApproved = false;
+  state.managerPriceApprovedBy = null;
   state.tender = '';
   state.customer = { id: '1560234000000102202', name: 'Walk in Customer' };
   renderMain();
@@ -2851,6 +2905,10 @@ function resumeHeldCart(idx) {
   state.cart = JSON.parse(JSON.stringify(held.cart));
   state.customer = { ...held.customer };
   state.disc = held.disc || 0;
+  state.managerDiscountApproved = held.managerDiscountApproved || false;
+  state.managerApprovedBy = held.managerApprovedBy || null;
+  state.managerPriceApproved = held.managerPriceApproved || false;
+  state.managerPriceApprovedBy = held.managerPriceApprovedBy || null;
   state.tender = '';
   state.heldCarts.splice(idx, 1);
   saveHeldCarts();
@@ -3441,7 +3499,29 @@ function pickCustomer(id) {
 
 // Price Manager Modal
 let activePMItem = null;
+let activePMManagerAuth = null;
+
 function openPriceManager() {
+  const isAuthorized = state.user && (state.user.role === 'admin' || state.user.role === 'finance' || state.user.role === 'manager');
+  if (!isAuthorized) {
+    openManagerOverrideModal({
+      reason: 'Cashiers cannot change prices. Manager or Finance PIN required to access Product Price Manager.',
+      onApprove: (manager) => {
+        activePMManagerAuth = manager;
+        toast(`Price Manager unlocked by ${manager.name}`);
+        showPriceManagerModal();
+      },
+      onReject: () => {
+        toast('❌ Access to Price Manager restricted to Manager or Finance.');
+      }
+    });
+    return;
+  }
+  activePMManagerAuth = null;
+  showPriceManagerModal();
+}
+
+function showPriceManagerModal() {
   $('#ov').innerHTML = `
     <div class="ov">
       <div class="modal" style="width:480px">
@@ -3503,7 +3583,13 @@ async function savePriceUpdate() {
     const r = await fetch('/api/catalog/update-price', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ item_id: activePMItem.id, retail_price: retail, carton_price: carton })
+      body: JSON.stringify({
+        item_id: activePMItem.id,
+        retail_price: retail,
+        carton_price: carton,
+        user_role: state.user?.role || 'cashier',
+        manager_pin: activePMManagerAuth ? activePMManagerAuth.pin : undefined
+      })
     });
     const res = await r.json();
     if (res.success) {
@@ -3631,19 +3717,19 @@ async function changePinPrompt(userId, userName) {
 }
 
 // ====================================================
-// MANAGER PIN OVERRIDE FOR DISCOUNTS > 5%
+// MANAGER PIN OVERRIDE FOR DISCOUNTS & PRICE CHANGES
 // ====================================================
 function handleDiscountChange(val) {
   const num = Math.min(100, Math.max(0, parseFloat(val) || 0));
-  if (num <= 5) {
-    state.disc = num;
+  if (num === 0) {
+    state.disc = 0;
     state.managerDiscountApproved = false;
     state.managerApprovedBy = null;
     $('#cart').innerHTML = renderCartHTML();
     return;
   }
 
-  // Discount > 5% requested (Manager / Finance privilege check)
+  // Manager or Finance logged in directly can apply discounts
   if (state.user && (state.user.role === 'admin' || state.user.role === 'finance' || state.user.role === 'manager')) {
     state.disc = num;
     state.managerDiscountApproved = true;
@@ -3652,25 +3738,29 @@ function handleDiscountChange(val) {
     return;
   }
 
+  // If cashier already got manager/finance approval for this cart with same or higher discount
   if (state.managerDiscountApproved && state.disc >= num) {
     state.disc = num;
     $('#cart').innerHTML = renderCartHTML();
     return;
   }
 
+  // Cashier cannot apply discount without manager or finance pin
   openManagerOverrideModal({
-    reason: `Discount of ${num}% exceeds standard 5% limit.`,
+    reason: `Cashiers cannot apply discounts without Manager or Finance PIN. Authorize ${num}% discount?`,
     onApprove: (manager) => {
       state.disc = num;
       state.managerDiscountApproved = true;
       state.managerApprovedBy = `${manager.name} (${manager.role.toUpperCase()})`;
-      toast(`Discount (${num}%) authorized by ${manager.name}.`);
+      toast(`✅ Discount (${num}%) authorized by ${manager.name}.`);
       playSound('beep');
       $('#cart').innerHTML = renderCartHTML();
     },
     onReject: () => {
-      state.disc = Math.min(state.disc, 5);
-      toast('Discount capped at standard 5% limit.');
+      state.disc = 0;
+      state.managerDiscountApproved = false;
+      state.managerApprovedBy = null;
+      toast('❌ Discount denied: Cashiers cannot apply discounts without Manager or Finance PIN.');
       $('#cart').innerHTML = renderCartHTML();
     }
   });

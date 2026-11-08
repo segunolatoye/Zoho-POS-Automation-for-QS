@@ -973,6 +973,49 @@ const server = http.createServer(async (req, res) => {
         catalog = JSON.parse(fs.readFileSync(CATALOG_PATH, 'utf8'));
       }
 
+      // 0b. RBAC Enforcement: Cashiers cannot apply discounts without Manager or Finance PIN authorization
+      const isCashier = activeUser.role === 'cashier';
+      const hasDiscount = (saleData.discount && parseFloat(saleData.discount) > 0) ||
+                          (saleData.subtotal && saleData.total && parseFloat(saleData.total) < parseFloat(saleData.subtotal));
+
+      if (isCashier && hasDiscount) {
+        const isAuthorized = saleData.manager_override === true && saleData.manager_override_by;
+        if (!isAuthorized) {
+          res.writeHead(403);
+          return res.end(JSON.stringify({
+            success: false,
+            message: 'Sale rejected: Cashiers cannot apply discounts without Manager or Finance PIN authorization.'
+          }));
+        }
+      }
+
+      // 0c. RBAC Enforcement: Cashiers cannot change price on order without Manager or Finance PIN authorization
+      if (isCashier) {
+        for (const line of (saleData.line_items || [])) {
+          const item = catalog.find(i => String(i.id) === String(line.item_id));
+          if (item) {
+            let expectedPrice = item.retail_price || 0;
+            if (line.unit && item.units && item.units.length) {
+              const matchedUnit = item.units.find(u => u.unit_symbol === line.unit || u.name === line.unit);
+              if (matchedUnit && matchedUnit.price !== undefined) {
+                expectedPrice = matchedUnit.price;
+              }
+            }
+            const soldRate = line.rate !== undefined ? line.rate : (line.unit_price !== undefined ? line.unit_price : null);
+            if (soldRate !== null && Math.round(parseFloat(soldRate)) !== Math.round(parseFloat(expectedPrice))) {
+              const isAuthorized = saleData.manager_override === true && saleData.manager_override_by;
+              if (!isAuthorized) {
+                res.writeHead(403);
+                return res.end(JSON.stringify({
+                  success: false,
+                  message: `Sale rejected: Cashiers cannot change price on order for "${item.name}". Expected ₦${expectedPrice.toLocaleString()}, got ₦${parseFloat(soldRate).toLocaleString()}. Requires Manager or Finance PIN.`
+                }));
+              }
+            }
+          }
+        }
+      }
+
       // 1. Strict Server Stock Verification: Block sales of out-of-stock items
       for (const line of (saleData.line_items || [])) {
         const item = catalog.find(i => String(i.id) === String(line.item_id));
@@ -1048,6 +1091,10 @@ const server = http.createServer(async (req, res) => {
         payments: saleData.payments || [],
         amount_paid: saleData.amount_paid !== undefined ? saleData.amount_paid : saleData.total,
         change: saleData.change || 0,
+        subtotal: saleData.subtotal !== undefined ? saleData.subtotal : saleData.total,
+        discount: saleData.discount || 0,
+        manager_override: saleData.manager_override || false,
+        manager_override_by: saleData.manager_override_by || null,
         total: saleData.total,
         line_items: saleData.line_items,
         status: 'PENDING_SYNC',
@@ -1147,11 +1194,21 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 6d. POST /api/catalog/update-price
+  // 6d. POST /api/catalog/update-price (Manager or Finance authorization required)
   if (req.method === 'POST' && pathname === '/api/catalog/update-price') {
     try {
       const body = await parseJsonBody(req);
-      const { item_id, retail_price, carton_price } = body;
+      const { item_id, retail_price, carton_price, user_role, manager_pin } = body;
+
+      if (user_role === 'cashier') {
+        const usersPath = path.join(DATA_DIR, 'pos_users.json');
+        const users = fs.existsSync(usersPath) ? JSON.parse(fs.readFileSync(usersPath, 'utf8')) : [];
+        const isMgr = users.find(u => u.pin === String(manager_pin).trim() && (u.role === 'admin' || u.role === 'finance' || u.role === 'manager'));
+        if (!isMgr) {
+          res.writeHead(403);
+          return res.end(JSON.stringify({ success: false, message: 'Unauthorized: Cashiers cannot modify product prices. Manager or Finance authorization required.' }));
+        }
+      }
 
       if (!item_id) {
         res.writeHead(400);
