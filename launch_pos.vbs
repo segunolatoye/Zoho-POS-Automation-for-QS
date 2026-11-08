@@ -9,3 +9,4 @@ objShell.CurrentDirectory = strCurrentDir
 
 ' Run launch_pos.bat completely hidden (0) without waiting (False)
 objShell.Run "cmd /c launch_pos.bat", 0, False
+

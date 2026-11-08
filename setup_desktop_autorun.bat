@@ -17,3 +17,4 @@ echo Setup completed! You can now launch the POS from your Desktop
 echo or let it start automatically when Windows boots.
 echo.
 pause
+

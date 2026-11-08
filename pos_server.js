@@ -7,6 +7,15 @@ const { chromium } = require('playwright-core');
 const hardwarePrinter = require('./modules/hardware_printer');
 const backupManager = require('./modules/backup_manager');
 
+// Global crash resilience: ensure unexpected network/DNS drops never kill POS server
+process.on('uncaughtException', (err) => {
+  console.error('[UNCAUGHT EXCEPTION]', err.message);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[UNHANDLED REJECTION]', reason?.message || reason);
+});
+
 function getLocalIpAddress() {
   const ifaces = os.networkInterfaces();
   const candidates = [];

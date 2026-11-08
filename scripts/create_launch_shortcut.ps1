@@ -3,9 +3,8 @@
 # ==============================================================================
 
 $root = (Get-Item $PSScriptRoot).Parent.FullName
-$vbsPath = Join-Path $root "launch_pos.vbs"
+$batPath = Join-Path $root "launch_pos.bat"
 $iconPath = Join-Path $root "public\pos_icon.ico"
-$wscript = Join-Path $env:SystemRoot "System32\wscript.exe"
 
 # 1. Dynamically locate user's Desktop & Startup folders (including OneDrive redirection)
 $reg = Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -ErrorAction SilentlyContinue
@@ -27,12 +26,11 @@ if (Test-Path $desktopPath) {
     $desktopShortcut = Join-Path $desktopPath "Quality Superstores POS.lnk"
     Write-Host "Creating Desktop shortcut at: $desktopShortcut"
     $shortcut = $WshShell.CreateShortcut($desktopShortcut)
-    $shortcut.TargetPath = $wscript
-    $shortcut.Arguments = "`"$vbsPath`""
+    $shortcut.TargetPath = $batPath
     $shortcut.WorkingDirectory = $root
     $shortcut.IconLocation = "$iconPath,0"
     $shortcut.Description = "Quality Superstores - Offline Retail POS Terminal"
-    $shortcut.WindowStyle = 7
+    $shortcut.WindowStyle = 7 # Minimized
     $shortcut.Save()
     Write-Host "  Desktop Shortcut Created Successfully!"
 } else {
@@ -44,12 +42,11 @@ if (Test-Path $startupPath) {
     $startupShortcut = Join-Path $startupPath "Quality Superstores POS.lnk"
     Write-Host "Configuring Windows Startup Autorun: $startupShortcut"
     $autoShortcut = $WshShell.CreateShortcut($startupShortcut)
-    $autoShortcut.TargetPath = $wscript
-    $autoShortcut.Arguments = "`"$vbsPath`""
+    $autoShortcut.TargetPath = $batPath
     $autoShortcut.WorkingDirectory = $root
     $autoShortcut.IconLocation = "$iconPath,0"
     $autoShortcut.Description = "Quality Superstores POS (Autorun on boot)"
-    $autoShortcut.WindowStyle = 7
+    $autoShortcut.WindowStyle = 7 # Minimized
     $autoShortcut.Save()
     Write-Host "  Startup Autorun Configured Successfully!"
 } else {
