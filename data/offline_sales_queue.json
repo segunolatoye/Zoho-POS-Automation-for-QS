@@ -224,7 +224,7 @@
     "salesperson": "Manager / Admin",
     "cashier_role": "admin",
     "terminal_id": "TERM-01",
-    "customer_id": "loc_cust_1794171550234",
+    "customer_id": "1560234000000446001",
     "customer_name": "Segun Olatoye",
     "date": "2026-11-08",
     "payment_mode": "Cash",
@@ -255,9 +255,108 @@
         "total": 2000
       }
     ],
-    "status": "PENDING_SYNC",
+    "status": "SYNCED",
     "created_at": "2026-11-08T20:59:14.582Z",
-    "sync_attempts": 2,
-    "last_sync_error": "Invalid value passed for Select Customer"
+    "sync_attempts": 3,
+    "zoho_invoice_id": "1560234000000446009",
+    "zoho_invoice_number": "KI-00120",
+    "zoho_payment_id": "1560234000000446040",
+    "synced_at": "2026-11-08T21:16:34.347Z"
+  },
+  {
+    "id": "sale_1794172636307_r342",
+    "order_id": "QS-00008",
+    "receipt_number": "QS-00008",
+    "tilled_by": "Manager",
+    "user_id": "u1",
+    "salesperson": "Manager",
+    "cashier_role": "admin",
+    "terminal_id": "TERM-01",
+    "customer_id": "1560234000000102202",
+    "customer_name": "Walk in Customer",
+    "date": "2026-11-08",
+    "payment_mode": "Cash",
+    "payments": [
+      {
+        "mode": "Cash",
+        "amount": 500
+      }
+    ],
+    "amount_paid": 500,
+    "change": 0,
+    "subtotal": 500,
+    "discount": 0,
+    "manager_override": false,
+    "manager_override_by": null,
+    "total": 500,
+    "line_items": [
+      {
+        "item_id": "1560234000000274718",
+        "name": "Test",
+        "unit": "pack",
+        "unit_display": "PACK",
+        "unit_conversion_id": "",
+        "quantity": 1,
+        "rate": 500,
+        "list_price": 500,
+        "is_custom_price": false,
+        "total": 500
+      }
+    ],
+    "status": "SYNCED",
+    "created_at": "2026-11-08T21:17:16.307Z",
+    "sync_attempts": 1,
+    "zoho_invoice_id": "1560234000000439268",
+    "zoho_invoice_number": "KI-00121",
+    "zoho_payment_id": "1560234000000439299",
+    "synced_at": "2026-11-08T21:17:31.715Z"
+  },
+  {
+    "id": "sale_1794172742166_6vne",
+    "order_id": "QS-00009",
+    "receipt_number": "QS-00009",
+    "tilled_by": "Manager",
+    "user_id": "u1",
+    "salesperson": "Manager",
+    "cashier_role": "admin",
+    "terminal_id": "TERM-01",
+    "customer_id": "1560234000000102202",
+    "customer_name": "Walk in Customer",
+    "date": "2026-11-08",
+    "payment_mode": "Cash",
+    "payments": [
+      {
+        "mode": "Cash",
+        "amount": 1500
+      }
+    ],
+    "amount_paid": 1500,
+    "change": 0,
+    "subtotal": 1500,
+    "discount": 0,
+    "manager_override": false,
+    "manager_override_by": null,
+    "total": 1500,
+    "line_items": [
+      {
+        "item_id": "1560234000000274718",
+        "name": "Test",
+        "unit": "pack",
+        "unit_display": "PACK",
+        "unit_conversion_id": "",
+        "quantity": 3,
+        "rate": 500,
+        "list_price": 500,
+        "is_custom_price": false,
+        "total": 1500
+      }
+    ],
+    "status": "SYNCED",
+    "created_at": "2026-11-08T21:19:02.166Z",
+    "sync_attempts": 1,
+    "zoho_invoice_id": "1560234000000439320",
+    "zoho_invoice_number": "KI-00122",
+    "zoho_payment_id": "1560234000000439351",
+    "synced_at": "2026-11-08T21:19:14.419Z"
   }
 ]

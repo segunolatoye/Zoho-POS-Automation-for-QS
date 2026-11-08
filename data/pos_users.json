@@ -1,7 +1,7 @@
 [
   {
     "id": "u1",
-    "name": "Manager",
+    "name": "Funmilayo",
     "pin": "9545",
     "role": "admin"
   },
@@ -13,10 +13,10 @@
   },
   {
     "id": "u2",
-    "name": "Cashier 1",
+    "name": "Oluwatosin",
     "pin": "5713",
     "role": "cashier",
-    "terminal_id": "TERM-01"
+    "terminal_id": "KETERE 2"
   },
   {
     "id": "u3",
@@ -24,12 +24,5 @@
     "pin": "5917",
     "role": "cashier",
     "terminal_id": "TERM-02"
-  },
-  {
-    "id": "u4",
-    "name": "Cashier 3",
-    "pin": "3508",
-    "role": "cashier",
-    "terminal_id": "TERM-03"
   }
 ]
