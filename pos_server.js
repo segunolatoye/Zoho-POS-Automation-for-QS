@@ -298,7 +298,7 @@ async function pullCloudDataFromZoho() {
 
     const formattedCustomers = [];
     const walkInId = '1560234000000095179';
-    const walkIn = allContacts.find(c => c.contact_id === walkInId || (c.contact_name && /walk\s*[-]?\s*in/i.test(c.contact_name)));
+    const walkIn = allContacts.find(c => c.contact_id === walkInId) || allContacts.find(c => c.contact_name && /^walk[- ]?in customer$/i.test(c.contact_name));
 
     formattedCustomers.push({
       id: walkIn ? walkIn.contact_id : walkInId,
