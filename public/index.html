@@ -1,0 +1,3543 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quality Superstores POS - Retail Register</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+  --bg: #F4F6F9;
+  --panel: #FFFFFF;
+  --panel-alt: #F8FAFC;
+  --ink: #0F172A;
+  --mute: #64748B;
+  --line: #E2E8F0;
+  --line-light: #F1F5F9;
+  --brand: #059669;
+  --brand-hover: #047857;
+  --brand-glow: rgba(5, 150, 105, 0.22);
+  --on: #FFFFFF;
+  --soft: #ECFDF5;
+  --warn: #D97706;
+  --warnbg: #FEF3C7;
+  --bad: #DC2626;
+  --badbg: #FEE2E2;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0B0F17;
+    --panel: #131B2A;
+    --panel-alt: #182234;
+    --ink: #F8FAFC;
+    --mute: #94A3B8;
+    --line: #222F43;
+    --line-light: #1A2435;
+    --brand: #10B981;
+    --brand-hover: #34D399;
+    --brand-glow: rgba(16, 185, 129, 0.25);
+    --on: #041B12;
+    --soft: rgba(16, 185, 129, 0.14);
+    --warn: #F59E0B;
+    --warnbg: rgba(245, 158, 11, 0.16);
+    --bad: #EF4444;
+    --badbg: rgba(239, 68, 68, 0.16);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.35);
+    --shadow-lg: 0 12px 24px rgba(0,0,0,0.45);
+    --shadow-card: 0 2px 6px rgba(0,0,0,0.25);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0B0F17;
+  --panel: #131B2A;
+  --panel-alt: #182234;
+  --ink: #F8FAFC;
+  --mute: #94A3B8;
+  --line: #222F43;
+  --line-light: #1A2435;
+  --brand: #10B981;
+  --brand-hover: #34D399;
+  --brand-glow: rgba(16, 185, 129, 0.25);
+  --on: #041B12;
+  --soft: rgba(16, 185, 129, 0.14);
+  --warn: #F59E0B;
+  --warnbg: rgba(245, 158, 11, 0.16);
+  --bad: #EF4444;
+  --badbg: rgba(239, 68, 68, 0.16);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.35);
+  --shadow-lg: 0 12px 24px rgba(0,0,0,0.45);
+  --shadow-card: 0 2px 6px rgba(0,0,0,0.25);
+}
+
+*, *::before, *::after { box-sizing: inherit; }
+html, body { height: 100%; margin: 0; }
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 13px;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+input, select, textarea { -webkit-user-select: text; user-select: text; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; transition: all 0.15s ease; }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+/* Custom scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--mute); }
+
+.app {
+  height: 100%;
+  min-width: 960px;
+  display: grid;
+  grid-template-rows: 58px 1fr 38px 28px;
+}
+
+/* Modern Top Header */
+.top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 18px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+  z-index: 10;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: -0.02em;
+}
+
+.mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+  color: #FFFFFF;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 16px;
+  box-shadow: 0 2px 8px var(--brand-glow);
+}
+
+.reg-sel {
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.reg-sel:hover {
+  border-color: var(--brand);
+  background: var(--panel);
+  box-shadow: 0 0 0 2px var(--brand-glow);
+}
+
+.sp { flex: 1; }
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  border-radius: 99px;
+  font-weight: 700;
+  font-size: 11.5px;
+  background: var(--soft);
+  color: var(--brand);
+  border: 1px solid rgba(5, 150, 105, 0.15);
+}
+
+.pill i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+  animation: pulse-dot 2s infinite;
+}
+
+.pill.off {
+  background: var(--badbg);
+  color: var(--bad);
+  border-color: rgba(220, 38, 38, 0.2);
+}
+.pill.off i { animation: none; }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 12px;
+}
+.user-chip i { color: var(--brand); font-size: 14px; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-weight: 600;
+  font-size: 12.5px;
+  box-shadow: var(--shadow-sm);
+}
+.btn:hover {
+  background: var(--bg);
+  border-color: var(--mute);
+  transform: translateY(-1px);
+}
+.btn:active { transform: translateY(0); }
+
+.btn.p {
+  background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+  color: #FFFFFF;
+  border-color: transparent;
+  box-shadow: 0 2px 6px var(--brand-glow);
+}
+.btn.p:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 4px 12px var(--brand-glow);
+}
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.btn.icon-btn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 8px;
+}
+
+.spin {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: r .8s linear infinite;
+  vertical-align: -2px;
+  margin-right: 6px;
+}
+@keyframes r { to { transform: rotate(360deg); } }
+
+/* Body Layout */
+.body {
+  display: grid;
+  grid-template-columns: 216px 1fr;
+  min-height: 0;
+}
+
+/* Modern Left Nav */
+.nav {
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.nav button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mute);
+  border: 1px solid transparent;
+  background: none;
+  position: relative;
+  transition: all 0.15s ease;
+}
+.nav button:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+.nav button.on {
+  background: var(--soft);
+  color: var(--brand);
+  border-color: rgba(5, 150, 105, 0.2);
+  font-weight: 700;
+}
+
+.nav .gl {
+  display: block;
+  color: var(--mute);
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 4px 12px 6px;
+  letter-spacing: .06em;
+}
+
+.nav kbd, .sb kbd {
+  margin-left: auto;
+  font: 700 10.5px 'Plus Jakarta Sans', system-ui, sans-serif;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--mute);
+  background: var(--bg);
+}
+
+.badge {
+  position: static;
+  margin-left: auto;
+  background: var(--warn);
+  color: #FFFFFF;
+  border-radius: 99px;
+  font-size: 11px;
+  padding: 1px 8px;
+  font-weight: 800;
+}
+
+.nb {
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+  background: var(--panel-alt);
+  border-radius: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+}
+.nb .row {
+  padding: 4px 0;
+  font-size: 11.5px;
+  color: var(--mute);
+  display: flex;
+  justify-content: space-between;
+}
+.nb .row b { color: var(--ink); }
+
+/* Main Sell Screen */
+.sell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(420px, 32vw, 480px);
+  min-height: 0;
+  background: var(--bg);
+}
+
+.left {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 14px 18px 0;
+}
+
+.tools {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.search-wrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-ico {
+  position: absolute;
+  left: 14px;
+  color: var(--mute);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.search-kbd {
+  position: absolute;
+  right: 12px;
+  pointer-events: none;
+}
+.search-kbd kbd {
+  font: 700 10.5px 'Plus Jakarta Sans', system-ui, sans-serif;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: var(--mute);
+  background: var(--panel);
+}
+
+.search {
+  width: 100%;
+  border: 1.5px solid var(--line);
+  background: var(--panel);
+  border-radius: 10px;
+  padding: 10px 42px 10px 38px;
+  font-size: 13px;
+  color: var(--ink);
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-sm);
+}
+.search:focus {
+  border-color: var(--brand);
+  background: var(--panel);
+  box-shadow: 0 0 0 3px var(--brand-glow);
+  outline: none;
+}
+
+.cat-select {
+  border: 1.5px solid var(--line);
+  background: var(--panel);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.15s ease;
+  min-width: 145px;
+  max-width: 175px;
+}
+.cat-select:hover, .cat-select:focus {
+  border-color: var(--brand);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--brand-glow);
+}
+
+.cat-tag {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--h) 14%, var(--panel));
+  color: color-mix(in srgb, var(--h) 80%, var(--ink));
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
+.seg {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
+}
+.seg button {
+  border: 0;
+  background: transparent;
+  padding: 7px 12px;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--mute);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.seg button.on {
+  background: var(--soft);
+  color: var(--brand);
+}
+
+/* Product Cards Grid */
+.grid {
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(162px, 1fr));
+  gap: 12px;
+  align-content: start;
+  padding: 2px 2px 18px;
+}
+.grid.list { display: block; padding: 0 0 14px; }
+
+.tile {
+  text-align: left;
+  border: 1.5px solid var(--line);
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: var(--shadow-card);
+}
+.tile:hover {
+  border-color: var(--brand);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.tile.out { opacity: .45; cursor: not-allowed; }
+.tile.out:hover { transform: none; border-color: var(--line); box-shadow: var(--shadow-card); }
+
+.art {
+  height: 56px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 19px;
+  background: color-mix(in srgb, var(--h) 15%, var(--panel));
+  color: color-mix(in srgb, var(--h) 75%, var(--ink));
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04);
+}
+
+.tile b {
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.35;
+  min-height: 34px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--ink);
+}
+
+.tile .m {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--mute);
+  font-size: 11.5px;
+  gap: 6px;
+}
+.tile .m span:first-child {
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 13.5px;
+}
+
+.stock-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 99px;
+  font-size: 10.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.stock-pill.in { background: var(--soft); color: var(--brand); }
+.stock-pill.low { background: var(--warnbg); color: var(--warn); }
+.stock-pill.out { background: var(--badbg); color: var(--bad); }
+
+.us {
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  width: 100%;
+  cursor: pointer;
+}
+.us:focus { border-color: var(--brand); outline: none; }
+
+/* Table View */
+.pt {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--panel);
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-card);
+}
+.pt th, .pt td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.pt th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--panel);
+  color: var(--mute);
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.pt td.td-name {
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.3;
+}
+.pt th.col-act, .pt td.col-act {
+  position: sticky;
+  right: 0;
+  z-index: 3;
+  background: var(--panel);
+  text-align: right;
+  box-shadow: -3px 0 6px rgba(0,0,0,0.05);
+}
+.pt tr:hover td.col-act {
+  background: var(--soft);
+}
+.pr { cursor: pointer; transition: background 0.12s; }
+.pr:hover td { background: var(--soft); }
+.pr.out { opacity: .45; cursor: not-allowed; }
+
+.av {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  margin-right: 8px;
+  font-weight: 800;
+  font-size: 11px;
+  vertical-align: middle;
+  background: color-mix(in srgb, var(--h) 15%, var(--panel));
+  color: color-mix(in srgb, var(--h) 75%, var(--ink));
+}
+
+/* Right Cart Panel */
+.cart {
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  box-shadow: -2px 0 8px rgba(0,0,0,0.02);
+}
+
+.cart-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cust-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  transition: all 0.15s ease;
+}
+.cust-bar:hover { border-color: var(--brand); }
+.cust-bar b {
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 240px;
+  font-weight: 700;
+}
+
+.debt-alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #DC2626;
+  background: #FEE2E2;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 3px;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+}
+
+.lines {
+  flex: 1;
+  overflow: auto;
+  padding: 4px 18px;
+}
+
+.empty {
+  color: var(--mute);
+  padding: 50px 14px;
+  text-align: center;
+  line-height: 1.6;
+  font-size: 13px;
+}
+
+.cart-col-hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1.5px solid var(--line);
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--mute);
+  letter-spacing: .06em;
+  user-select: none;
+}
+.cart-col-hdr .c-item { flex: 1; min-width: 0; }
+.cart-col-hdr .c-unit { width: 72px; }
+.cart-col-hdr .c-qty { width: 74px; text-align: center; }
+.cart-col-hdr .c-tot { width: 80px; text-align: right; }
+.cart-col-hdr .c-act { width: 24px; }
+
+.ln {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  min-height: 42px;
+  transition: background 0.12s;
+}
+.ln:hover { background: var(--line-light); border-radius: 6px; padding-left: 4px; padding-right: 4px; }
+
+.ln .nm {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+.ln .us-cart {
+  width: 72px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.ln .us-cart:disabled { opacity: .6; cursor: default; }
+
+.ln .qty {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  flex-shrink: 0;
+  height: 28px;
+  background: var(--bg);
+  overflow: hidden;
+}
+.qty button {
+  border: 0;
+  background: none;
+  width: 24px;
+  height: 28px;
+  font-size: 14px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--ink);
+  transition: all 0.1s;
+}
+.qty button:hover {
+  background: var(--soft);
+  color: var(--brand);
+}
+.qty span {
+  min-width: 24px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.ln .tot {
+  width: 80px;
+  text-align: right;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--ink);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.ln .tot:hover { color: var(--brand); text-decoration: underline; }
+.ln .tot.ch { color: var(--warn); }
+.ln .tot.ch::after { content: '*'; font-size: 11px; margin-left: 2px; }
+
+.ln .del-btn {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  background: none;
+  color: var(--mute);
+  font-size: 16px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  border-radius: 6px;
+  flex-shrink: 0;
+  transition: all 0.12s;
+}
+.ln .del-btn:hover { color: var(--bad); background: var(--badbg); }
+
+/* Cart Summary & Total */
+.sum {
+  padding: 14px 18px;
+  background: var(--panel-alt);
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 8px;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.row.t {
+  font-size: 24px;
+  font-weight: 800;
+  padding-top: 8px;
+  margin-top: 4px;
+  border-top: 1.5px dashed var(--line);
+  color: var(--brand);
+  letter-spacing: -0.02em;
+}
+.row input {
+  width: 70px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 6px;
+  padding: 4px 8px;
+  text-align: right;
+  font-weight: 700;
+}
+
+.quick-tender-pills {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 2px 0 6px;
+}
+.quick-tender-pills::-webkit-scrollbar { height: 3px; }
+.qt-btn {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 11px;
+  border-radius: 6px;
+  padding: 4px 6px;
+  white-space: nowrap;
+  flex: 1;
+  text-align: center;
+  transition: all 0.12s ease;
+  user-select: none;
+}
+.qt-btn:hover {
+  background: var(--soft);
+  border-color: var(--brand);
+  color: var(--brand);
+  transform: translateY(-1px);
+}
+.qt-btn.exact {
+  background: var(--soft);
+  color: var(--brand);
+  border-color: rgba(5, 150, 105, 0.35);
+  font-weight: 800;
+}
+
+/* Payment Mode Grid */
+.pay {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 10px 18px;
+}
+.pay button {
+  border: 1.5px solid var(--line);
+  background: var(--panel);
+  border-radius: 8px;
+  padding: 9px 4px;
+  font-weight: 700;
+  font-size: 11px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  color: var(--mute);
+  transition: all 0.15s ease;
+}
+.pay button i { font-size: 14px; }
+.pay button:hover {
+  background: var(--bg);
+  border-color: var(--mute);
+  color: var(--ink);
+}
+.pay button.on {
+  border-color: var(--brand);
+  background: var(--soft);
+  color: var(--brand);
+  box-shadow: 0 0 0 1px var(--brand);
+}
+
+.split-box {
+  margin: 0 18px 12px;
+  padding: 10px 14px;
+  background: var(--panel-alt);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  display: grid;
+  gap: 8px;
+}
+.split-hdr {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.split-status {
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+.split-status.ok { background: var(--soft); color: var(--brand); }
+.split-status.warn { background: var(--warnbg); color: var(--warn); }
+.split-status.err { background: var(--badbg); color: var(--bad); }
+
+.split-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.split-row label {
+  width: 115px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+.split-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 8px;
+  gap: 6px;
+}
+.split-wrap input {
+  flex: 1;
+  border: 0;
+  background: none;
+  font-weight: 700;
+  font-size: 12.5px;
+  text-align: right;
+  width: 100%;
+  outline: none;
+  color: var(--ink);
+}
+.split-fill {
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--brand);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.12s;
+}
+.split-fill:hover { background: var(--soft); border-color: var(--brand); }
+
+/* Main Charge CTA Button */
+.charge {
+  margin: 0 18px 16px;
+  padding: 15px;
+  font-size: 16px;
+  font-weight: 800;
+  border-radius: 10px;
+  border: 0;
+  background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+  color: #FFFFFF;
+  letter-spacing: -0.01em;
+  box-shadow: 0 4px 14px var(--brand-glow);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.charge:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 6px 20px var(--brand-glow);
+  transform: translateY(-1px);
+}
+.charge:active {
+  transform: translateY(1px) scale(0.99);
+}
+.charge:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  filter: grayscale(0.6);
+}
+
+/* Function Keys Bar */
+.fk {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 0 14px;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  overflow-x: auto;
+}
+.fk button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-weight: 600;
+  font-size: 11.5px;
+  white-space: nowrap;
+  color: var(--mute);
+}
+.fk button:hover {
+  border-color: var(--brand);
+  color: var(--ink);
+  background: var(--panel);
+}
+.fk kbd {
+  font: 800 10px 'Plus Jakarta Sans', system-ui, sans-serif;
+  border-radius: 4px;
+  padding: 1px 5px;
+  background: var(--brand);
+  color: #FFFFFF;
+}
+
+/* Footer Status Bar */
+.sb {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 18px;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  font-size: 11.5px;
+  color: var(--mute);
+}
+
+/* Orders Page & Tables */
+.page {
+  padding: 24px;
+  overflow: auto;
+  min-height: 0;
+}
+.page h1 { margin: 0 0 18px; font-size: 21px; font-weight: 800; letter-spacing: -0.02em; }
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+  max-width: 800px;
+}
+.stat {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow: var(--shadow-card);
+}
+.stat small { color: var(--mute); font-weight: 600; font-size: 12px; }
+.stat div { font-size: 22px; font-weight: 800; margin-top: 6px; }
+
+.tw {
+  overflow-x: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+}
+table { width: 100%; border-collapse: collapse; }
+th, td {
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+th { color: var(--mute); font-weight: 700; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; }
+tr:last-child td { border-bottom: 0; }
+
+.st {
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--warnbg);
+  color: var(--warn);
+}
+.st.ok { background: var(--soft); color: var(--brand); }
+
+.rs {
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.rs:hover { background: var(--soft); border-color: var(--brand); color: var(--brand); }
+
+.kk {
+  font: 700 11px monospace;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+/* Modals */
+.ov {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+  animation: fadeIn 0.15s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  width: 440px;
+  max-width: 94vw;
+  padding: 24px;
+  max-height: 90vh;
+  overflow: auto;
+  box-shadow: var(--shadow-lg);
+  animation: modalPop 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes modalPop { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.modal h3 { margin: 0 0 8px; font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+
+.modal.pd {
+  width: 780px;
+  max-width: 94vw;
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  padding: 0;
+  overflow: hidden;
+}
+.pdl { padding: 24px; display: grid; gap: 14px; align-content: start; }
+.pdl label { display: grid; gap: 5px; font-weight: 700; font-size: 12px; color: var(--mute); }
+.pdl label.ck { display: flex; gap: 8px; align-items: center; color: var(--ink); }
+.pdl select, .pdl input {
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.pv {
+  background: var(--bg);
+  padding: 24px;
+  overflow: auto;
+  max-height: 80vh;
+  border-left: 1px solid var(--line);
+}
+.paper {
+  background: #fff;
+  color: #000;
+  padding: 12px;
+  margin: 0 auto;
+  width: max-content;
+  max-width: 100%;
+  box-shadow: 0 4px 20px rgba(0,0,0,.25);
+  border-radius: 4px;
+}
+.rc { font: 11px/1.25 'Courier New', ui-monospace, monospace; color: #000; background: #fff; margin: 0 auto; padding: 0; }
+.rc .rc-c, .rc .c { text-align: center; }
+.rc .rc-r, .rc .r { display: flex; justify-content: space-between; gap: 4px; line-height: 1.2; }
+.rc hr, .rc .rc-hr { border: 0; border-top: 1px dashed #000; margin: 3px 0; }
+.rc .rc-b, .rc .b { font-weight: 700; }
+.rc.w80 { width: 72mm; } .rc.w58 { width: 48mm; } .rc.wA4 { width: 100mm; }
+.rc-tbl { width: 100%; border-collapse: collapse; font-size: 10px; margin: 2px 0; line-height: 1.2; }
+.rc-tbl th { border-bottom: 1px dashed #000; padding: 1px 0; font-weight: 700; font-size: 9.5px; text-transform: uppercase; }
+.rc-tbl td { padding: 1.5px 0; vertical-align: top; }
+
+#prt { display: none; }
+@media print {
+  body > *:not(#prt) { display: none !important; }
+  html, body { height: auto; background: #fff; overflow: visible; }
+  #prt { display: block; }
+  .rc { page-break-after: always; padding: 2mm 0; }
+}
+
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  background: #0F172A;
+  color: #F8FAFC;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+  z-index: 90;
+  display: none;
+  max-width: 520px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+  animation: toastUp 0.15s ease;
+}
+@keyframes toastUp { from { transform: translate(-50%, 8px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+
+@media (max-width: 1180px) {
+  .body { grid-template-columns: 72px 1fr; }
+  .nav .gl, .nb, .nav kbd { display: none; }
+  .nav button { font-size: 0; justify-content: center; padding: 14px 0; }
+  .logo { font-size: 0; gap: 0; }
+  .mark { font-size: 16px; }
+}
+
+/* PIN Lock Screen */
+#lock-ov {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: radial-gradient(circle at center, var(--panel) 0%, var(--bg) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(12px);
+}
+
+.pin-card {
+  background: var(--panel);
+  border: 1.5px solid var(--line);
+  border-radius: 22px;
+  padding: 32px 36px;
+  width: 360px;
+  max-width: 92vw;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+}
+
+.pin-logo {
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+  color: #FFFFFF;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 26px;
+  margin: 0 auto 12px;
+  box-shadow: 0 6px 18px var(--brand-glow);
+}
+
+.pin-dots {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin: 18px 0 22px;
+}
+
+.pdot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  background: var(--bg);
+  transition: all .18s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.pdot.filled {
+  background: var(--brand);
+  border-color: var(--brand);
+  transform: scale(1.2);
+  box-shadow: 0 0 12px var(--brand);
+}
+
+.pin-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.pin-btn {
+  height: 60px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  border-radius: 14px;
+  font-weight: 800;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all .12s;
+  user-select: none;
+}
+.pin-btn:hover {
+  background: var(--soft);
+  border-color: var(--brand);
+  color: var(--brand);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+.pin-btn:active { transform: scale(.95); }
+.pin-btn.clr { font-size: 15px; color: var(--bad); font-weight: 700; }
+.pin-btn.del { font-size: 18px; }
+
+@keyframes pin-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-10px); }
+  40%, 80% { transform: translateX(10px); }
+}
+.shake { animation: pin-shake 0.4s ease; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top" id="top"></header>
+  <div class="body">
+    <nav class="nav" id="nav"></nav>
+    <main id="main" style="min-height:0;display:flex;flex-direction:column"></main>
+  </div>
+
+  <div class="fk" aria-label="Function keys">
+    <button data-a="fk" data-k="F1"><kbd>F1</kbd>Help</button>
+    <button data-a="fk" data-k="F2"><kbd>F2</kbd>Search</button>
+    <button data-a="fk" data-k="F3"><kbd>F3</kbd>Sell / Orders</button>
+    <button data-a="fk" data-k="F4"><kbd>F4</kbd>Customer</button>
+    <button data-a="fk" data-k="F5" onclick="handleHoldRecallKey()"><kbd>F5</kbd>Hold / Recall</button>
+    <button data-a="fk" data-k="F6"><kbd>F6</kbd>Payment</button>
+    <button data-a="fk" data-k="F7"><kbd>F7</kbd>Price Manager</button>
+    <button data-a="fk" data-k="F8"><kbd>F8</kbd>Charge</button>
+    <button data-a="fk" data-k="F9"><kbd>F9</kbd>Sync</button>
+    <button data-a="fk" data-k="F10"><kbd>F10</kbd>Theme</button>
+    <button data-a="fk" data-k="F12"><kbd>F12</kbd>Print</button>
+  </div>
+
+  <footer class="sb" id="sb"></footer>
+</div>
+
+<div id="prt"></div>
+<style id="pgs"></style>
+<div id="toast" role="status"></div>
+<div id="ov"></div>
+<div id="lock-ov" style="display:none"></div>
+
+<script>
+const NGN = n => '₦' + Math.round(n).toLocaleString('en-NG');
+const T = t => new Date(t).toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
+const $ = s => document.querySelector(s);
+
+// Category hue palette
+const HUE_MAP = {
+  'GROCERY': '#17674A',
+  'BEVERAGES': '#2B6CB0',
+  'TOILETRIES': '#7B4FA3',
+  'BRUSH': '#B8741A',
+  'HOUSEHOLD': '#9A5F10',
+  'GENERAL': '#4A5568'
+};
+
+const getHue = cat => HUE_MAP[(cat || '').toUpperCase()] || '#17674A';
+
+let state = {
+  view: 'sell',
+  vw: 'list', // 'list' or 'grid'
+  theme: 'auto',
+  terminalId: localStorage.getItem('pos_terminal_id') || '',
+  user: JSON.parse(sessionStorage.getItem('pos_user') || 'null'),
+  isLocked: !sessionStorage.getItem('pos_user'),
+  pinInput: '',
+  customer: { id: '1560234000000102202', name: 'Walk in Customer' },
+  cat: 'All',
+  q: '',
+  cart: {}, // id: { qty, unitIndex, customPrice }
+  heldCarts: JSON.parse(localStorage.getItem('qs_held_carts') || '[]'),
+  disc: 0,
+  pay: 'Cash',
+  tender: '',
+  syncing: false,
+  pulling: false,
+  items: [],
+  customers: [],
+  sales: [],
+  pendingCount: 0,
+  lastSyncTime: null,
+  lanIp: '192.168.100.18',
+  lanUrl: 'http://192.168.100.18:3001',
+  pp: {
+    printer: 'Receipt printer (USB, 80 mm)',
+    paper: '80',
+    copies: 1,
+    hdr: true,
+    vat: false,
+    companyName: 'QUALITY SUPERSTORES',
+    address: '16, Ogo Oluwa St, Ketere Market, Sango, Ogun State',
+    phones: '0803 456 7890, 0812 345 6789',
+    branch: 'KETERE BRANCH',
+    salesperson: 'Cashier 1'
+  }
+};
+
+// Apply preferences
+try {
+  const p = JSON.parse(localStorage.getItem('qs-prefs') || 'null');
+  if (p) {
+    state.theme = p.theme || 'auto';
+    if (p.pp) {
+      Object.assign(state.pp, p.pp);
+      if (state.pp.address === 'Ketere Market Road, Saki, Oyo State' || !state.pp.address) {
+        state.pp.address = '16, Ogo Oluwa St, Ketere Market, Sango, Ogun State';
+      }
+    }
+  }
+} catch(e) {}
+
+function applyTheme() {
+  const r = document.documentElement;
+  if (state.theme === 'auto') r.removeAttribute('data-theme');
+  else r.setAttribute('data-theme', state.theme);
+}
+applyTheme();
+
+function savePrefs() {
+  try {
+    localStorage.setItem('qs-prefs', JSON.stringify({ theme: state.theme, pp: state.pp }));
+  } catch(e) {}
+}
+
+function saveHeldCarts() {
+  try {
+    localStorage.setItem('qs_held_carts', JSON.stringify(state.heldCarts));
+  } catch(e) {}
+}
+
+// Audio Synthesizer via Web Audio API (zero audio files needed, works offline)
+let audioCtx = null;
+function playSound(type) {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    if (!audioCtx) audioCtx = new AudioCtx();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    if (type === 'beep' || type === 'scan') {
+      // Crisp 880Hz -> 1320Hz electronic cashier beep (60ms)
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(1320, now + 0.05);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+      osc.start(now);
+      osc.stop(now + 0.06);
+    } else if (type === 'error' || type === 'out') {
+      // Low dual warning buzz (180ms)
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.setValueAtTime(180, now + 0.08);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+      osc.start(now);
+      osc.stop(now + 0.18);
+    } else if (type === 'success' || type === 'sale') {
+      // Melodic 2-tone chime on successful payment
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(587.33, now);
+      osc.frequency.setValueAtTime(880, now + 0.12);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc.start(now);
+      osc.stop(now + 0.35);
+    }
+  } catch(e) {}
+}
+
+function toast(m) {
+  const t = $('#toast');
+  t.textContent = m;
+  t.style.display = 'block';
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => t.style.display = 'none', 3800);
+}
+
+// Helpers for items
+function getItem(id) {
+  return state.items.find(it => String(it.id) === String(id));
+}
+
+function getItemUnits(it) {
+  if (!it || !it.units || !it.units.length) {
+    return [{ name: it?.base_unit || 'unit', label: 'Unit', price: it?.retail_price || 0, is_base: true, conversion_ratio: 1, unit_conversion_id: '' }];
+  }
+  return it.units;
+}
+
+function getCartLine(id) {
+  const it = getItem(id);
+  if (!it) return null;
+  const c = state.cart[id] || { qty: 1, unitIndex: 0, customPrice: null };
+  const units = getItemUnits(it);
+  const u = units[c.unitIndex] || units[0];
+  const listPrice = u.price;
+  const activePrice = c.customPrice !== null ? c.customPrice : listPrice;
+  return {
+    item: it,
+    qty: c.qty,
+    unitIndex: c.unitIndex,
+    unit: u,
+    listPrice: listPrice,
+    price: activePrice,
+    total: activePrice * c.qty
+  };
+}
+
+function calcTotals() {
+  let sub = 0, n = 0;
+  for (const id in state.cart) {
+    const L = getCartLine(id);
+    if (L) {
+      sub += L.total;
+      n += L.qty;
+    }
+  }
+  const disc = (sub * state.disc) / 100;
+  const total = sub - disc;
+  return { sub, n, disc, total };
+}
+
+// Load from server
+async function loadCatalog() {
+  try {
+    const r = await fetch('/api/catalog');
+    state.items = await r.json();
+    renderMain();
+  } catch(e) {
+    console.error('Failed to load catalog:', e);
+  }
+}
+
+async function loadCustomers() {
+  try {
+    const r = await fetch('/api/customers');
+    state.customers = await r.json();
+    if (state.customers.length && !state.customer.id) {
+      state.customer = { id: state.customers[0].id, name: state.customers[0].display_name || state.customers[0].name };
+    }
+  } catch(e) {}
+}
+
+async function loadQueueStatus() {
+  try {
+    const [qRes, sRes] = await Promise.all([
+      fetch('/api/queue').then(r => r.json()).catch(() => null),
+      fetch('/api/status').then(r => r.json()).catch(() => null)
+    ]);
+    if (qRes) {
+      state.pendingCount = qRes.pending_count || 0;
+      state.sales = qRes.sales || [];
+    }
+    if (sRes && sRes.local_ip) {
+      state.lanIp = sRes.local_ip;
+      state.lanUrl = sRes.lan_url || `http://${sRes.local_ip}:${sRes.port || 3001}`;
+    }
+    if (sRes && sRes.sync_info) {
+      const prevSyncTime = state.syncInfo?.last_sync_time;
+      state.syncInfo = sRes.sync_info;
+      if (prevSyncTime && sRes.sync_info.last_sync_time && prevSyncTime !== sRes.sync_info.last_sync_time) {
+        Promise.all([
+          fetch('/api/catalog').then(r => r.json()).then(items => { state.items = items; }),
+          fetch('/api/customers').then(r => r.json()).then(custs => { state.customers = custs; })
+        ]).then(() => {
+          const active = document.activeElement;
+          const isSearching = active && active.id === 'q';
+          if (!isSearching) renderMain();
+        }).catch(() => {});
+      }
+    }
+    renderTop();
+    renderNav();
+    renderSb();
+    if (state.view === 'orders') renderMain();
+  } catch(e) {}
+}
+
+// Header Bar
+function renderTop() {
+  const p = state.pendingCount;
+  $('#top').innerHTML = `
+    <div class="logo">
+      <div class="mark">Q</div>
+      <div style="display:flex;flex-direction:column">
+        <span style="font-weight:800;font-size:14px;letter-spacing:-0.02em;line-height:1.2">Quality Superstores</span>
+        <span style="font-weight:800;font-size:9.5px;color:var(--brand);letter-spacing:0.06em">RETAIL OS v2.0</span>
+      </div>
+    </div>
+    <select class="reg-sel" onchange="changeTerminal(this.value)" aria-label="Terminal">
+      <option value="TERM-01" ${state.terminalId==='TERM-01'?'selected':''}>Terminal 1 (Cashier 1)</option>
+      <option value="TERM-02" ${state.terminalId==='TERM-02'?'selected':''}>Terminal 2 (Cashier 2)</option>
+      <option value="TERM-03" ${state.terminalId==='TERM-03'?'selected':''}>Terminal 3 (Cashier 3)</option>
+      <option value="TERM-04" ${state.terminalId==='TERM-04'?'selected':''}>Terminal 4 (Cashier 4)</option>
+      <option value="TERM-05" ${state.terminalId==='TERM-05'?'selected':''}>Terminal 5 (Floor/Mobile)</option>
+    </select>
+    <div class="sp"></div>
+    <span class="pill ${p>0?'off':''}"><i></i>${p>0 ? `${p} Offline Queued` : 'Online & Ready'}</span>
+    ${state.user ? `
+      <div class="user-chip">
+        <i class="fa-solid fa-circle-user"></i>
+        <span>${state.user.name}</span>
+      </div>
+      <button class="btn" onclick="openAccountsModal()" title="Manage POS Cashier Accounts & PINs"><i class="fa-solid fa-users-gear"></i> Accounts</button>
+      <button class="btn" onclick="lockRegister()" title="Switch User / Lock Portal"><i class="fa-solid fa-arrow-right-from-bracket"></i> Lock</button>
+    ` : `
+      <button class="btn p" onclick="state.isLocked=true;renderLockScreen();"><i class="fa-solid fa-lock"></i> Login with PIN</button>
+    `}
+    <button class="btn" onclick="openPriceManager()"><i class="fa-solid fa-tags" style="color:var(--warn)"></i> Price Manager</button>
+    <button class="btn" id="btn-pull-top" onclick="triggerPullSync()" ${state.pulling?'disabled':''} title="Pull latest customers and live inventory stock from Zoho Cloud">
+      ${state.pulling ? '<span class="spin"></span>Pulling Zoho…' : '<i class="fa-solid fa-cloud-arrow-down" style="color:var(--brand)"></i> Pull from Zoho'}
+    </button>
+    <button class="btn p" onclick="triggerSync()" ${state.syncing?'disabled':''}>
+      ${state.syncing ? '<span class="spin"></span>Syncing…' : `<i class="fa-solid fa-rotate"></i> Sync to Zoho${p ? ' ('+p+')' : ''}`}
+    </button>
+    <button class="btn icon-btn" onclick="toggleTheme()" title="Switch Light/Dark Theme (F10)" aria-label="Theme toggle">
+      ${(state.theme === 'dark' || (state.theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches))
+        ? '<i class="fa-solid fa-sun" style="color:#f59f00;font-size:15px"></i>'
+        : '<i class="fa-solid fa-moon" style="color:#6366f1;font-size:15px"></i>'}
+    </button>
+  `;
+}
+
+function getTerminalLabel(id) {
+  const m = {
+    'TERM-01': 'Terminal 1 (Cashier 1)',
+    'TERM-02': 'Terminal 2 (Cashier 2)',
+    'TERM-03': 'Terminal 3 (Cashier 3)',
+    'TERM-04': 'Terminal 4 (Cashier 4)',
+    'TERM-05': 'Terminal 5 (Floor/Mobile)'
+  };
+  return m[id] || id;
+}
+
+function changeTerminal(val) {
+  state.terminalId = val;
+  localStorage.setItem('pos_terminal_id', val);
+  fetch('/api/terminal/init', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ terminal_id: val })
+  }).catch(() => {});
+  renderTop();
+  renderSb();
+  toast('Station changed to ' + getTerminalLabel(val));
+}
+
+async function initTerminal() {
+  const saved = localStorage.getItem('pos_terminal_id');
+  try {
+    const res = await fetch('/api/terminal/init', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ terminal_id: saved || null })
+    }).then(r => r.json());
+
+    if (res && res.success && res.terminal_id) {
+      const isNew = !saved || saved !== res.terminal_id;
+      state.terminalId = res.terminal_id;
+      localStorage.setItem('pos_terminal_id', res.terminal_id);
+      renderTop();
+      renderSb();
+      if (isNew) {
+        toast(`🖥️ Connected as ${getTerminalLabel(res.terminal_id)}`);
+      }
+    }
+  } catch(e) {
+    if (!state.terminalId) state.terminalId = saved || 'TERM-01';
+  }
+}
+
+// PIN & Lock Screen Logic
+function renderLockScreen() {
+  const el = $('#lock-ov');
+  if (!el) return;
+  if (!state.isLocked) {
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+  el.style.display = 'flex';
+  const pin = state.pinInput || '';
+  el.innerHTML = `
+    <div class="pin-card" id="pin-card">
+      <div class="pin-logo">Q</div>
+      <h2 style="margin:8px 0 2px;font-size:18px;font-weight:800;letter-spacing:-0.5px">Quality Superstores</h2>
+      <p style="margin:0 0 16px;color:var(--mute);font-size:12px">Ketere Branch • Cash Register Locked</p>
+
+      <div class="pin-dots">
+        <span class="pdot ${pin.length >= 1 ? 'filled' : ''}"></span>
+        <span class="pdot ${pin.length >= 2 ? 'filled' : ''}"></span>
+        <span class="pdot ${pin.length >= 3 ? 'filled' : ''}"></span>
+        <span class="pdot ${pin.length >= 4 ? 'filled' : ''}"></span>
+      </div>
+
+      <div id="pin-err" style="color:var(--bad);font-size:12px;font-weight:600;min-height:18px;margin-bottom:8px"></div>
+
+      <div class="pin-pad">
+        <button class="pin-btn" onclick="enterPinDigit('1')">1</button>
+        <button class="pin-btn" onclick="enterPinDigit('2')">2</button>
+        <button class="pin-btn" onclick="enterPinDigit('3')">3</button>
+        <button class="pin-btn" onclick="enterPinDigit('4')">4</button>
+        <button class="pin-btn" onclick="enterPinDigit('5')">5</button>
+        <button class="pin-btn" onclick="enterPinDigit('6')">6</button>
+        <button class="pin-btn" onclick="enterPinDigit('7')">7</button>
+        <button class="pin-btn" onclick="enterPinDigit('8')">8</button>
+        <button class="pin-btn" onclick="enterPinDigit('9')">9</button>
+        <button class="pin-btn clr" onclick="clearPin()">C</button>
+        <button class="pin-btn" onclick="enterPinDigit('0')">0</button>
+        <button class="pin-btn del" onclick="backspacePin()"><i class="fa-solid fa-delete-left"></i></button>
+      </div>
+
+      <div style="margin-top:16px;padding:8px 10px;background:var(--soft);border-radius:8px;font-size:11px;color:var(--mute);line-height:1.4">
+        <b>Cashier PINs:</b><br>
+        Cashier 1: <code style="color:var(--brand);font-weight:700">1111</code> &bull; 
+        Cashier 2: <code style="color:var(--brand);font-weight:700">2222</code> &bull; 
+        Manager: <code style="color:var(--brand);font-weight:700">1234</code>
+      </div>
+    </div>
+  `;
+}
+
+function enterPinDigit(d) {
+  if (state.pinInput.length >= 4) return;
+  state.pinInput += String(d);
+  renderLockScreen();
+  if (state.pinInput.length === 4) {
+    submitPin();
+  }
+}
+
+function backspacePin() {
+  state.pinInput = state.pinInput.slice(0, -1);
+  renderLockScreen();
+}
+
+function clearPin() {
+  state.pinInput = '';
+  renderLockScreen();
+}
+
+async function submitPin() {
+  const pin = state.pinInput;
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin })
+    }).then(r => r.json());
+
+    if (res && res.success && res.user) {
+      state.user = res.user;
+      sessionStorage.setItem('pos_user', JSON.stringify(res.user));
+      state.isLocked = false;
+      state.pinInput = '';
+      if (res.user.terminal_id) {
+        state.terminalId = res.user.terminal_id;
+        localStorage.setItem('pos_terminal_id', res.user.terminal_id);
+      }
+      renderLockScreen();
+      renderTop();
+      renderSb();
+      toast(`✓ Unlocked! Welcome, ${res.user.name}`);
+    } else {
+      const card = $('#pin-card');
+      if (card) {
+        card.classList.add('shake');
+        setTimeout(() => card.classList.remove('shake'), 450);
+      }
+      const errEl = $('#pin-err');
+      if (errEl) errEl.textContent = res.message || 'Invalid PIN. Try again.';
+      state.pinInput = '';
+      setTimeout(() => renderLockScreen(), 600);
+    }
+  } catch(e) {
+    const errEl = $('#pin-err');
+    if (errEl) errEl.textContent = 'Server connection error';
+    state.pinInput = '';
+  }
+}
+
+function lockRegister() {
+  state.isLocked = true;
+  state.pinInput = '';
+  sessionStorage.removeItem('pos_user');
+  renderLockScreen();
+  toast('🔒 Cash register locked');
+}
+
+function toggleTheme() {
+  const isDark = state.theme === 'dark' || (state.theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  state.theme = isDark ? 'light' : 'dark';
+  applyTheme();
+  savePrefs();
+  renderTop();
+  toast(state.theme === 'dark' ? '🌙 Dark mode enabled' : '☀️ Light mode enabled');
+}
+
+// Nav Bar
+function renderNav() {
+  const p = state.pendingCount;
+  const I = d => `<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  $('#nav').innerHTML = `
+    <small class="gl">Workspace</small>
+    <button class="${state.view==='sell'?'on':''}" onclick="goView('sell')">
+      ${I('<path d="M3 4h2l2 9h9l2-6H6"/><circle cx="9" cy="17" r="1"/><circle cx="16" cy="17" r="1"/>')}Sell<kbd>F2</kbd>
+    </button>
+    <button class="${state.view==='orders'?'on':''}" onclick="goView('orders')">
+      ${I('<path d="M5 3h10v14H5zM8 7h4M8 10h4M8 13h3"/>')}Orders${p ? `<span class="badge">${p}</span>` : ''}
+    </button>
+    <div class="nb">
+      <small class="gl">Wi-Fi Multi-Terminal</small>
+      <div class="row"><span>IP to Open</span><b style="color:var(--brand);font-family:monospace;font-size:11px">${state.lanIp || '192.168.100.18'}:3001</b></div>
+      <div class="row"><span>Waiting Sync</span><b>${p}</b></div>
+      <div class="row"><span>Hub Server</span><b style="color:var(--brand)">Active</b></div>
+    </div>
+  `;
+}
+
+function renderSb() {
+  const p = state.pendingCount;
+  const ip = state.lanIp || '192.168.100.18';
+  const lanUrl = `http://${ip}:3001`;
+  const sync = state.syncInfo;
+  const isSyncing = sync?.is_syncing;
+  const lastTime = sync?.last_sync_time ? sync.last_sync_time.split(' ')[1] : '';
+
+  $('#sb').innerHTML = `
+    <span style="color:var(--brand);font-weight:700">● POS Hub Connected</span>
+    <span style="display:inline-flex;align-items:center;gap:6px;font-weight:600;color:var(--ink);background:var(--bg);padding:2px 8px;border-radius:4px;border:1px solid var(--line)" title="Open this URL on other PCs, phones, or tablets on this Wi-Fi">
+      <i class="fa-solid fa-wifi" style="color:var(--brand)"></i> LAN Hub: <b style="color:var(--brand);font-family:monospace;letter-spacing:0.5px">${lanUrl}</b>
+    </span>
+    <span style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-weight:600;padding:2px 8px;border-radius:4px;background:var(--soft)" onclick="openSyncLogModal()" title="Click to view Zoho Background Sync Engine logs">
+      <i class="fa-solid fa-cloud" style="color:${sync?.is_online ? 'var(--brand)' : 'var(--bad)'}"></i>
+      <span>Zoho Sync: <b>${isSyncing ? 'Syncing...' : (lastTime ? `Updated ${lastTime}` : 'Active (10m)')}</b></span>
+    </span>
+    <span>${p} offline receipt(s) waiting</span>
+    <span>${state.sales.length} recent sales</span>
+    <span class="sp"></span>
+    <span>Terminal: ${state.terminalId}</span>
+    <span>Printer: ${state.pp.printer}</span>
+  `;
+}
+
+// Sync Logs Viewer Modal
+async function openSyncLogModal() {
+  try {
+    const [stat, logs] = await Promise.all([
+      fetch('/api/sync/status').then(r => r.json()),
+      fetch('/api/sync/logs').then(r => r.text())
+    ]);
+
+    $('#ov').innerHTML = `
+      <div class="ov"><div class="modal" style="max-width:680px;width:95%">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3 style="margin:0"><i class="fa-solid fa-cloud-arrow-down" style="color:var(--brand)"></i> Zoho Background Sync Engine</h3>
+          <button class="btn" onclick="closeModal()">✕</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:8px;margin-bottom:12px;font-size:12px">
+          <div style="padding:8px;background:var(--soft);border-radius:6px">
+            <span style="color:var(--mute);display:block">Network Status</span>
+            <b style="color:${stat.is_online ? 'var(--brand)' : 'var(--bad)'}">${stat.is_online ? '● Online (Connected)' : '○ Offline (Monitoring)'}</b>
+          </div>
+          <div style="padding:8px;background:var(--soft);border-radius:6px">
+            <span style="color:var(--mute);display:block">Sync Cycle</span>
+            <b>Every 10 Minutes</b>
+          </div>
+          <div style="padding:8px;background:var(--soft);border-radius:6px">
+            <span style="color:var(--mute);display:block">Last Sync Time</span>
+            <b>${stat.last_sync_time || 'None'}</b>
+          </div>
+          <div style="padding:8px;background:var(--soft);border-radius:6px">
+            <span style="color:var(--mute);display:block">Next Scheduled</span>
+            <b>${stat.next_scheduled_sync || 'Calculating...'}</b>
+          </div>
+        </div>
+        <div style="margin-bottom:10px;font-size:11.5px;color:var(--mute)">
+          Summary: <b>${stat.last_sync_summary || 'Waiting for initial sync...'}</b>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:12px;font-weight:700">Recent Sync Log Events (logs/zoho_sync.log):</span>
+          <button class="btn" style="padding:2px 8px;font-size:11px" onclick="openSyncLogModal()"><i class="fa-solid fa-arrows-rotate"></i> Refresh Log</button>
+        </div>
+        <pre style="background:var(--bg);color:var(--ink);padding:10px;border-radius:6px;max-height:220px;overflow:auto;font-size:11px;line-height:1.4;border:1px solid var(--line);white-space:pre-wrap">${logs || 'No log entries found.'}</pre>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn" style="flex:1" onclick="closeModal()">Close</button>
+          <button class="btn p" style="flex:1" onclick="closeModal();triggerPullSync();"><i class="fa-solid fa-cloud-arrow-down"></i> Trigger Pull Now</button>
+        </div>
+      </div></div>
+    `;
+  } catch(e) {
+    alert('Failed to load sync status: ' + e.message);
+  }
+}
+
+function goView(v) {
+  state.view = v;
+  renderNav();
+  renderMain();
+}
+
+// Main Workspace
+function renderMain() {
+  if (state.view === 'sell') {
+    $('#main').innerHTML = `
+      <div class="sell" style="flex:1">
+        <section class="left">
+          <div class="tools">
+            <div class="search-wrap">
+              <i class="fa-solid fa-magnifying-glass search-ico"></i>
+              <input class="search" id="q" placeholder="Search 440+ products by name, SKU or barcode... (Press F2)" value="${state.q}" oninput="handleSearch(this.value)" onkeydown="handleSearchKey(event)" autocomplete="off">
+              <span class="search-kbd"><kbd>F2</kbd></span>
+            </div>
+            <select class="cat-select" onchange="setCategory(this.value)" title="Filter by Category" aria-label="Category">
+              <option value="All" ${(state.cat||'All')==='All'?'selected':''}>All Categories</option>
+              <option value="BEVERAGES" ${(state.cat||'').toUpperCase()==='BEVERAGES'?'selected':''}>Beverages & Drinks</option>
+              <option value="FOODS" ${(state.cat||'').toUpperCase()==='FOODS'?'selected':''}>Foods & Seasoning</option>
+              <option value="TOILETRIES" ${(state.cat||'').toUpperCase()==='TOILETRIES'?'selected':''}>Toiletries</option>
+              <option value="BODY CARE" ${(state.cat||'').toUpperCase()==='BODY CARE'?'selected':''}>Body Care</option>
+              <option value="HOUSEHOLD" ${(state.cat||'').toUpperCase()==='HOUSEHOLD'?'selected':''}>Household</option>
+              <option value="GENERAL" ${(state.cat||'').toUpperCase()==='GENERAL'?'selected':''}>General</option>
+            </select>
+            <div class="seg">
+              <button class="${state.vw==='list'?'on':''}" onclick="setViewMode('list')" title="List View"><i class="fa-solid fa-list"></i> List</button>
+              <button class="${state.vw==='grid'?'on':''}" onclick="setViewMode('grid')" title="Grid View"><i class="fa-solid fa-table-cells-large"></i> Grid</button>
+            </div>
+          </div>
+          <div class="grid ${state.vw}" id="grid">${renderCatalogHTML()}</div>
+        </section>
+        <aside class="cart" id="cart">${renderCartHTML()}</aside>
+      </div>
+    `;
+  } else {
+    renderOrdersView();
+  }
+}
+
+function setCategory(c) {
+  state.cat = c;
+  $('#grid').innerHTML = renderCatalogHTML();
+}
+
+function setViewMode(m) {
+  state.vw = m;
+  renderMain();
+}
+
+function handleSearch(val) {
+  state.q = val;
+  $('#grid').innerHTML = renderCatalogHTML();
+}
+
+function handleSearchKey(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const q = state.q.toLowerCase().trim();
+    if (!q) return;
+    const filtered = state.items.filter(it => {
+      const matchUpc = it.upc && (it.upc.trim() === q || it.upc.includes(q));
+      const matchSku = it.sku && it.sku.toLowerCase() === q;
+      const matchName = it.name.toLowerCase().includes(q);
+      const matchId = it.id && String(it.id) === q;
+      return matchUpc || matchSku || matchName || matchId;
+    });
+    if (filtered.length > 0) {
+      const exact = filtered.find(it => it.upc && it.upc.trim() === q) ||
+                    filtered.find(it => it.sku && it.sku.toLowerCase() === q) ||
+                    filtered.find(it => it.name.toLowerCase() === q) ||
+                    filtered[0];
+      const added = addToCart(exact.id);
+      state.q = '';
+      const input = $('#q');
+      if (input) input.value = '';
+      $('#grid').innerHTML = renderCatalogHTML();
+      if (added) {
+        toast(`Scanned & Added: ${exact.name}`);
+      }
+    } else {
+      toast(`No product found matching "${q}"`);
+    }
+  }
+}
+
+function getUnitRatio(u) {
+  if (!u) return 1;
+  if (u.is_base) return 1;
+  if (u.units_per_bulk) return u.units_per_bulk;
+  if (u.conversion_ratio > 1) return u.conversion_ratio;
+  if (u.conversion_ratio > 0 && u.conversion_ratio < 1) return Math.round(1 / u.conversion_ratio);
+  return 1;
+}
+
+// Inventory Count calculation across packaging units
+function getStockInfo(it, unitIdx) {
+  const units = getItemUnits(it);
+  const curIdx = unitIdx != null ? unitIdx : (itemPickUnit[it.id] || 0);
+  const selectedUnit = units[curIdx] || units[0];
+
+  const bulkUnit = units.find(u => !u.is_base) || units[units.length - 1];
+  const baseUnit = units.find(u => u.is_base) || units[0];
+  const ratio = getUnitRatio(bulkUnit);
+
+  // Raw recorded stock in bulk units
+  const rawBulk = parseFloat(it.stock) || 0;
+  
+  // Local quantity in cart
+  const cartItem = state.cart[it.id];
+  const cartRatio = cartItem ? getUnitRatio(units[cartItem.unitIndex]) : 1;
+  const inCartBase = cartItem ? (cartItem.qty * cartRatio) : 0;
+  
+  // Total available in base units (packs / pieces)
+  const totalBase = Math.max(0, Math.round(rawBulk * ratio) - inCartBase);
+
+  if (totalBase <= 0) {
+    return {
+      totalBase: 0,
+      isOut: true,
+      isLow: false,
+      text: 'Out of stock'
+    };
+  }
+
+  if (selectedUnit.is_base || ratio === 1) {
+    const sym = (selectedUnit.unit_symbol || selectedUnit.name || 'pcs').toLowerCase();
+    return {
+      totalBase: totalBase,
+      isOut: false,
+      isLow: totalBase <= (ratio > 1 ? ratio : 5),
+      text: `${totalBase.toLocaleString()} ${sym}`
+    };
+  } else {
+    const whole = Math.floor(totalBase / ratio);
+    const rem = totalBase % ratio;
+    const bulkSym = (selectedUnit.unit_symbol || selectedUnit.name || 'ctn').toLowerCase();
+    const baseSym = (baseUnit.unit_symbol || baseUnit.name || 'pcs').toLowerCase();
+
+    let text = `${whole} ${bulkSym}`;
+    if (rem > 0) {
+      text += ` + ${rem} ${baseSym}`;
+    }
+
+    return {
+      totalBase: totalBase,
+      isOut: false,
+      isLow: whole < 2,
+      text: text
+    };
+  }
+}
+
+function renderCatalogHTML() {
+  const q = state.q.toLowerCase().trim();
+  const cat = (state.cat || 'All').toUpperCase();
+  const filtered = state.items.filter(it => {
+    const matchesQ = !q ||
+      it.name.toLowerCase().includes(q) ||
+      (it.upc && it.upc.includes(q)) ||
+      (it.sku && it.sku.toLowerCase().includes(q)) ||
+      (it.id && String(it.id).includes(q));
+    const itemCat = (it.category || 'General').toUpperCase();
+    const matchesCat = cat === 'ALL' || itemCat === cat || (cat === 'FOODS' && (itemCat === 'FOODS' || itemCat === 'SEASONING' || itemCat === 'TOMATO PASTE')) || (cat === 'BEVERAGES' && (itemCat === 'BEVERAGES' || itemCat === 'DRINK'));
+    return matchesQ && matchesCat;
+  });
+
+  if (!filtered.length) {
+    return `<div class="empty" style="grid-column:1/-1">No items match your search.</div>`;
+  }
+
+  if (state.vw === 'list') {
+    return `
+      <table class="pt">
+        <colgroup>
+          <col style="width:auto">
+          <col style="width:85px">
+          <col style="width:78px">
+          <col style="width:88px">
+          <col style="width:90px">
+          <col style="width:68px">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Product Name</th>
+            <th>Unit</th>
+            <th style="text-align:right">Stock</th>
+            <th style="text-align:right">Unit Price</th>
+            <th style="text-align:right">Pack Price</th>
+            <th class="col-act" style="text-align:right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filtered.map(it => {
+            const units = getItemUnits(it);
+            const curIdx = itemPickUnit[it.id] != null ? itemPickUnit[it.id] : 0;
+            const activeUnit = units[curIdx] || units[0];
+            const stockInfo = getStockInfo(it, curIdx);
+
+            const baseUnit = units.find(u => u.is_base) || units[0];
+            const bulkUnit = units.find(u => !u.is_base);
+            const singlePrice = baseUnit ? baseUnit.price : (it.retail_price || 0);
+            const bulkPrice = bulkUnit ? bulkUnit.price : (it.carton_price || null);
+
+            return `
+              <tr class="pr ${stockInfo.isOut ? 'out' : ''}" onclick="${stockInfo.isOut ? '' : `addToCart('${it.id}')`}">
+                <td class="td-name">
+                  <div style="display:flex;align-items:center">
+                    <span class="av" style="--h:${getHue(it.category)}">${it.name[0]}</span>
+                    <div style="min-width:0;flex:1">
+                      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                        <b style="font-size:12.5px;color:var(--ink)">${it.name}</b>
+                        <span class="cat-tag" style="--h:${getHue(it.category)}">${it.category || 'General'}</span>
+                      </div>
+                      ${it.upc ? `<div style="color:var(--mute);font-size:10px;margin-top:1px"><i class="fa-solid fa-barcode"></i> ${it.upc}</div>` : ''}
+                    </div>
+                  </div>
+                </td>
+                <td onclick="event.stopPropagation()">
+                  <select class="us" onchange="setItemUnit('${it.id}', this.value)" ${stockInfo.isOut ? 'disabled' : ''}>
+                    ${units.map((u, idx) => `<option value="${idx}" ${idx===curIdx?'selected':''}>${(u.unit_symbol || u.name).toUpperCase()}</option>`).join('')}
+                  </select>
+                </td>
+                <td style="text-align:right">
+                  <span class="stock-pill ${stockInfo.isOut ? 'out' : (stockInfo.isLow ? 'low' : 'in')}">
+                    ${stockInfo.text}
+                  </span>
+                </td>
+                <td style="text-align:right;font-weight:700;font-size:12px">${NGN(singlePrice)}</td>
+                <td style="text-align:right;font-weight:800;font-size:12px;color:var(--brand)">${bulkPrice ? NGN(bulkPrice) : '<span style="color:var(--mute)">–</span>'}</td>
+                <td class="col-act" style="text-align:right">
+                  ${stockInfo.isOut
+                    ? `<button class="btn" style="padding:4px 6px;font-size:10.5px;opacity:0.5;cursor:not-allowed" disabled>Out</button>`
+                    : `<button class="btn p" style="padding:4px 10px;font-size:11.5px;font-weight:700" onclick="event.stopPropagation(); addToCart('${it.id}')">+ Add</button>`
+                  }
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  return filtered.map(it => {
+    const units = getItemUnits(it);
+    const curIdx = itemPickUnit[it.id] != null ? itemPickUnit[it.id] : 0;
+    const activeUnit = units[curIdx] || units[0];
+    const stockInfo = getStockInfo(it, curIdx);
+
+    const baseUnit = units.find(u => u.is_base) || units[0];
+    const bulkUnit = units.find(u => !u.is_base);
+    const singlePrice = baseUnit ? baseUnit.price : (it.retail_price || 0);
+    const bulkPrice = bulkUnit ? bulkUnit.price : (it.carton_price || null);
+
+    return `
+      <div class="tile ${stockInfo.isOut ? 'out' : ''}" onclick="${stockInfo.isOut ? '' : `addToCart('${it.id}')`}">
+        <div class="art" style="--h:${getHue(it.category)}">${it.name.slice(0, 2).toUpperCase()}</div>
+        <b>${it.name}</b>
+        <div class="m">
+          <div style="display:flex;gap:6px;align-items:baseline;overflow:hidden">
+            <span style="font-size:13px;font-weight:800;color:var(--ink)" title="Single Unit Price">${NGN(singlePrice)}</span>
+            ${bulkPrice ? `<span style="font-size:11px;font-weight:700;color:var(--brand);white-space:nowrap" title="Pack / Carton Price">Pack: ${NGN(bulkPrice)}</span>` : ''}
+          </div>
+          <span class="stock-pill ${stockInfo.isOut ? 'out' : (stockInfo.isLow ? 'low' : 'in')}">${stockInfo.text}</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;margin-top:auto" onclick="event.stopPropagation()">
+          <select class="us" style="flex:1" onchange="setItemUnit('${it.id}', this.value)" ${stockInfo.isOut ? 'disabled' : ''}>
+            ${units.map((u, idx) => `<option value="${idx}" ${idx===curIdx?'selected':''}>${(u.unit_symbol || u.name).toUpperCase()}</option>`).join('')}
+          </select>
+          <button class="btn p" style="padding:4px 8px;font-size:11px;font-weight:700;white-space:nowrap" onclick="addToCart('${it.id}')" ${stockInfo.isOut ? 'disabled' : ''}>
+            + Add
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Unit picker per catalog card
+const itemPickUnit = {};
+function setItemUnit(id, unitIdx) {
+  itemPickUnit[id] = parseInt(unitIdx, 10);
+  $('#grid').innerHTML = renderCatalogHTML();
+}
+
+// Cart actions with strict out-of-stock guard
+function addToCart(id) {
+  const it = getItem(id);
+  if (!it) return false;
+
+  const units = getItemUnits(it);
+  const uIdx = state.cart[id] ? state.cart[id].unitIndex : (itemPickUnit[id] || 0);
+  const selectedUnit = units[uIdx] || units[0];
+  const unitRatio = getUnitRatio(selectedUnit);
+
+  const bulkUnit = units.find(u => !u.is_base) || units[units.length - 1];
+  const bulkRatio = getUnitRatio(bulkUnit);
+  const rawBulk = parseFloat(it.stock) || 0;
+  const maxAvailableBase = Math.round(rawBulk * bulkRatio);
+
+  if (maxAvailableBase <= 0) {
+    playSound('error');
+    toast(`⛔ Cannot add "${it.name}": Product is OUT OF STOCK.`);
+    return false;
+  }
+
+  const curQty = state.cart[id] ? state.cart[id].qty : 0;
+  const newQty = curQty + 1;
+  const neededBase = newQty * unitRatio;
+
+  if (neededBase > maxAvailableBase) {
+    playSound('error');
+    const unitName = (selectedUnit.name || selectedUnit.unit_symbol || 'units').toUpperCase();
+    const maxUnitsInSelected = Math.floor(maxAvailableBase / unitRatio);
+    if (maxUnitsInSelected <= 0) {
+      toast(`⚠️ Stock limit for "${it.name}": Only ${maxAvailableBase} base units left (cannot form 1 full ${unitName}).`);
+    } else {
+      toast(`⚠️ Stock limit reached for "${it.name}": Only ${maxUnitsInSelected} ${unitName} available.`);
+    }
+    return false;
+  }
+
+  if (!state.cart[id]) {
+    state.cart[id] = { qty: 1, unitIndex: uIdx, customPrice: null };
+  } else {
+    state.cart[id].qty = newQty;
+  }
+  playSound('beep');
+  $('#cart').innerHTML = renderCartHTML();
+  $('#grid').innerHTML = renderCatalogHTML();
+  return true;
+}
+
+function decCart(id) {
+  if (state.cart[id]) {
+    playSound('beep');
+    state.cart[id].qty--;
+    if (state.cart[id].qty <= 0) delete state.cart[id];
+  }
+  $('#cart').innerHTML = renderCartHTML();
+  $('#grid').innerHTML = renderCatalogHTML();
+}
+
+function setCartUnit(id, unitIdx) {
+  if (state.cart[id]) {
+    const it = getItem(id);
+    if (it) {
+      const units = getItemUnits(it);
+      const targetUnit = units[unitIdx] || units[0];
+      const targetRatio = getUnitRatio(targetUnit);
+      const bulkUnit = units.find(u => !u.is_base) || units[units.length - 1];
+      const bulkRatio = getUnitRatio(bulkUnit);
+      const rawBulk = parseFloat(it.stock) || 0;
+      const maxAvailableBase = Math.round(rawBulk * bulkRatio);
+
+      const neededBase = state.cart[id].qty * targetRatio;
+      if (neededBase > maxAvailableBase) {
+        toast(`⚠️ Insufficient stock to switch "${it.name}" to ${(targetUnit.name || '').toUpperCase()} (Needs ${neededBase} base units, only ${maxAvailableBase} available).`);
+        $('#cart').innerHTML = renderCartHTML();
+        return;
+      }
+    }
+    state.cart[id].unitIndex = parseInt(unitIdx, 10);
+    state.cart[id].customPrice = null; // reset custom price to list price
+    itemPickUnit[id] = parseInt(unitIdx, 10);
+  }
+  $('#cart').innerHTML = renderCartHTML();
+  $('#grid').innerHTML = renderCatalogHTML();
+}
+
+function setCartPrice(id, val) {
+  const p = parseFloat(val);
+  if (state.cart[id] && !isNaN(p) && p >= 0) {
+    state.cart[id].customPrice = p;
+  }
+  $('#cart').innerHTML = renderCartHTML();
+}
+
+function resetCartPrice(id) {
+  if (state.cart[id]) state.cart[id].customPrice = null;
+  $('#cart').innerHTML = renderCartHTML();
+}
+
+function removeCartItem(id) {
+  if (state.cart[id]) {
+    delete state.cart[id];
+  }
+  $('#cart').innerHTML = renderCartHTML();
+  $('#grid').innerHTML = renderCatalogHTML();
+}
+
+function editCartItemPrice(id) {
+  const L = getCartLine(id);
+  if (!L) return;
+  const isCustom = L.price !== L.listPrice;
+  const promptText = isCustom
+    ? `Current custom price: ₦${L.price.toLocaleString()} (List: ₦${L.listPrice.toLocaleString()})\nEnter new price per ${L.unit.name || 'unit'}, or leave empty to reset:`
+    : `List price: ₦${L.listPrice.toLocaleString()}\nEnter custom price per ${L.unit.name || 'unit'}:`;
+  const val = prompt(promptText, L.price);
+  if (val !== null) {
+    const trimmed = val.trim();
+    if (trimmed === '' || (isCustom && parseFloat(trimmed) === L.listPrice)) {
+      resetCartPrice(id);
+    } else {
+      const p = parseFloat(trimmed);
+      if (!isNaN(p) && p >= 0) {
+        setCartPrice(id, Math.round(p));
+      }
+    }
+  }
+}
+
+function clearCart() {
+  if (!Object.keys(state.cart).length) return;
+  state.cart = {};
+  state.disc = 0;
+  state.tender = '';
+  $('#cart').innerHTML = renderCartHTML();
+  $('#grid').innerHTML = renderCatalogHTML();
+}
+
+function setPaymentMode(mode) {
+  state.pay = mode;
+  if (mode === 'Split' && !state.split) {
+    state.split = { cash: 0, moniepoint: 0, transfer: 0 };
+  }
+  $('#cart').innerHTML = renderCartHTML();
+}
+
+function updateSplitAmount(field, val) {
+  if (!state.split) state.split = { cash: 0, moniepoint: 0, transfer: 0 };
+  const p = parseFloat(val);
+  state.split[field] = isNaN(p) ? 0 : Math.max(0, Math.round(p));
+  $('#cart').innerHTML = renderCartHTML();
+}
+
+function fillSplitRemaining(field) {
+  const t = calcTotals();
+  if (!state.split) state.split = { cash: 0, moniepoint: 0, transfer: 0 };
+  let otherAlloc = 0;
+  for (const k in state.split) {
+    if (k !== field) otherAlloc += (parseFloat(state.split[k]) || 0);
+  }
+  const rem = Math.max(0, Math.round(t.total - otherAlloc));
+  state.split[field] = rem;
+  $('#cart').innerHTML = renderCartHTML();
+}
+
+function renderCartHTML() {
+  const t = calcTotals();
+  const ids = Object.keys(state.cart);
+  const tend = parseFloat(state.tender) || 0;
+  const short = state.pay === 'Cash' && state.tender !== '' && tend < t.total;
+
+  const splitCash = parseFloat(state.split?.cash) || 0;
+  const splitMoniepoint = parseFloat(state.split?.moniepoint) || 0;
+  const splitTransfer = parseFloat(state.split?.transfer) || 0;
+  const splitTotal = splitCash + splitMoniepoint + splitTransfer;
+  const splitDiff = t.total - splitTotal;
+  const splitBalanced = Math.abs(splitDiff) < 1;
+
+  let chargeDisabled = !t.n;
+  let chargeButtonLabel = 'Charge ' + NGN(t.total) + ' (F8)';
+
+  if (state.pay === 'Cash') {
+    if (short) {
+      chargeDisabled = true;
+      chargeButtonLabel = 'Cash received is too low';
+    }
+  } else if (state.pay === 'Split') {
+    if (!splitBalanced) {
+      chargeDisabled = true;
+      chargeButtonLabel = splitDiff > 0 ? `Allocate remaining ₦${splitDiff.toLocaleString()}` : `Over-allocated by ₦${(-splitDiff).toLocaleString()}`;
+    } else {
+      chargeButtonLabel = `Charge ${NGN(t.total)} (Split Tender)`;
+    }
+  }
+
+  const lines = ids.length ? `
+    <div class="cart-col-hdr">
+      <span class="c-item">ITEM</span>
+      <span class="c-unit">UNIT</span>
+      <span class="c-qty">QTY</span>
+      <span class="c-tot">TOTAL</span>
+      <span class="c-act"></span>
+    </div>
+    ${ids.map(id => {
+      const L = getCartLine(id);
+      if (!L) return '';
+      const units = getItemUnits(L.item);
+      const ch = L.price !== L.listPrice;
+      return `
+        <div class="ln">
+          <div class="nm" title="${L.item.name} (${L.unit.name || ''})">${L.item.name}</div>
+          <select class="us-cart" onchange="setCartUnit('${id}', this.value)" aria-label="Unit" ${units.length < 2 ? 'disabled' : ''}>
+            ${units.map((u, idx) => `<option value="${idx}" ${idx===L.unitIndex?'selected':''}>${(u.unit_symbol || u.name).toUpperCase()}</option>`).join('')}
+          </select>
+          <div class="qty">
+            <button onclick="decCart('${id}')" aria-label="Minus">−</button>
+            <span>${L.qty}</span>
+            <button onclick="addToCart('${id}')" aria-label="Plus">+</button>
+          </div>
+          <b class="tot ${ch ? 'ch' : ''}" onclick="editCartItemPrice('${id}')" title="₦${L.price.toLocaleString()} each (Click to edit rate)">${NGN(L.total)}</b>
+          <button class="del-btn" onclick="removeCartItem('${id}')" title="Remove item">×</button>
+        </div>
+      `;
+    }).join('')}
+  ` : `<div class="empty">The cart is empty.<br>Click any item from the catalog or press F2 to scan.</div>`;
+
+  return `
+    <div class="cart-header">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2 style="margin:0;font-size:15px;font-weight:800;letter-spacing:-0.01em">Current Sale</h2>
+        <div style="display:flex;gap:5px;align-items:center">
+          <button class="btn" style="padding:3px 8px;font-size:11px" onclick="holdCurrentCart()" title="Park current cart on hold (F5)" ${!ids.length ? 'disabled' : ''}>
+            <i class="fa-solid fa-pause"></i> Hold (F5)
+          </button>
+          <button class="btn ${state.heldCarts.length ? 'p' : ''}" style="padding:3px 8px;font-size:11px" onclick="openRecallModal()" title="Recall parked carts">
+            <i class="fa-solid fa-clock-rotate-left"></i> Recall ${state.heldCarts.length ? `(${state.heldCarts.length})` : ''}
+          </button>
+          <button class="btn" style="padding:3px 8px;font-size:11px" onclick="clearCart()" ${!ids.length ? 'disabled' : ''}>Clear</button>
+        </div>
+      </div>
+      <div class="cust-bar">
+        <div>
+          <span style="color:var(--mute);font-size:10.5px;font-weight:700;display:block;text-transform:uppercase;letter-spacing:0.04em">CUSTOMER</span>
+          <b style="font-size:13px">${state.customer.name}</b>
+          ${state.customer.outstanding > 0 ? `
+            <div>
+              <span class="debt-alert">
+                <i class="fa-solid fa-triangle-exclamation"></i> Debt Balance: ₦${Number(state.customer.outstanding).toLocaleString()}
+              </span>
+            </div>
+          ` : ''}
+        </div>
+        <button class="btn" style="padding:4px 10px;font-size:11.5px" onclick="openCustomerModal()"><i class="fa-solid fa-user-pen"></i> Change (F4)</button>
+      </div>
+    </div>
+
+    <div class="lines">${lines}</div>
+
+    <div class="sum">
+      <div class="row"><span>Subtotal (${t.n} items)</span><span>${NGN(t.sub)}</span></div>
+      <div class="row">
+        <span>Discount %</span>
+        <input id="disc" type="number" min="0" max="100" value="${state.disc}" oninput="state.disc=Math.min(100,Math.max(0,+this.value||0));$('#cart').innerHTML=renderCartHTML();">
+      </div>
+      ${state.pay === 'Cash' ? `
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div class="quick-tender-pills">
+            <button type="button" class="qt-btn exact" onclick="setQuickTender('exact', ${Math.round(t.total)})">Exact</button>
+            <button type="button" class="qt-btn" onclick="setQuickTender('add', 500)">+500</button>
+            <button type="button" class="qt-btn" onclick="setQuickTender('add', 1000)">+1k</button>
+            <button type="button" class="qt-btn" onclick="setQuickTender('add', 2000)">+2k</button>
+            <button type="button" class="qt-btn" onclick="setQuickTender('add', 5000)">+5k</button>
+            <button type="button" class="qt-btn" onclick="setQuickTender('add', 10000)">+10k</button>
+            <button type="button" class="qt-btn" onclick="setQuickTender('clear', 0)" title="Clear tender">✕</button>
+          </div>
+          <div class="row">
+            <span>Cash Received</span>
+            <input id="tender" style="width:115px;font-weight:700;font-size:13px" type="number" min="0" placeholder="${Math.round(t.total)}" value="${state.tender}" oninput="state.tender=this.value;$('#cart').innerHTML=renderCartHTML();">
+          </div>
+        </div>
+        ${state.tender !== '' && !short ? `
+          <div class="row" style="padding:2px 0"><span>Change Due</span><b style="color:var(--brand);font-size:15px">${NGN(tend - t.total)}</b></div>
+        ` : ''}
+      ` : ''}
+      <div class="row t"><span>Total</span><span>${NGN(t.total)}</span></div>
+    </div>
+
+    <div class="pay">
+      <button class="${state.pay==='Cash'?'on':''}" onclick="setPaymentMode('Cash')"><i class="fa-solid fa-money-bill-1"></i> Cash</button>
+      <button class="${state.pay==='Moniepoint POS'?'on':''}" onclick="setPaymentMode('Moniepoint POS')"><i class="fa-solid fa-credit-card"></i> Moniepoint</button>
+      <button class="${state.pay==='First Bank Transfer'?'on':''}" onclick="setPaymentMode('First Bank Transfer')"><i class="fa-solid fa-building-columns"></i> First Bank</button>
+      <button class="${state.pay==='Split'?'on':''}" onclick="setPaymentMode('Split')"><i class="fa-solid fa-layer-group"></i> Split Pay</button>
+    </div>
+
+    ${state.pay === 'Split' ? `
+      <div class="split-box">
+        <div class="split-hdr">
+          <span>Split Payment Distribution</span>
+          <span class="split-status ${splitBalanced ? 'ok' : (splitDiff > 0 ? 'warn' : 'err')}">
+            ${splitBalanced ? '✓ Balanced' : (splitDiff > 0 ? `₦${splitDiff.toLocaleString()} remaining` : `₦${(-splitDiff).toLocaleString()} excess`)}
+          </span>
+        </div>
+        <div class="split-row">
+          <label><i class="fa-solid fa-money-bill-1" style="color:var(--brand)"></i> Cash</label>
+          <div class="split-wrap">
+            <span>₦</span>
+            <input type="number" min="0" value="${state.split?.cash || ''}" placeholder="0" oninput="updateSplitAmount('cash', this.value)">
+            <button type="button" class="split-fill" onclick="fillSplitRemaining('cash')">Fill</button>
+          </div>
+        </div>
+        <div class="split-row">
+          <label><i class="fa-solid fa-credit-card" style="color:#2B6CB0"></i> Moniepoint</label>
+          <div class="split-wrap">
+            <span>₦</span>
+            <input type="number" min="0" value="${state.split?.moniepoint || ''}" placeholder="0" oninput="updateSplitAmount('moniepoint', this.value)">
+            <button type="button" class="split-fill" onclick="fillSplitRemaining('moniepoint')">Fill</button>
+          </div>
+        </div>
+        <div class="split-row">
+          <label><i class="fa-solid fa-building-columns" style="color:#B8741A"></i> First Bank</label>
+          <div class="split-wrap">
+            <span>₦</span>
+            <input type="number" min="0" value="${state.split?.transfer || ''}" placeholder="0" oninput="updateSplitAmount('transfer', this.value)">
+            <button type="button" class="split-fill" onclick="fillSplitRemaining('transfer')">Fill</button>
+          </div>
+        </div>
+      </div>
+    ` : ''}
+
+    <button class="charge" onclick="chargeSale()" ${chargeDisabled ? 'disabled' : ''}>
+      ${chargeButtonLabel}
+    </button>
+  `;
+}
+
+// Complete sale & save to offline outbox
+async function chargeSale() {
+  const t = calcTotals();
+  if (!t.n) {
+    toast('Add items to the cart first.');
+    return;
+  }
+
+  // Strict stock validation: block checkout if any item is out of stock or exceeds stock
+  for (const id of Object.keys(state.cart)) {
+    const it = getItem(id);
+    if (!it) continue;
+    const units = getItemUnits(it);
+    const cartEntry = state.cart[id];
+    const unit = units[cartEntry.unitIndex] || units[0];
+    const unitRatio = getUnitRatio(unit);
+    const bulkUnit = units.find(u => !u.is_base) || units[units.length - 1];
+    const bulkRatio = getUnitRatio(bulkUnit);
+    const rawBulk = parseFloat(it.stock) || 0;
+    const maxAvailableBase = Math.round(rawBulk * bulkRatio);
+    const requestedBase = cartEntry.qty * unitRatio;
+
+    if (maxAvailableBase <= 0) {
+      toast(`⛔ Checkout blocked: "${it.name}" is OUT OF STOCK. Remove it to proceed.`);
+      alert(`Cannot checkout: "${it.name}" is OUT OF STOCK. Please remove it from the cart.`);
+      return;
+    }
+    if (requestedBase > maxAvailableBase) {
+      const unitName = (unit.name || unit.unit_symbol || 'units').toUpperCase();
+      const maxUnitsInSelected = Math.floor(maxAvailableBase / unitRatio);
+      toast(`⛔ Checkout blocked: Insufficient stock for "${it.name}". Only ${maxUnitsInSelected} ${unitName} available.`);
+      alert(`Insufficient stock for "${it.name}".\nRequested: ${cartEntry.qty} ${unitName}\nAvailable: ${maxUnitsInSelected} ${unitName}`);
+      return;
+    }
+  }
+
+  let paymentModeDisplay = state.pay;
+  let paymentArray = [];
+
+  if (state.pay === 'Split') {
+    const sc = parseFloat(state.split?.cash) || 0;
+    const sm = parseFloat(state.split?.moniepoint) || 0;
+    const st = parseFloat(state.split?.transfer) || 0;
+    const totalAlloc = sc + sm + st;
+    if (Math.abs(totalAlloc - t.total) >= 1) {
+      toast(`Split amounts (₦${totalAlloc.toLocaleString()}) must match total (₦${t.total.toLocaleString()})`);
+      return;
+    }
+    if (sc > 0) paymentArray.push({ mode: 'Cash', amount: sc });
+    if (sm > 0) paymentArray.push({ mode: 'Moniepoint POS', amount: sm });
+    if (st > 0) paymentArray.push({ mode: 'First Bank Transfer', amount: st });
+
+    paymentModeDisplay = `Split (${paymentArray.map(p => `${p.mode.replace(' POS', '').replace(' Bank Transfer', '')}: ₦${p.amount.toLocaleString()}`).join(', ')})`;
+  } else {
+    paymentArray.push({ mode: state.pay, amount: t.total });
+  }
+
+  const lineItems = Object.keys(state.cart).map(id => {
+    const L = getCartLine(id);
+    return {
+      item_id: L.item.id,
+      name: L.item.name,
+      unit: L.unit.unit_symbol || L.unit.name,
+      unit_display: (L.unit.name || '').toUpperCase(),
+      unit_conversion_id: L.unit.unit_conversion_id || '',
+      quantity: L.qty,
+      rate: L.price,
+      total: L.total
+    };
+  });
+
+  const tenderVal = parseFloat(state.tender) || 0;
+  if (!state.user) {
+    state.isLocked = true;
+    renderLockScreen();
+    toast('🔒 Login required: Please enter your cashier PIN.');
+    return;
+  }
+
+  const amountPaid = tenderVal >= t.total ? tenderVal : t.total;
+  const changeDue = Math.max(0, amountPaid - t.total);
+
+  const salePayload = {
+    terminal_id: state.terminalId,
+    user_id: state.user.id,
+    user_name: state.user.name,
+    customer_id: state.customer.id,
+    customer_name: state.customer.name,
+    salesperson: state.user.name,
+    date: new Date().toISOString().split('T')[0],
+    payment_mode: paymentModeDisplay,
+    payments: paymentArray,
+    amount_paid: amountPaid,
+    change: changeDue,
+    total: t.total,
+    line_items: lineItems
+  };
+
+  try {
+    const r = await fetch('/api/sales', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(salePayload)
+    });
+    const res = await r.json();
+
+    if (res.success) {
+      lineItems.forEach(l => {
+        const it = getItem(l.item_id);
+        if (it) {
+          const u = (it.units || []).find(x => (x.unit_symbol === l.unit || x.name === l.unit)) || it.units?.[0];
+          const ratio = getUnitRatio(u);
+          const bulkUnit = (it.units || []).find(x => !x.is_base) || it.units?.[it.units.length - 1];
+          const bulkRatio = getUnitRatio(bulkUnit);
+          const soldBulk = (l.quantity * ratio) / bulkRatio;
+          it.stock = Math.max(0, (parseFloat(it.stock) || 0) - soldBulk);
+        }
+      });
+      state.cart = {};
+      state.disc = 0;
+      state.tender = '';
+      state.split = { cash: 0, moniepoint: 0, transfer: 0 };
+      await loadQueueStatus();
+      renderMain();
+      playSound('success');
+      showReceiptModal(res.sale);
+      toast(`Receipt ${res.sale.receipt_number} saved to offline outbox.`);
+    } else {
+      alert('Error: ' + res.message);
+    }
+  } catch(e) {
+    alert('Server communication error: ' + e.message);
+  }
+}
+
+// Quick Cash Tender Fast Buttons
+function setQuickTender(type, val) {
+  playSound('beep');
+  if (type === 'exact') {
+    state.tender = String(val);
+  } else if (type === 'clear') {
+    state.tender = '';
+  } else if (type === 'add') {
+    const cur = parseFloat(state.tender) || 0;
+    state.tender = String(cur + val);
+  }
+  $('#cart').innerHTML = renderCartHTML();
+}
+
+// Hold / Park & Recall Cart Engine
+function holdCurrentCart(silent = false) {
+  if (!Object.keys(state.cart).length) return;
+  const totals = calcTotals();
+  const held = {
+    id: 'HOLD-' + Date.now().toString(36).toUpperCase(),
+    time: new Date().toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' }),
+    customer: { ...state.customer },
+    cart: JSON.parse(JSON.stringify(state.cart)),
+    disc: state.disc,
+    total: totals.total,
+    itemCount: totals.n
+  };
+  state.heldCarts.unshift(held);
+  saveHeldCarts();
+  state.cart = {};
+  state.disc = 0;
+  state.tender = '';
+  state.customer = { id: '1560234000000102202', name: 'Walk in Customer' };
+  renderMain();
+  if (!silent) {
+    toast(`🛒 Cart parked on hold (${held.itemCount} items). Next customer ready!`);
+    playSound('beep');
+  }
+}
+
+function handleHoldRecallKey() {
+  if (Object.keys(state.cart).length > 0) {
+    holdCurrentCart();
+  } else if (state.heldCarts.length > 0) {
+    openRecallModal();
+  } else {
+    toast('Cart is empty. Nothing to park.');
+  }
+}
+
+function openRecallModal() {
+  if (!state.heldCarts.length) {
+    toast('No parked carts found.');
+    return;
+  }
+
+  $('#ov').innerHTML = `
+    <div class="ov"><div class="modal" style="width:480px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="margin:0"><i class="fa-solid fa-clock-rotate-left" style="color:var(--brand)"></i> Parked / Held Carts (${state.heldCarts.length})</h3>
+        <button class="btn" onclick="closeModal()">✕</button>
+      </div>
+      <p style="font-size:12px;color:var(--mute);margin:0 0 14px">Select a held cart to resume ringing up that customer:</p>
+
+      <div style="display:grid;gap:8px;max-height:360px;overflow-y:auto;margin-bottom:14px">
+        ${state.heldCarts.map((h, idx) => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--bg);border:1px solid var(--line);border-radius:10px">
+            <div>
+              <div style="font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px">
+                <i class="fa-solid fa-user" style="color:var(--brand);font-size:11px"></i> ${h.customer.name}
+              </div>
+              <div style="font-size:11.5px;color:var(--mute);margin-top:2px">
+                Parked at <b>${h.time}</b> &bull; ${h.itemCount} items &bull; <b style="color:var(--ink)">${NGN(h.total)}</b>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px">
+              <button class="btn p" style="padding:5px 12px;font-size:11.5px" onclick="resumeHeldCart(${idx})">Resume</button>
+              <button class="btn" style="padding:5px 8px;font-size:11.5px;color:var(--bad)" onclick="deleteHeldCart(${idx})" title="Discard this parked cart">✕</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:10px">
+        <button class="btn" style="color:var(--bad)" onclick="clearAllHeldCarts()">Discard All</button>
+        <button class="btn" onclick="closeModal()">Close</button>
+      </div>
+    </div></div>
+  `;
+}
+
+function resumeHeldCart(idx) {
+  const held = state.heldCarts[idx];
+  if (!held) return;
+
+  const currentHasItems = Object.keys(state.cart).length > 0;
+  if (currentHasItems) {
+    if (!confirm('The current cart has items. Park the current cart first before resuming this one?')) {
+      return;
+    }
+    holdCurrentCart(true); // silent park
+  }
+
+  state.cart = JSON.parse(JSON.stringify(held.cart));
+  state.customer = { ...held.customer };
+  state.disc = held.disc || 0;
+  state.tender = '';
+  state.heldCarts.splice(idx, 1);
+  saveHeldCarts();
+  closeModal();
+  renderMain();
+  toast(`🛒 Resumed cart for ${state.customer.name}!`);
+  playSound('beep');
+}
+
+function deleteHeldCart(idx) {
+  if (confirm('Discard this held cart?')) {
+    state.heldCarts.splice(idx, 1);
+    saveHeldCarts();
+    if (state.heldCarts.length) openRecallModal();
+    else closeModal();
+    renderMain();
+  }
+}
+
+function clearAllHeldCarts() {
+  if (confirm('Discard all parked carts?')) {
+    state.heldCarts = [];
+    saveHeldCarts();
+    closeModal();
+    renderMain();
+    toast('All held carts cleared.');
+  }
+}
+
+// Orders View
+function renderOrdersView() {
+  const p = state.pendingCount;
+  const tot = state.sales.reduce((a, s) => a + (s.total || 0), 0);
+  const sy = state.sales.filter(s => s.status === 'SYNCED').length;
+
+  $('#main').innerHTML = `
+    <div class="page">
+      <h1>Sales & Cloud Outbox</h1>
+      <div class="stats">
+        <div class="stat"><small>Waiting to Sync</small><div style="color:var(--warn)">${p}</div></div>
+        <div class="stat"><small>Synced to Zoho</small><div style="color:var(--brand)">${sy}</div></div>
+        <div class="stat"><small>Total Queue Sales</small><div>${NGN(tot)}</div></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center">
+        <button class="btn p" onclick="triggerSync()" ${state.syncing?'disabled':''}>
+          ${state.syncing ? '<span class="spin"></span>Pushing Sales to Zoho…' : '<i class="fa-solid fa-cloud-arrow-up"></i> Push Sales to Zoho'}
+        </button>
+        <button class="btn" onclick="triggerPullSync()" ${state.pulling?'disabled':''}>
+          ${state.pulling ? '<span class="spin"></span>Pulling from Zoho…' : '<i class="fa-solid fa-cloud-arrow-down" style="color:var(--brand)"></i> Pull Customers & Inventory from Zoho'}
+        </button>
+        <div style="flex:1"></div>
+        <small style="color:var(--mute)">Two-way sync keeps offline terminal fully in lockstep with Zoho Cloud</small>
+      </div>
+      <div class="tw">
+        <table>
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Cashier</th>
+              <th>Terminal</th>
+              <th>Date</th>
+              <th>Customer</th>
+              <th>Payment</th>
+              <th>Total</th>
+              <th>Zoho Status</th>
+              <th>Zoho Invoice</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${state.sales.length ? state.sales.map(s => `
+              <tr>
+                <td><b>${s.order_id || s.receipt_number}</b></td>
+                <td><span style="font-weight:600">${s.salesperson || 'Cashier 1'}</span></td>
+                <td><kbd class="kk">${s.terminal_id || 'TERM-01'}</kbd></td>
+                <td>${s.date}</td>
+                <td>${s.customer_name || 'Walk in'}</td>
+                <td>${s.payment_mode}</td>
+                <td><b>${NGN(s.total)}</b></td>
+                <td><span class="st ${s.status==='SYNCED'?'ok':''}">${s.status==='SYNCED'?'Synced':'Pending Sync'}</span></td>
+                <td>${s.zoho_invoice_number || '–'}</td>
+                <td><button class="rs" onclick="previewPrintReceipt('${s.id}')">Print Receipt</button></td>
+              </tr>
+            `).join('') : `
+              <tr><td colspan="9" style="text-align:center;color:var(--mute);padding:30px">No sales recorded yet.</td></tr>
+            `}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// Sync to Zoho (Push Pending Sales)
+async function triggerSync() {
+  if (state.syncing) return;
+  state.syncing = true;
+  renderTop();
+  renderMain();
+
+  try {
+    const r = await fetch('/api/sync', { method: 'POST' });
+    const res = await r.json();
+    alert(res.message);
+    await loadQueueStatus();
+  } catch(e) {
+    alert('Sync error: ' + e.message);
+  } finally {
+    state.syncing = false;
+    renderTop();
+    renderMain();
+  }
+}
+
+// Pull from Zoho (Customers & Live Inventory)
+async function triggerPullSync() {
+  if (state.pulling) return;
+  state.pulling = true;
+  renderTop();
+  renderMain();
+
+  try {
+    const r = await fetch('/api/sync/pull', { method: 'POST' });
+    const res = await r.json();
+    if (res.success) {
+      await loadCatalog();
+      await loadCustomers();
+      renderMain();
+      alert('✅ ' + (res.message || 'Synced customers & inventory successfully!'));
+    } else {
+      alert('⚠️ ' + (res.message || 'Failed to pull from Zoho'));
+    }
+  } catch(e) {
+    alert('Pull Sync error: ' + e.message);
+  } finally {
+    state.pulling = false;
+    renderTop();
+    renderMain();
+  }
+}
+
+// Thermal Receipt Modal & Printing
+function tickHTML(s, p) {
+  const dt = s.created_at ? new Date(s.created_at).toLocaleString('en-NG', { dateStyle: 'short', timeStyle: 'short' }) : (s.date || '');
+  const comp = p.companyName || 'QUALITY SUPERSTORES';
+  const addr = p.address || '16, Ogo Oluwa St, Ketere Market, Sango, Ogun State';
+  const phones = p.phones || '0803 456 7890, 0812 345 6789';
+  const branch = p.branch || 'KETERE BRANCH';
+  const cashier = s.salesperson || p.salesperson || getTerminalLabel(s.terminal_id) || 'Cashier 1';
+  const cust = s.customer_name || 'Walk in';
+
+  const paid = s.amount_paid !== undefined ? Number(s.amount_paid) : (
+    (s.payments && s.payments.length > 0) ? s.payments.reduce((sum, py) => sum + Number(py.amount || 0), 0) : Number(s.total || 0)
+  );
+  const change = s.change !== undefined ? Number(s.change) : Math.max(0, paid - Number(s.total || 0));
+
+  let methodsStr = '';
+  if (s.payments && s.payments.length > 1) {
+    methodsStr = s.payments.map(py => `${py.mode}: ${NGN(py.amount)}`).join(', ');
+  } else if (s.payments && s.payments.length === 1) {
+    methodsStr = s.payments[0].mode;
+  } else {
+    methodsStr = s.payment_mode || 'Cash';
+  }
+
+  return `
+    <div class="rc w${p.paper}">
+      <div class="rc-c rc-b" style="font-size:12.5px;letter-spacing:0.5px">${comp}</div>
+      <div class="rc-c" style="font-size:9.5px">${addr}</div>
+      <div class="rc-c" style="font-size:9.5px">Tel: ${phones}</div>
+      <hr class="rc-hr">
+      <div class="rc-r" style="font-size:10px"><span>Order No:</span><span class="rc-b">${s.order_id || s.receipt_number}</span></div>
+      <div class="rc-r" style="font-size:10px"><span>Date:</span><span>${dt}</span></div>
+      <div class="rc-r" style="font-size:10px"><span>Salesperson:</span><span>${s.salesperson || cashier}</span></div>
+      <div class="rc-r" style="font-size:10px"><span>Customer:</span><span>${cust}</span></div>
+      <hr class="rc-hr">
+      <table class="rc-tbl">
+        <thead>
+          <tr>
+            <th style="text-align:left;width:44%">Item</th>
+            <th style="text-align:center;width:14%">Qty</th>
+            <th style="text-align:right;width:20%">Rate</th>
+            <th style="text-align:right;width:22%">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${(s.line_items || []).map(l => `
+            <tr>
+              <td style="text-align:left;word-break:break-word">${l.name}${l.unit_display ? ` <span style="font-size:8.5px">(${l.unit_display})</span>` : ''}</td>
+              <td style="text-align:center">${l.quantity}</td>
+              <td style="text-align:right">${Math.round(l.rate).toLocaleString()}</td>
+              <td style="text-align:right">${Math.round(l.total).toLocaleString()}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <hr class="rc-hr">
+      <div class="rc-r rc-b" style="font-size:12px"><span>TOTAL:</span><span>${NGN(s.total)}</span></div>
+      <div class="rc-r" style="font-size:10px"><span>Payment Made:</span><span>${NGN(paid)}</span></div>
+      ${change > 0 ? `<div class="rc-r" style="font-size:10px"><span>Change:</span><span>${NGN(change)}</span></div>` : ''}
+      <div class="rc-r" style="font-size:10px"><span>Payment Methods:</span><span>[${methodsStr}]</span></div>
+      <hr class="rc-hr">
+      <div class="rc-c rc-b" style="font-size:10.5px;margin-top:2px">Thanks for your patronage!</div>
+    </div>
+  `;
+}
+
+function showReceiptModal(sale) {
+  state.activePrintSale = sale;
+  const p = state.pp;
+  $('#ov').innerHTML = `
+    <div class="ov">
+      <div class="modal pd" role="dialog" aria-label="Print receipt">
+        <div class="pdl" style="max-height:85vh;overflow-y:auto">
+          <h3>Sale Completed!</h3>
+          <p style="margin:0 0 8px;color:var(--mute);font-size:12px">Receipt #${sale.receipt_number} saved.</p>
+          <label>Printer<select id="pp-printer" onchange="updatePrintPref('printer', this.value)">
+            ${['Receipt printer (USB, 80 mm)', 'Receipt printer (USB, 58 mm)', 'System default printer'].map(x => `
+              <option ${x===p.printer?'selected':''}>${x}</option>
+            `).join('')}
+          </select></label>
+          <label>Paper Size<select id="pp-paper" onchange="updatePrintPref('paper', this.value)">
+            <option value="80" ${p.paper==='80'?'selected':''}>80 mm Thermal Roll</option>
+            <option value="58" ${p.paper==='58'?'selected':''}>58 mm Thermal Roll</option>
+            <option value="A4" ${p.paper==='A4'?'selected':''}>A4 Sheet</option>
+          </select></label>
+          <label>Copies<input type="number" min="1" max="5" value="${p.copies}" onchange="updatePrintPref('copies', this.value)"></label>
+
+          <details style="margin:8px 0;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:6px 8px">
+            <summary style="cursor:pointer;font-weight:600;font-size:11.5px;color:var(--ink)">Edit Receipt Header Info</summary>
+            <div style="display:grid;gap:6px;margin-top:6px">
+              <label style="font-size:11px">Company Name<input type="text" value="${p.companyName || ''}" oninput="updatePrintPref('companyName', this.value)"></label>
+              <label style="font-size:11px">Address<input type="text" value="${p.address || ''}" oninput="updatePrintPref('address', this.value)"></label>
+              <label style="font-size:11px">Phone Numbers<input type="text" value="${p.phones || ''}" oninput="updatePrintPref('phones', this.value)"></label>
+              <label style="font-size:11px">Salesperson<input type="text" value="${p.salesperson || ''}" oninput="updatePrintPref('salesperson', this.value)"></label>
+            </div>
+          </details>
+
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn" style="flex:1" onclick="closeModal()">Close</button>
+            <button class="btn p" style="flex:1" onclick="doPrint()"><i class="fa-solid fa-print"></i> Print</button>
+          </div>
+        </div>
+        <div class="pv">
+          <div class="paper" id="pv">${tickHTML(sale, p)}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function previewPrintReceipt(saleId) {
+  const sale = state.sales.find(s => s.id === saleId);
+  if (sale) showReceiptModal(sale);
+}
+
+function updatePrintPref(key, val) {
+  state.pp[key] = val;
+  savePrefs();
+  if (state.activePrintSale) {
+    $('#pv').innerHTML = tickHTML(state.activePrintSale, state.pp);
+  }
+}
+
+function doPrint() {
+  const s = state.activePrintSale;
+  if (!s) return;
+  const p = state.pp;
+  $('#pgs').textContent = '@page{margin:0;size:' + (p.paper === 'A4' ? 'A4' : p.paper + 'mm auto') + '}';
+  $('#prt').innerHTML = Array(parseInt(p.copies, 10) || 1).fill(tickHTML(s, p)).join('');
+  closeModal();
+  setTimeout(() => window.print(), 60);
+}
+
+// Customer Selection Modal
+function openCustomerModal() {
+  $('#ov').innerHTML = `
+    <div class="ov">
+      <div class="modal" style="width:500px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <h3 style="margin:0"><i class="fa-solid fa-users"></i> Select Customer</h3>
+          <div style="display:flex;gap:6px">
+            <button class="btn p" style="padding:4px 10px;font-size:12px" onclick="toggleNewCustForm()"><i class="fa-solid fa-user-plus"></i> + New Customer</button>
+            <button class="btn" style="padding:2px 8px" onclick="closeModal()">✕</button>
+          </div>
+        </div>
+
+        <div id="new-cust-box" style="display:none;background:var(--soft);padding:12px;border-radius:8px;margin-bottom:12px;border:1px solid var(--line)">
+          <b style="font-size:12.5px;display:block;margin-bottom:8px"><i class="fa-solid fa-user-plus"></i> Register Customer (Offline-First & Cloud Sync):</b>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <input id="nc-name" class="search" placeholder="Customer Name *" style="font-size:12px;width:100%">
+            <input id="nc-phone" class="search" placeholder="Phone Number" style="font-size:12px;width:100%">
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn" style="flex:1;font-size:12px" onclick="toggleNewCustForm()">Cancel</button>
+            <button class="btn p" style="flex:2;font-size:12px" onclick="submitNewCust()">Save & Select Customer</button>
+          </div>
+        </div>
+
+        <input class="search" id="cust-search-input" style="width:100%;margin-bottom:12px" placeholder="Search 300+ customers by name, company, phone..." oninput="filterCustList(this.value)">
+        <div id="cust-modal-list" style="max-height:360px;overflow:auto;display:grid;gap:4px">
+          ${renderCustRows(state.customers)}
+        </div>
+      </div>
+    </div>
+  `;
+  setTimeout(() => { const el = $('#cust-search-input'); if (el) el.focus(); }, 100);
+}
+
+function toggleNewCustForm() {
+  const box = $('#new-cust-box');
+  if (!box) return;
+  const isHidden = box.style.display === 'none';
+  box.style.display = isHidden ? 'block' : 'none';
+  if (isHidden) {
+    const inp = $('#nc-name');
+    if (inp) inp.focus();
+  }
+}
+
+async function submitNewCust() {
+  const name = ($('#nc-name')?.value || '').trim();
+  const phone = ($('#nc-phone')?.value || '').trim();
+  if (!name) {
+    alert('Please enter a customer or company name.');
+    return;
+  }
+  try {
+    const r = await fetch('/api/customers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, phone })
+    });
+    const res = await r.json();
+    if (res.success && res.customer) {
+      const c = res.customer;
+      // Add or replace in state.customers
+      const idx = state.customers.findIndex(x => x.id === c.id || x.name.toLowerCase() === c.name.toLowerCase());
+      if (idx >= 0) {
+        state.customers[idx] = c;
+      } else {
+        state.customers.unshift(c);
+      }
+      state.customer = { id: c.id, name: c.display_name || c.name, outstanding: c.outstanding || 0 };
+      closeModal();
+      renderMain();
+      toast(`✅ Customer registered & selected: ${state.customer.name}`);
+    } else {
+      alert('Error: ' + (res.message || 'Failed to save customer'));
+    }
+  } catch(e) {
+    alert('Failed to register customer: ' + e.message);
+  }
+}
+
+function renderCustRows(list) {
+  return list.slice(0, 50).map(c => `
+    <div class="cust-bar" style="cursor:pointer;padding:8px 10px;border-radius:6px;margin-bottom:4px" onclick="pickCustomer('${c.id}')">
+      <div>
+        <b style="font-size:13px">${c.display_name || c.name}</b>
+        <span style="display:block;font-size:11px;color:var(--mute)">${c.phone ? '📞 ' + c.phone : ''} ${c.company_name ? '• ' + c.company_name : ''}</span>
+      </div>
+      <div style="text-align:right">
+        ${c.outstanding > 0 ? `
+          <span style="color:#c92a2a;background:#ffe3e3;font-weight:700;font-size:11px;padding:2px 6px;border-radius:4px;display:inline-block;margin-bottom:2px">
+            Debt: ₦${Number(c.outstanding).toLocaleString()}
+          </span><br>
+        ` : ''}
+        ${c.id === state.customer.id ? '<span class="pill" style="padding:2px 6px;font-size:10px">Selected</span>' : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterCustList(q) {
+  const query = q.toLowerCase().trim();
+  const filtered = state.customers.filter(c =>
+    (c.display_name && c.display_name.toLowerCase().includes(query)) ||
+    (c.name && c.name.toLowerCase().includes(query)) ||
+    (c.company_name && c.company_name.toLowerCase().includes(query)) ||
+    (c.phone && c.phone.includes(query))
+  );
+  $('#cust-modal-list').innerHTML = renderCustRows(filtered);
+}
+
+function pickCustomer(id) {
+  const c = state.customers.find(x => x.id === id);
+  if (c) {
+    state.customer = { id: c.id, name: c.display_name || c.name, outstanding: c.outstanding || 0 };
+    closeModal();
+    renderMain();
+    toast('Customer set to ' + state.customer.name + (c.outstanding > 0 ? ` (Debt: ₦${Number(c.outstanding).toLocaleString()})` : ''));
+  }
+}
+
+// Price Manager Modal
+let activePMItem = null;
+function openPriceManager() {
+  $('#ov').innerHTML = `
+    <div class="ov">
+      <div class="modal" style="width:480px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <h3 style="margin:0"><i class="fa-solid fa-tags" style="color:var(--warn)"></i> Product Price Manager</h3>
+          <button class="btn" style="padding:2px 8px" onclick="closeModal()">✕</button>
+        </div>
+        <p style="margin:0 0 10px;color:var(--mute);font-size:12px">Search any product to update retail piece and carton prices live:</p>
+        <input class="search" style="width:100%;margin-bottom:10px" placeholder="Search product name..." oninput="searchPM(this.value)">
+        <div id="pm-results" style="max-height:160px;overflow:auto;display:grid;gap:4px;margin-bottom:12px"></div>
+        <div id="pm-editor" style="display:none;padding:12px;background:var(--bg);border-radius:8px">
+          <b id="pm-name" style="font-size:14px;display:block;margin-bottom:8px"></b>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--mute)">Single Unit Price (₦)</label>
+              <input id="pm-retail" type="number" style="width:100%;padding:6px;border:1px solid var(--line);border-radius:6px;font-weight:700">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--mute)">Carton Bulk Price (₦)</label>
+              <input id="pm-carton" type="number" style="width:100%;padding:6px;border:1px solid var(--line);border-radius:6px;font-weight:700">
+            </div>
+          </div>
+          <button class="btn p" style="width:100%;margin-top:12px" onclick="savePriceUpdate()">Save Live Price</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function searchPM(q) {
+  const query = q.toLowerCase().trim();
+  const div = $('#pm-results');
+  if (!query) { div.innerHTML = ''; return; }
+  const matches = state.items.filter(it => it.name.toLowerCase().includes(query)).slice(0, 6);
+  div.innerHTML = matches.map(m => `
+    <div class="cust-bar" style="cursor:pointer" onclick="selectPMItem('${m.id}')">
+      <b>${m.name}</b>
+      <span style="font-size:11.5px;color:var(--mute)">Single: ${NGN(m.retail_price)} • Carton: ${NGN(m.carton_price)}</span>
+    </div>
+  `).join('');
+}
+
+function selectPMItem(id) {
+  const it = getItem(id);
+  if (!it) return;
+  activePMItem = it;
+  $('#pm-name').innerText = it.name;
+  $('#pm-retail').value = it.retail_price;
+  $('#pm-carton').value = it.carton_price;
+  $('#pm-editor').style.display = 'block';
+}
+
+async function savePriceUpdate() {
+  if (!activePMItem) return;
+  const retail = parseFloat($('#pm-retail').value) || 0;
+  const carton = parseFloat($('#pm-carton').value) || 0;
+
+  try {
+    const r = await fetch('/api/catalog/update-price', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ item_id: activePMItem.id, retail_price: retail, carton_price: carton })
+    });
+    const res = await r.json();
+    if (res.success) {
+      activePMItem.retail_price = retail;
+      activePMItem.carton_price = carton;
+      if (activePMItem.units && activePMItem.units.length) {
+        const b = activePMItem.units.find(u => u.is_base);
+        if (b) b.price = retail;
+        const c = activePMItem.units.find(u => !u.is_base);
+        if (c) c.price = carton;
+      }
+      closeModal();
+      renderMain();
+      toast(`✅ Prices updated for ${activePMItem.name}`);
+    } else {
+      alert('Error: ' + res.message);
+    }
+  } catch(e) {
+    alert('Failed to update price: ' + e.message);
+  }
+}
+
+function closeModal() {
+  $('#ov').innerHTML = '';
+}
+
+// Manage POS Cashier Accounts & PINs
+async function openAccountsModal() {
+  try {
+    const res = await fetch('/api/auth/users').then(r => r.json());
+    const currentName = state.user?.name || 'Cashier 1';
+    $('#ov').innerHTML = `
+      <div class="ov"><div class="modal" style="max-width:540px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3 style="margin:0"><i class="fa-solid fa-users-gear" style="color:var(--brand)"></i> POS Cashier Accounts</h3>
+          <button class="btn" onclick="closeModal()">✕</button>
+        </div>
+        <p style="font-size:12px;color:var(--mute);margin:0 0 16px">
+          Each account's name is used as the Order ID prefix on receipts and Zoho Books (e.g. <b>${currentName.toUpperCase()}-0001</b>).
+        </p>
+
+        <div style="display:grid;gap:10px;margin-bottom:16px">
+          ${res.map(u => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--soft);border-radius:10px;border:1px solid ${state.user?.id === u.id ? 'var(--brand)' : 'var(--line)'}">
+              <div>
+                <div style="font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:8px">
+                  ${u.name}
+                  ${state.user?.id === u.id ? '<span class="pill" style="padding:1px 6px;font-size:10px">ACTIVE ACCESS</span>' : ''}
+                </div>
+                <div style="font-size:11px;color:var(--mute);margin-top:2px">
+                  Role: <b style="text-transform:capitalize">${u.role}</b> &bull; Default Station: ${u.terminal_id || 'Any'}
+                </div>
+              </div>
+              <div style="display:flex;gap:6px">
+                <button class="btn" style="padding:4px 8px;font-size:11px" onclick="renameAccountPrompt('${u.id}', '${u.name}')"><i class="fa-solid fa-pen"></i> Rename</button>
+                <button class="btn" style="padding:4px 8px;font-size:11px" onclick="changePinPrompt('${u.id}', '${u.name}')"><i class="fa-solid fa-key"></i> Change PIN</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:12px">
+          <button class="btn" onclick="lockRegister();closeModal();"><i class="fa-solid fa-arrow-right-from-bracket"></i> Switch Account</button>
+          <button class="btn p" onclick="closeModal()">Done</button>
+        </div>
+      </div></div>
+    `;
+  } catch(e) {
+    alert('Failed to load accounts: ' + e.message);
+  }
+}
+
+async function renameAccountPrompt(userId, currentName) {
+  const newName = prompt(`Enter new account name for "${currentName}":\n(This will be your Order ID prefix on receipts and Zoho, e.g. ${currentName.toUpperCase()}-0001)`, currentName);
+  if (!newName || !newName.trim() || newName.trim() === currentName) return;
+
+  try {
+    const res = await fetch('/api/auth/update-name', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, name: newName.trim() })
+    }).then(r => r.json());
+
+    if (res.success) {
+      if (state.user && state.user.id === userId) {
+        state.user.name = res.user.name;
+        sessionStorage.setItem('pos_user', JSON.stringify(state.user));
+      }
+      toast(`✅ Account renamed to "${res.user.name}"`);
+      openAccountsModal();
+      renderTop();
+    } else {
+      alert('Error: ' + res.message);
+    }
+  } catch(e) {
+    alert('Failed to update name: ' + e.message);
+  }
+}
+
+async function changePinPrompt(userId, userName) {
+  const oldPin = prompt(`Enter CURRENT 4-digit PIN for ${userName}:`);
+  if (!oldPin) return;
+  const newPin = prompt(`Enter NEW 4-digit PIN for ${userName}:`);
+  if (!newPin || newPin.length !== 4 || isNaN(newPin)) {
+    alert('PIN must be exactly 4 digits.');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/auth/change-pin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, old_pin: oldPin.trim(), new_pin: newPin.trim() })
+    }).then(r => r.json());
+
+    if (res.success) {
+      alert(`✅ ${res.message}`);
+      openAccountsModal();
+    } else {
+      alert('Error: ' + res.message);
+    }
+  } catch(e) {
+    alert('Failed to update PIN: ' + e.message);
+  }
+}
+
+// Keyboard shortcuts (F1 - F12)
+document.addEventListener('keydown', e => {
+  if (state.isLocked) return;
+  const k = e.key;
+  if (k === 'F1') {
+    e.preventDefault();
+    $('#ov').innerHTML = `
+      <div class="ov"><div class="modal">
+        <h3>Cashier Keyboard Shortcuts</h3>
+        <div style="display:grid;gap:6px;font-size:12.5px;margin:12px 0">
+          <div class="row"><kbd class="kk">F2</kbd> <span>Focus Search bar</span></div>
+          <div class="row"><kbd class="kk">F3</kbd> <span>Toggle Sell / Orders view</span></div>
+          <div class="row"><kbd class="kk">F4</kbd> <span>Select Customer</span></div>
+          <div class="row"><kbd class="kk">F6</kbd> <span>Cycle Payment Method (Cash, POS, Transfer, Split)</span></div>
+          <div class="row"><kbd class="kk">F7</kbd> <span>Open Price Manager</span></div>
+          <div class="row"><kbd class="kk">F8</kbd> <span>Charge / Complete Sale</span></div>
+          <div class="row"><kbd class="kk">F9</kbd> <span>Push Sales to Zoho (Shift+F9: Pull Stock & Cust)</span></div>
+          <div class="row"><kbd class="kk">F10</kbd> <span>Toggle Theme</span></div>
+          <div class="row"><kbd class="kk">F12</kbd> <span>Print Last Receipt</span></div>
+          <div class="row"><kbd class="kk">Esc</kbd> <span>Close active modal</span></div>
+        </div>
+        <button class="btn p" style="width:100%" onclick="closeModal()">Got it</button>
+      </div></div>
+    `;
+  } else if (k === 'F2') {
+    e.preventDefault();
+    goView('sell');
+    const q = $('#q');
+    if (q) { q.focus(); q.select(); }
+  } else if (k === 'F3') {
+    e.preventDefault();
+    goView(state.view === 'sell' ? 'orders' : 'sell');
+  } else if (k === 'F4') {
+    e.preventDefault();
+    openCustomerModal();
+  } else if (k === 'F6') {
+    e.preventDefault();
+    const modes = ['Cash', 'Moniepoint POS', 'First Bank Transfer', 'Split'];
+    const next = modes[(modes.indexOf(state.pay) + 1) % modes.length];
+    setPaymentMode(next);
+    toast('Payment Mode: ' + next);
+  } else if (k === 'F7') {
+    e.preventDefault();
+    openPriceManager();
+  } else if (k === 'F8') {
+    e.preventDefault();
+    chargeSale();
+  } else if (k === 'F9') {
+    e.preventDefault();
+    if (e.shiftKey) {
+      triggerPullSync();
+    } else {
+      triggerSync();
+    }
+  } else if (k === 'F10') {
+    e.preventDefault();
+    toggleTheme();
+  } else if (k === 'F12') {
+    e.preventDefault();
+    if (state.sales.length) previewPrintReceipt(state.sales[0].id);
+  } else if (k === 'Escape') {
+    closeModal();
+  }
+});
+
+// Global Hardware Barcode Scanner Listener
+let barcodeBuf = '';
+let lastScanTime = 0;
+
+document.addEventListener('keydown', e => {
+  if (state.isLocked) return;
+  const now = Date.now();
+  const timeDiff = now - lastScanTime;
+  lastScanTime = now;
+
+  const active = document.activeElement;
+  const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'SELECT' || active.tagName === 'TEXTAREA');
+
+  if (e.key === 'Enter') {
+    if (barcodeBuf.length >= 4) {
+      const code = barcodeBuf.trim();
+      barcodeBuf = '';
+      const match = state.items.find(it => it.upc && it.upc.trim() === code) ||
+                    state.items.find(it => it.sku && it.sku.toLowerCase() === code.toLowerCase()) ||
+                    state.items.find(it => String(it.id) === code);
+      if (match) {
+        e.preventDefault();
+        const added = addToCart(match.id);
+        if (added) {
+          toast(`Scanned & Added: ${match.name}`);
+        }
+        return;
+      }
+    }
+    barcodeBuf = '';
+    return;
+  }
+
+  // If characters arrive very rapidly (< 45ms between strokes) from hardware scanner
+  if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    if (!isInput || active.id === 'q') {
+      if (timeDiff > 120) {
+        barcodeBuf = e.key;
+      } else {
+        barcodeBuf += e.key;
+      }
+    }
+  }
+});
+
+// App Bootstrap
+document.addEventListener('DOMContentLoaded', async () => {
+  renderLockScreen();
+  await initTerminal();
+  renderTop();
+  renderNav();
+  renderSb();
+  await loadCatalog();
+  await loadCustomers();
+  await loadQueueStatus();
+  setInterval(loadQueueStatus, 15000);
+});
+</script>
+</body>
+</html>

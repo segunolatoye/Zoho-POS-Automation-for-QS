@@ -1,0 +1,18 @@
+{
+  "name": "zoho-pos-automation",
+  "version": "1.0.0",
+  "description": "Zoho POS Unit Group automation",
+  "main": "create_unit_groups.js",
+  "scripts": {
+    "start": "node pos_server.js",
+    "test": "node scripts/test_catalog.js",
+    "validate": "node -c pos_server.js && node scripts/test_catalog.js",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop ecosystem.config.js",
+    "pm2:restart": "pm2 restart ecosystem.config.js",
+    "pm2:logs": "pm2 logs pos-server"
+  },
+  "dependencies": {
+    "playwright-core": "^1.51.0"
+  }
+}

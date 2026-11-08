@@ -1,0 +1,20 @@
+# Node.js dependencies
+node_modules/
+package-lock.json
+
+# Playwright Browser Profile & Session Cookies (SENSITIVE)
+.browser_profile/
+
+# Server Logs & Automated Backups
+logs/*.log
+backups/
+*.tmp
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment Configuration
+.env
+.env.local

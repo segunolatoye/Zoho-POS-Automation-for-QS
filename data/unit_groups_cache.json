@@ -1,0 +1,1478 @@
+[
+  {
+    "unit_group_id": "1560234000000187428",
+    "unit_group_name": "Bag -  Roll (5)",
+    "base_unit_id": "1560234000000274730",
+    "base_unit_name": "Roll",
+    "base_unit": "roll",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187429",
+        "target_unit_id": "1560234000000096026",
+        "conversion_rate": 5,
+        "target_unit_name": "Bag",
+        "target_unit": "bag",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187412",
+    "unit_group_name": "Bag - Pack (1)",
+    "base_unit_id": "1560234000000096025",
+    "base_unit_name": "Pack",
+    "base_unit": "pack",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187413",
+        "target_unit_id": "1560234000000096026",
+        "conversion_rate": 1,
+        "target_unit_name": "Bag",
+        "target_unit": "bag",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187414",
+    "unit_group_name": "Bag - Pack (10)",
+    "base_unit_id": "1560234000000096025",
+    "base_unit_name": "Pack",
+    "base_unit": "pack",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187415",
+        "target_unit_id": "1560234000000096026",
+        "conversion_rate": 10,
+        "target_unit_name": "Bag",
+        "target_unit": "bag",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187420",
+    "unit_group_name": "Bag - Pack (3)",
+    "base_unit_id": "1560234000000096025",
+    "base_unit_name": "Pack",
+    "base_unit": "pack",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187421",
+        "target_unit_id": "1560234000000096026",
+        "conversion_rate": 3,
+        "target_unit_name": "Bag",
+        "target_unit": "bag",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187422",
+    "unit_group_name": "Bag - Pack (4)",
+    "base_unit_id": "1560234000000096025",
+    "base_unit_name": "Pack",
+    "base_unit": "pack",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187423",
+        "target_unit_id": "1560234000000096026",
+        "conversion_rate": 4,
+        "target_unit_name": "Bag",
+        "target_unit": "bag",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187416",
+    "unit_group_name": "Bag - Pieces (10)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187417",
+        "target_unit_id": "1560234000000096026",
+        "conversion_rate": 10,
+        "target_unit_name": "Bag",
+        "target_unit": "bag",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187418",
+    "unit_group_name": "Bag - Pieces (24)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187419",
+        "target_unit_id": "1560234000000096026",
+        "conversion_rate": 24,
+        "target_unit_name": "Bag",
+        "target_unit": "bag",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187426",
+    "unit_group_name": "Bag - Pieces (5)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187427",
+        "target_unit_id": "1560234000000096026",
+        "conversion_rate": 5,
+        "target_unit_name": "Bag",
+        "target_unit": "bag",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187430",
+    "unit_group_name": "Bag - Pieces (50)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187431",
+        "target_unit_id": "1560234000000096026",
+        "conversion_rate": 50,
+        "target_unit_name": "Bag",
+        "target_unit": "bag",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187434",
+    "unit_group_name": "Bag - Pieces (60)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187435",
+        "target_unit_id": "1560234000000096026",
+        "conversion_rate": 60,
+        "target_unit_name": "Bag",
+        "target_unit": "bag",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187424",
+    "unit_group_name": "Bag - Roll (4)",
+    "base_unit_id": "1560234000000274730",
+    "base_unit_name": "Roll",
+    "base_unit": "roll",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187425",
+        "target_unit_id": "1560234000000096026",
+        "conversion_rate": 4,
+        "target_unit_name": "Bag",
+        "target_unit": "bag",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187432",
+    "unit_group_name": "Bag - Roll (6)",
+    "base_unit_id": "1560234000000274730",
+    "base_unit_name": "Roll",
+    "base_unit": "roll",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187433",
+        "target_unit_id": "1560234000000096026",
+        "conversion_rate": 6,
+        "target_unit_name": "Bag",
+        "target_unit": "bag",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187436",
+    "unit_group_name": "Box - Bags (3)",
+    "base_unit_id": "1560234000000096026",
+    "base_unit_name": "Bag",
+    "base_unit": "bag",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187437",
+        "target_unit_id": "1560234000000274729",
+        "conversion_rate": 3,
+        "target_unit_name": "Box",
+        "target_unit": "box",
+        "quantity_decimal_place": 0
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187499",
+    "unit_group_name": "Carton - Bag (4)",
+    "base_unit_id": "1560234000000096026",
+    "base_unit_name": "Bag",
+    "base_unit": "bag",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187500",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 4,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187525",
+    "unit_group_name": "Carton - Bag (7)",
+    "base_unit_id": "1560234000000096026",
+    "base_unit_name": "Bag",
+    "base_unit": "bag",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187526",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 7,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187449",
+    "unit_group_name": "Carton - Box (12)",
+    "base_unit_id": "1560234000000274729",
+    "base_unit_name": "Box",
+    "base_unit": "box",
+    "base_unit_decimal": 0,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187450",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 12,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187439",
+    "unit_group_name": "Carton - Jar (0.25)",
+    "base_unit_id": "1560234000000187438",
+    "base_unit_name": "Jar",
+    "base_unit": "jar",
+    "base_unit_decimal": 2,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187440",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 0.25,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187451",
+    "unit_group_name": "Carton - Jar (12)",
+    "base_unit_id": "1560234000000187438",
+    "base_unit_name": "Jar",
+    "base_unit": "jar",
+    "base_unit_decimal": 2,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187452",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 12,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187487",
+    "unit_group_name": "Carton - Jar (24)",
+    "base_unit_id": "1560234000000187438",
+    "base_unit_name": "Jar",
+    "base_unit": "jar",
+    "base_unit_decimal": 2,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187488",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 24,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187517",
+    "unit_group_name": "Carton - Jar (6)",
+    "base_unit_id": "1560234000000187438",
+    "base_unit_name": "Jar",
+    "base_unit": "jar",
+    "base_unit_decimal": 2,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187518",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 6,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187443",
+    "unit_group_name": "Carton - Pack (10)",
+    "base_unit_id": "1560234000000096025",
+    "base_unit_name": "Pack",
+    "base_unit": "pack",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187444",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 10,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187453",
+    "unit_group_name": "Carton - Pack (12)",
+    "base_unit_id": "1560234000000096025",
+    "base_unit_name": "Pack",
+    "base_unit": "pack",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187454",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 12,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187465",
+    "unit_group_name": "Carton - Pack (15)",
+    "base_unit_id": "1560234000000096025",
+    "base_unit_name": "Pack",
+    "base_unit": "pack",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187466",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 15,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187471",
+    "unit_group_name": "Carton - Pack (16)",
+    "base_unit_id": "1560234000000096025",
+    "base_unit_name": "Pack",
+    "base_unit": "pack",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187472",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 16,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187479",
+    "unit_group_name": "Carton - Pack (20)",
+    "base_unit_id": "1560234000000096025",
+    "base_unit_name": "Pack",
+    "base_unit": "pack",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187480",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 20,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187489",
+    "unit_group_name": "Carton - Pack (24)",
+    "base_unit_id": "1560234000000096025",
+    "base_unit_name": "Pack",
+    "base_unit": "pack",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187490",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 24,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187501",
+    "unit_group_name": "Carton - Pack (4)",
+    "base_unit_id": "1560234000000096025",
+    "base_unit_name": "Pack",
+    "base_unit": "pack",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187502",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 4,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187513",
+    "unit_group_name": "Carton - Pack (50)",
+    "base_unit_id": "1560234000000096025",
+    "base_unit_name": "Pack",
+    "base_unit": "pack",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187514",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 50,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187531",
+    "unit_group_name": "Carton - Pack (8)",
+    "base_unit_id": "1560234000000096025",
+    "base_unit_name": "Pack",
+    "base_unit": "pack",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187532",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 8,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187491",
+    "unit_group_name": "Carton - Piece (24)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187492",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 24,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187495",
+    "unit_group_name": "Carton - Piece (3)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187496",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 3,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187445",
+    "unit_group_name": "Carton - Pieces (10)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187446",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 10,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187455",
+    "unit_group_name": "Carton - Pieces (12)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187456",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 12,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187463",
+    "unit_group_name": "Carton - Pieces (14)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187464",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 14,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187467",
+    "unit_group_name": "Carton - Pieces (15)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187468",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 15,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187473",
+    "unit_group_name": "Carton - Pieces (16)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187474",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 16,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000304471",
+    "unit_group_name": "Carton - Pieces (18)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000304472",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 18,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187481",
+    "unit_group_name": "Carton - Pieces (20)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187482",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 20,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187497",
+    "unit_group_name": "Carton - Pieces (36)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187498",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 36,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187503",
+    "unit_group_name": "Carton - Pieces (4)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187504",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 4,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187507",
+    "unit_group_name": "Carton - Pieces (40)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187508",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 40,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187509",
+    "unit_group_name": "Carton - Pieces (48)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187510",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 48,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187515",
+    "unit_group_name": "Carton - Pieces (50)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187516",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 50,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187519",
+    "unit_group_name": "Carton - Pieces (6)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187520",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 6,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187523",
+    "unit_group_name": "Carton - Pieces (60)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187524",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 60,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187527",
+    "unit_group_name": "Carton - Pieces (7)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187528",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 7,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187529",
+    "unit_group_name": "Carton - Pieces (72)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187530",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 72,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187533",
+    "unit_group_name": "Carton - Pieces (8)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187534",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 8,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187537",
+    "unit_group_name": "Carton - Pieces (80)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187538",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 80,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187441",
+    "unit_group_name": "Carton - Roll (1)",
+    "base_unit_id": "1560234000000274730",
+    "base_unit_name": "Roll",
+    "base_unit": "roll",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187442",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 1,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187447",
+    "unit_group_name": "Carton - Roll (10)",
+    "base_unit_id": "1560234000000274730",
+    "base_unit_name": "Roll",
+    "base_unit": "roll",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187448",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 10,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187457",
+    "unit_group_name": "Carton - Roll (12)",
+    "base_unit_id": "1560234000000274730",
+    "base_unit_name": "Roll",
+    "base_unit": "roll",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187458",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 12,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187459",
+    "unit_group_name": "Carton - Roll (13)",
+    "base_unit_id": "1560234000000274730",
+    "base_unit_name": "Roll",
+    "base_unit": "roll",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187460",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 13,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187461",
+    "unit_group_name": "Carton - Roll (14)",
+    "base_unit_id": "1560234000000274730",
+    "base_unit_name": "Roll",
+    "base_unit": "roll",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187462",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 14,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187469",
+    "unit_group_name": "Carton - Roll (15)",
+    "base_unit_id": "1560234000000274730",
+    "base_unit_name": "Roll",
+    "base_unit": "roll",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187470",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 15,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187475",
+    "unit_group_name": "Carton - Roll (16)",
+    "base_unit_id": "1560234000000274730",
+    "base_unit_name": "Roll",
+    "base_unit": "roll",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187476",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 16,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187477",
+    "unit_group_name": "Carton - Roll (18)",
+    "base_unit_id": "1560234000000274730",
+    "base_unit_name": "Roll",
+    "base_unit": "roll",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187478",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 18,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187483",
+    "unit_group_name": "Carton - Roll (20)",
+    "base_unit_id": "1560234000000274730",
+    "base_unit_name": "Roll",
+    "base_unit": "roll",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187484",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 20,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187485",
+    "unit_group_name": "Carton - Roll (21)",
+    "base_unit_id": "1560234000000274730",
+    "base_unit_name": "Roll",
+    "base_unit": "roll",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187486",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 21,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187493",
+    "unit_group_name": "Carton - Roll (24)",
+    "base_unit_id": "1560234000000274730",
+    "base_unit_name": "Roll",
+    "base_unit": "roll",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187494",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 24,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187505",
+    "unit_group_name": "Carton - Roll (4)",
+    "base_unit_id": "1560234000000274730",
+    "base_unit_name": "Roll",
+    "base_unit": "roll",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187506",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 4,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187511",
+    "unit_group_name": "Carton - Roll (5)",
+    "base_unit_id": "1560234000000274730",
+    "base_unit_name": "Roll",
+    "base_unit": "roll",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187512",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 5,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187409",
+    "unit_group_name": "Carton - Roll (50)",
+    "base_unit_id": "1560234000000274730",
+    "base_unit_name": "Roll",
+    "base_unit": "roll",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187410",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 50,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187521",
+    "unit_group_name": "Carton - Roll (6)",
+    "base_unit_id": "1560234000000274730",
+    "base_unit_name": "Roll",
+    "base_unit": "roll",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187522",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 6,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187535",
+    "unit_group_name": "Carton - Roll (8)",
+    "base_unit_id": "1560234000000274730",
+    "base_unit_name": "Roll",
+    "base_unit": "roll",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187536",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 8,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187539",
+    "unit_group_name": "Carton - Roll (9)",
+    "base_unit_id": "1560234000000274730",
+    "base_unit_name": "Roll",
+    "base_unit": "roll",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187540",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 9,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000274713",
+    "unit_group_name": "Dozen - pcs",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000274714",
+        "target_unit_id": "1560234000000095085",
+        "conversion_rate": 12,
+        "target_unit_name": "Dozen",
+        "target_unit": "dz",
+        "quantity_decimal_place": 2
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187556",
+    "unit_group_name": "Pack - Piece (12)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187557",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 20,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187558",
+    "unit_group_name": "Pack - Piece (24)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187559",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 24,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187560",
+    "unit_group_name": "Pack - Piece (3)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187561",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 3,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187568",
+    "unit_group_name": "Pack - Piece (6)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187569",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 6,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187570",
+    "unit_group_name": "Pack - Piece (8)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187571",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 8,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187541",
+    "unit_group_name": "Pack - Pieces (0.05)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187542",
+        "target_unit_id": "1560234000000096025",
+        "conversion_rate": 0.05,
+        "target_unit_name": "Pack",
+        "target_unit": "pack",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187543",
+    "unit_group_name": "Pack - Pieces (0.125)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187544",
+        "target_unit_id": "1560234000000096025",
+        "conversion_rate": 0.125,
+        "target_unit_name": "Pack",
+        "target_unit": "pack",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187545",
+    "unit_group_name": "Pack - Pieces (0.166666666666667)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187546",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 0.166667,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000304473",
+    "unit_group_name": "Pack - Pieces (10)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000304474",
+        "target_unit_id": "1560234000000096025",
+        "conversion_rate": 10,
+        "target_unit_name": "Pack",
+        "target_unit": "pack",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187554",
+    "unit_group_name": "Pack - Pieces (20)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187555",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 20,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187564",
+    "unit_group_name": "Pack - Pieces (30)",
+    "base_unit_id": "1560234000000095095",
+    "base_unit_name": "Pieces",
+    "base_unit": "pcs",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187565",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 30,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187548",
+    "unit_group_name": "Pack - Unit (10)",
+    "base_unit_id": "1560234000000187547",
+    "base_unit_name": "Units",
+    "base_unit": "unit",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187549",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 10,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187562",
+    "unit_group_name": "Pack - Unit (3)",
+    "base_unit_id": "1560234000000187547",
+    "base_unit_name": "Units",
+    "base_unit": "unit",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187563",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 3,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187566",
+    "unit_group_name": "Pack - Unit (5)",
+    "base_unit_id": "1560234000000187547",
+    "base_unit_name": "Units",
+    "base_unit": "unit",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187567",
+        "target_unit_id": "1560234000000096024",
+        "conversion_rate": 5,
+        "target_unit_name": "Carton",
+        "target_unit": "ctn",
+        "quantity_decimal_place": 6
+      }
+    ]
+  },
+  {
+    "unit_group_id": "1560234000000187713",
+    "unit_group_name": "Piece (3) - Pack",
+    "base_unit_id": "1560234000000096025",
+    "base_unit_name": "Pack",
+    "base_unit": "pack",
+    "base_unit_decimal": 6,
+    "unit_conversions": [
+      {
+        "unit_conversion_id": "1560234000000187714",
+        "target_unit_id": "1560234000000095095",
+        "conversion_rate": 0.333333,
+        "target_unit_name": "Pieces",
+        "target_unit": "pcs",
+        "quantity_decimal_place": 6
+      }
+    ]
+  }
+]
