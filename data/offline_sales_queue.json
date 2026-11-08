@@ -358,5 +358,57 @@
     "zoho_invoice_number": "KI-00122",
     "zoho_payment_id": "1560234000000439351",
     "synced_at": "2026-11-08T21:19:14.419Z"
+  },
+  {
+    "id": "sale_1794175305597_tuhw",
+    "order_id": "QS-00010",
+    "receipt_number": "QS-00010",
+    "tilled_by": "Oluwatosin",
+    "user_id": "u2",
+    "salesperson": "Oluwatosin",
+    "cashier_role": "cashier",
+    "terminal_id": "TERM-01",
+    "customer_id": "1560234000000095179",
+    "customer_name": "Walk-in Customer",
+    "date": "2026-11-08",
+    "payment_mode": "Split (Cash: ₦250, Moniepoint: ₦2,250)",
+    "payments": [
+      {
+        "mode": "Cash",
+        "amount": 250
+      },
+      {
+        "mode": "Moniepoint POS",
+        "amount": 2250
+      }
+    ],
+    "amount_paid": 2500,
+    "change": 0,
+    "subtotal": 2500,
+    "discount": 0,
+    "manager_override": false,
+    "manager_override_by": null,
+    "total": 2500,
+    "line_items": [
+      {
+        "item_id": "1560234000000274718",
+        "name": "Test",
+        "unit": "pack",
+        "unit_display": "PACK",
+        "unit_conversion_id": "",
+        "quantity": 5,
+        "rate": 500,
+        "list_price": 500,
+        "is_custom_price": false,
+        "total": 2500
+      }
+    ],
+    "status": "SYNCED",
+    "created_at": "2026-11-08T22:01:45.597Z",
+    "sync_attempts": 1,
+    "zoho_invoice_id": "1560234000000446061",
+    "zoho_invoice_number": "KI-00123",
+    "zoho_payment_id": "1560234000000446094,1560234000000446113",
+    "synced_at": "2026-11-08T22:02:12.919Z"
   }
 ]
