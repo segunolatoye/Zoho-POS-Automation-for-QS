@@ -415,7 +415,7 @@
     "unit_group": "Roll (50) - Carton",
     "retail_price": 1300,
     "carton_price": 63000,
-    "stock": 4413,
+    "stock": 4266,
     "upc": "6937042508352",
     "sku": "",
     "units": [
@@ -4687,7 +4687,7 @@
     "unit_group": "Pack (4) - Bag",
     "retail_price": 3900,
     "carton_price": 14300,
-    "stock": 1787.5,
+    "stock": 1781.5,
     "upc": "6156000433172",
     "sku": "",
     "units": [
@@ -4761,7 +4761,7 @@
     "unit_group": "Roll (5) - Bag",
     "retail_price": 1600,
     "carton_price": 7500,
-    "stock": 4401,
+    "stock": 4397,
     "upc": "6156000349251",
     "sku": "",
     "units": [
@@ -6659,7 +6659,7 @@
     "unit_group": "Piece (24) - Carton",
     "retail_price": 700,
     "carton_price": 15500,
-    "stock": 4178,
+    "stock": 4132,
     "upc": "6154000054151",
     "sku": "",
     "units": [
@@ -6696,7 +6696,7 @@
     "unit_group": "Piece (24) - Carton",
     "retail_price": 700,
     "carton_price": 15500,
-    "stock": 4488,
+    "stock": 4465,
     "upc": "8716200607544",
     "sku": "",
     "units": [
@@ -6955,7 +6955,7 @@
     "unit_group": "Roll (21) - Carton",
     "retail_price": 1650,
     "carton_price": 33800,
-    "stock": 5315,
+    "stock": 5275,
     "upc": "8716200449304",
     "sku": "",
     "units": [
@@ -10209,7 +10209,7 @@
     "unit_group": "Roll (6) - Carton",
     "retail_price": 1700,
     "carton_price": 10000,
-    "stock": 471,
+    "stock": 461,
     "upc": "",
     "sku": "",
     "units": [
@@ -10320,7 +10320,7 @@
     "unit_group": "Roll (20) - Carton",
     "retail_price": 755,
     "carton_price": 15100,
-    "stock": 695,
+    "stock": 676,
     "upc": "630282996137",
     "sku": "",
     "units": [
@@ -12468,7 +12468,7 @@
     "unit_group": "Roll (5) - Bag",
     "retail_price": 1500,
     "carton_price": 7500,
-    "stock": 2187,
+    "stock": 2183,
     "upc": "",
     "sku": "",
     "units": [

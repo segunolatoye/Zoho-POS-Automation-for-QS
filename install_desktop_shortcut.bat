@@ -9,3 +9,4 @@ echo Installing desktop shortcut icon and Windows autorun...
 powershell -NoProfile -ExecutionPolicy Bypass -File "scripts\create_launch_shortcut.ps1"
 echo.
 pause
+
