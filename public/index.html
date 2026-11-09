@@ -2173,7 +2173,7 @@ function renderSb() {
     <span>${p} offline receipt(s) waiting</span>
     <span class="sp"></span>
     <span style="cursor:pointer" onclick="openPrinterModal()" title="Click to configure station printer">
-      <i class="fa-solid fa-print" style="color:var(--brand)"></i> Printer: <b>${state.pp.destination === 'browser' ? 'Browser Dialog' : 'Silent Direct'} (${state.pp.paper}mm)</b>
+      <i class="fa-solid fa-print" style="color:var(--brand)"></i> Printer: <b>${escapeHtml(state.pp.printer || 'Xprinter XP-80')} (${state.pp.destination === 'browser' ? 'Dialog' : 'Direct'} • ${state.pp.copies || 2} Copies)</b>
     </span>
   `;
 }
@@ -4233,9 +4233,50 @@ async function loadInstalledPrinters() {
     const res = await r.json();
     if (res.success && Array.isArray(res.printers)) {
       state.installedPrinters = res.printers;
+
+      // Auto-assign thermal default printer if currently generic or unselected
+      const current = state.pp.printer;
+      const exists = res.printers.some(p => p.Name === current);
+      if (!current || current === 'System default printer' || !exists) {
+        const thermalMatch = res.printers.find(p => /xprinter|xp-80|xp80|pos|thermal|receipt|80mm|58mm/i.test(p.Name)) ||
+                             res.printers.find(p => p.IsDefault) ||
+                             res.printers[0];
+        if (thermalMatch) {
+          state.pp.printer = thermalMatch.Name;
+          state.pp.destination = 'direct';
+          state.pp.paper = /58/i.test(thermalMatch.Name) ? '58' : '80';
+          savePrefs();
+          renderSb();
+        }
+      }
     }
   } catch(e) {
     console.warn('Printer discovery:', e);
+  }
+}
+
+function selectDefaultStationPrinter(printerName) {
+  state.pp.printer = printerName;
+  state.pp.destination = 'direct'; // Setting default printer ensures direct silent printing
+  state.pp.autoPrint = true;
+  if (/58/i.test(printerName)) {
+    state.pp.paper = '58';
+  } else {
+    state.pp.paper = '80';
+  }
+  savePrefs();
+  renderSb();
+  toast(`✓ Set "${printerName}" as Default Station Printer (Direct Silent)`);
+  if (state.activePrintSale) {
+    showReceiptModal(state.activePrintSale, true);
+  }
+}
+
+async function refreshAndReopenPrinterModal() {
+  toast('Rescanning Windows printers...');
+  await loadInstalledPrinters();
+  if (state.activePrintSale) {
+    showReceiptModal(state.activePrintSale, true);
   }
 }
 
@@ -4337,19 +4378,45 @@ function showReceiptModal(sale, isSettings = false) {
           <label>
             Print Method
             <select onchange="updatePrintPref('destination', this.value)">
-              <option value="direct" ${p.destination!=='browser'?'selected':''}>⚡ Silent Direct Print (No Dialog)</option>
+              <option value="direct" ${p.destination!=='browser'?'selected':''}>⚡ Silent Direct Print (No Dialog - Recommended)</option>
               <option value="browser" ${p.destination==='browser'?'selected':''}>🖥️ Windows Print Dialog</option>
             </select>
           </label>
 
-          <label>
-            Thermal Receipt Printer
-            <select id="pp-printer" onchange="updatePrintPref('printer', this.value)">
-              ${printerOptions.map(x => `
-                <option value="${x}" ${x===p.printer?'selected':''}>${x}</option>
-              `).join('')}
-            </select>
-          </label>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px">
+            <label style="font-weight:700;font-size:12.5px;color:var(--mute);margin:0">
+              Select Default Station Printer
+            </label>
+            <button class="btn" style="padding:2px 8px;font-size:11px" onclick="refreshAndReopenPrinterModal()" title="Rescan for newly connected USB printers">
+              <i class="fa-solid fa-arrows-rotate"></i> Rescan
+            </button>
+          </div>
+
+          <div style="display:grid;gap:6px;max-height:160px;overflow-y:auto;padding-right:2px">
+            ${(state.installedPrinters || []).map(pr => {
+              const isSelected = (state.pp.printer === pr.Name) || (!state.pp.printer && pr.IsDefault);
+              const isThermal = /xprinter|xp-80|xp80|pos|thermal|receipt|80mm|58mm/i.test(pr.Name);
+              return `
+                <div onclick="selectDefaultStationPrinter('${escapeHtml(pr.Name)}')" style="cursor:pointer;padding:8px 12px;border:1.5px solid ${isSelected ? 'var(--brand)' : 'var(--line)'};border-radius:8px;background:${isSelected ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg)'};display:flex;align-items:center;justify-content:space-between">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <i class="fa-solid ${isThermal ? 'fa-receipt' : 'fa-print'}" style="color:${isSelected ? 'var(--brand)' : 'var(--mute)'};font-size:15px"></i>
+                    <div>
+                      <b style="font-size:12.5px;color:var(--ink);display:block">${escapeHtml(pr.Name)}</b>
+                      <small style="color:var(--mute);font-size:10.5px">${pr.IsDefault ? 'Windows Default' : 'Installed'}${isThermal ? ' • Thermal 80mm' : ''}</small>
+                    </div>
+                  </div>
+                  <div>
+                    ${isSelected ? `<span class="badge" style="background:var(--brand);color:#fff;font-weight:700;padding:2px 8px;border-radius:10px;font-size:10.5px"><i class="fa-solid fa-check"></i> Default</span>` : `<button class="btn" style="padding:2px 8px;font-size:10.5px" onclick="event.stopPropagation();selectDefaultStationPrinter('${escapeHtml(pr.Name)}')">Set Default</button>`}
+                  </div>
+                </div>
+              `;
+            }).join('') || '<div style="color:var(--mute);font-size:12px;padding:8px">No Windows printers detected. Click Rescan.</div>'}
+          </div>
+
+          <div style="padding:8px 10px;background:rgba(16, 185, 129, 0.08);border:1px solid rgba(16, 185, 129, 0.25);border-radius:7px;font-size:11.5px;color:var(--ink)">
+            <i class="fa-solid fa-bolt" style="color:var(--brand);margin-right:4px"></i>
+            Active default printer: <b>${escapeHtml(state.pp.printer || 'Xprinter XP-80')}</b>. Receipts will spool directly with zero dialogs.
+          </div>
 
           <label>
             Paper Size
@@ -4391,7 +4458,8 @@ function showReceiptModal(sale, isSettings = false) {
   `;
 }
 
-function openPrinterModal() {
+async function openPrinterModal() {
+  await loadInstalledPrinters();
   const p = state.pp;
   const sampleSale = state.sales?.[0] || {
     receipt_number: 'QS-SAMPLE',
