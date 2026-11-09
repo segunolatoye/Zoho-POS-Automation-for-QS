@@ -1636,12 +1636,15 @@ const server = http.createServer(async (req, res) => {
   // 7. GET /api/status
   if (req.method === 'GET' && pathname === '/api/status') {
     const localIp = getLocalIpAddress();
+    const hostName = os.hostname();
     res.writeHead(200);
     return res.end(JSON.stringify({
       status: 'OK',
       port: PORT,
       local_ip: localIp,
+      hostname: hostName,
       lan_url: `http://${localIp}:${PORT}`,
+      hostname_url: `http://${hostName}:${PORT}`,
       time: new Date().toISOString(),
       sync_info: {
         is_online: syncState.isOnline,

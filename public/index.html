@@ -1766,6 +1766,7 @@ async function loadQueueStatus() {
     }
     if (sRes && sRes.local_ip) {
       state.lanIp = sRes.local_ip;
+      state.hostname = sRes.hostname || 'DESKTOP-11DN7IC';
       state.lanUrl = sRes.lan_url || `http://${sRes.local_ip}:${sRes.port || 3001}`;
     }
     if (sRes && sRes.sync_info) {
@@ -2127,7 +2128,8 @@ function renderNav() {
 
     <div class="nb" style="margin-top:auto">
       <small class="gl" style="padding:0 0 4px">Wi-Fi Terminal Hub</small>
-      <div class="row"><span>IP to Open</span><b style="color:var(--brand);font-family:monospace;font-size:11px">${state.lanIp || '192.168.100.18'}:3001</b></div>
+      <div class="row"><span>IP to Open</span><b style="color:var(--brand);font-family:monospace;font-size:11px">${state.lanIp || '172.20.10.2'}:3001</b></div>
+      <div class="row" title="Computer hostname (Permanent address that never changes with IP)"><span>Hostname</span><b style="color:var(--ink);font-family:monospace;font-size:10px">${state.hostname || 'DESKTOP-11DN7IC'}:3001</b></div>
       <div class="row"><span>Waiting Sync</span><b>${p}</b></div>
       <div class="row"><span>Hub Server</span><b style="color:var(--brand)">Active</b></div>
     </div>
