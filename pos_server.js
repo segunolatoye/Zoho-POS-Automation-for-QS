@@ -1105,7 +1105,7 @@ const server = http.createServer(async (req, res) => {
           const bulkUnit = (item.units || []).find(u => !u.is_base) || item.units?.[item.units.length - 1];
           const bulkRatio = bulkUnit ? (bulkUnit.conversion_ratio > 1 ? bulkUnit.conversion_ratio : (bulkUnit.units_per_bulk || (bulkUnit.conversion_ratio > 0 && bulkUnit.conversion_ratio < 1 ? Math.round(1 / bulkUnit.conversion_ratio) : 1))) : 1;
           const currentStockBulk = parseFloat(item.stock) || 0;
-          const currentStockBase = Math.round(currentStockBulk * bulkRatio);
+          const currentStockBase = Math.round((currentStockBulk * bulkRatio) * 100) / 100;
 
           let sellRatio = 1;
           if (line.unit) {
@@ -1114,7 +1114,7 @@ const server = http.createServer(async (req, res) => {
               sellRatio = soldUnit.is_base ? 1 : (soldUnit.conversion_ratio > 1 ? soldUnit.conversion_ratio : (soldUnit.units_per_bulk || (soldUnit.conversion_ratio > 0 && soldUnit.conversion_ratio < 1 ? Math.round(1 / soldUnit.conversion_ratio) : 1)));
             }
           }
-          const requestedBase = line.quantity * sellRatio;
+          const requestedBase = Math.round((line.quantity * sellRatio) * 100) / 100;
 
           if (currentStockBase <= 0) {
             res.writeHead(400);

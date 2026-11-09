@@ -1,5 +1,5 @@
 // Quality Superstores POS - Offline-First Service Worker
-const CACHE_NAME = 'qs-pos-v2.1';
+const CACHE_NAME = 'qs-pos-v2.3';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
@@ -40,7 +40,23 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // 2. Cache-first with network fallback & background refresh for static assets
+  // 2. Navigation & HTML requests: Network-First with cache fallback for offline
+  if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html' || url.pathname.endsWith('.html')) {
+    event.respondWith(
+      fetch(event.request).then(networkResponse => {
+        if (networkResponse && networkResponse.status === 200) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+        return networkResponse;
+      }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // 3. Static assets: Cache-first with network background refresh
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
       const fetchPromise = fetch(event.request).then(networkResponse => {
@@ -57,4 +73,5 @@ self.addEventListener('fetch', event => {
     })
   );
 });
+
 
