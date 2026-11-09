@@ -2359,8 +2359,8 @@ function renderCatalogHTML() {
             <th>Product Name</th>
             <th>Unit</th>
             <th style="text-align:right">Stock</th>
-            <th style="text-align:right">Unit Price</th>
-            <th style="text-align:right">Pack Price</th>
+            <th style="text-align:right">Single Price</th>
+            <th style="text-align:right">Bulk Price</th>
             <th class="col-act" style="text-align:right">Action</th>
           </tr>
         </thead>
@@ -2401,7 +2401,7 @@ function renderCatalogHTML() {
                   </span>
                 </td>
                 <td style="text-align:right;font-weight:700;font-size:12px">${NGN(singlePrice)}</td>
-                <td style="text-align:right;font-weight:800;font-size:12px;color:var(--brand)">${bulkPrice ? NGN(bulkPrice) : '<span style="color:var(--mute)">–</span>'}</td>
+                <td style="text-align:right;font-weight:800;font-size:12px;color:var(--brand)">${bulkPrice ? `${NGN(bulkPrice)} <small style="font-size:10px;font-weight:700;color:var(--mute)">/${(bulkUnit.unit_symbol || bulkUnit.name).toUpperCase()}</small>` : '<span style="color:var(--mute)">–</span>'}</td>
                 <td class="col-act" style="text-align:right">
                   ${stockInfo.isOut
                     ? `<button class="btn" style="padding:4px 6px;font-size:10.5px;opacity:0.5;cursor:not-allowed" disabled>Out</button>`
@@ -2434,7 +2434,7 @@ function renderCatalogHTML() {
         <div class="m">
           <div style="display:flex;gap:6px;align-items:baseline;overflow:hidden">
             <span style="font-size:13px;font-weight:800;color:var(--ink)" title="Single Unit Price">${NGN(singlePrice)}</span>
-            ${bulkPrice ? `<span style="font-size:11px;font-weight:700;color:var(--brand);white-space:nowrap" title="Pack / Carton Price">Pack: ${NGN(bulkPrice)}</span>` : ''}
+            ${bulkPrice ? `<span style="font-size:11px;font-weight:700;color:var(--brand);white-space:nowrap" title="Bulk Price (${(bulkUnit.name || '').toUpperCase()})">${(bulkUnit.unit_symbol || bulkUnit.name || 'Bulk').toUpperCase()}: ${NGN(bulkPrice)}</span>` : ''}
           </div>
           <span class="stock-pill ${stockInfo.isOut ? 'out' : (stockInfo.isLow ? 'low' : 'in')}">${stockInfo.text}</span>
         </div>
@@ -4055,7 +4055,7 @@ function showPriceManagerModal() {
               <input id="pm-retail" type="number" style="width:100%;padding:6px;border:1px solid var(--line);border-radius:6px;font-weight:700">
             </div>
             <div>
-              <label style="font-size:11px;font-weight:700;color:var(--mute)">Carton Bulk Price (₦)</label>
+              <label id="pm-bulk-label" style="font-size:11px;font-weight:700;color:var(--mute)">Bulk Unit Price (₦)</label>
               <input id="pm-carton" type="number" style="width:100%;padding:6px;border:1px solid var(--line);border-radius:6px;font-weight:700">
             </div>
           </div>
@@ -4071,12 +4071,16 @@ function searchPM(q) {
   const div = $('#pm-results');
   if (!query) { div.innerHTML = ''; return; }
   const matches = state.items.filter(it => it.name.toLowerCase().includes(query)).slice(0, 6);
-  div.innerHTML = matches.map(m => `
-    <div class="cust-bar" style="cursor:pointer" onclick="selectPMItem('${m.id}')">
-      <b>${m.name}</b>
-      <span style="font-size:11.5px;color:var(--mute)">Single: ${NGN(m.retail_price)} • Carton: ${NGN(m.carton_price)}</span>
-    </div>
-  `).join('');
+  div.innerHTML = matches.map(m => {
+    const bulkU = (m.units || []).find(u => !u.is_base);
+    const bulkLabel = bulkU ? (bulkU.unit_symbol || bulkU.name).toUpperCase() : 'Bulk';
+    return `
+      <div class="cust-bar" style="cursor:pointer" onclick="selectPMItem('${m.id}')">
+        <b>${m.name}</b>
+        <span style="font-size:11.5px;color:var(--mute)">Single: ${NGN(m.retail_price)} • ${bulkLabel}: ${NGN(m.carton_price)}</span>
+      </div>
+    `;
+  }).join('');
 }
 
 function selectPMItem(id) {
@@ -4086,6 +4090,10 @@ function selectPMItem(id) {
   $('#pm-name').innerText = it.name;
   $('#pm-retail').value = it.retail_price;
   $('#pm-carton').value = it.carton_price;
+  const bulkU = (it.units || []).find(u => !u.is_base);
+  const bulkLabel = bulkU ? `${(bulkU.unit_symbol || bulkU.name).toUpperCase()} Bulk Price (₦)` : 'Bulk Price (₦)';
+  const lbl = $('#pm-bulk-label');
+  if (lbl) lbl.innerText = bulkLabel;
   $('#pm-editor').style.display = 'block';
 }
 

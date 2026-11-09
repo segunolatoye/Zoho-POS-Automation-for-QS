@@ -24,9 +24,9 @@ const swPath = path.join(__dirname, '..', 'public', 'sw.js');
 const swJs = fs.readFileSync(swPath, 'utf8');
 
 // Test 1: Service Worker uses Network-First for navigation and has bumped cache version
-assert(swJs.includes("qs-pos-v2.3"), "Service Worker must have updated cache version qs-pos-v2.3");
+assert(swJs.includes("qs-pos-v2.4"), "Service Worker must have updated cache version qs-pos-v2.4");
 assert(swJs.includes("event.request.mode === 'navigate'"), "Service Worker must have Network-First navigation rule");
-console.log('✅ PASS: Service Worker v2.3 with Network-First navigation verified');
+console.log('✅ PASS: Service Worker v2.4 with Network-First navigation verified');
 
 // Test 2: Stepper spinners are removed via CSS
 assert(indexHtml.includes('-webkit-inner-spin-button'), "CSS must target -webkit-inner-spin-button");
@@ -76,6 +76,34 @@ const soldBulk = 0.5;
 const remainingStock = Math.max(0, Math.round((initialStockCartons - soldBulk) * 100) / 100);
 assert.strictEqual(remainingStock, 9.5, "10 - 0.5 cartons must equal 9.5 cartons");
 console.log('✅ PASS: Math simulation for 0.5 carton sale verified (₦31,500 total, 9.5 cartons remaining)');
+
+// Test 8: Respective Conversion Units Verification
+const catPath = path.join(__dirname, '..', 'data', 'pos_catalog.json');
+const cat = JSON.parse(fs.readFileSync(catPath, 'utf8'));
+
+const toothbrush = cat.find(i => i.name.includes('DIPLOMAT CHAMPION'));
+assert(toothbrush, "Must find DIPLOMAT CHAMPION in catalog");
+assert.strictEqual(toothbrush.base_unit, 'pcs', "Toothbrush base unit must be pcs");
+assert.strictEqual(toothbrush.bulk_unit, 'pack', "Toothbrush bulk unit must be pack (NOT carton)");
+const tbBulk = toothbrush.units.find(u => !u.is_base);
+assert.strictEqual(tbBulk.unit_symbol, 'pack', "Toothbrush bulk symbol must be pack");
+assert.strictEqual(tbBulk.conversion_ratio, 12, "Toothbrush pack ratio must be 12");
+console.log('✅ PASS: Respective conversion unit for Toothbrush verified (pcs -> pack x12)');
+
+const diaper = cat.find(i => i.name.includes('SOFTCARE GOLD XS/S10'));
+assert(diaper, "Must find SOFTCARE GOLD in catalog");
+assert.strictEqual(diaper.base_unit, 'pack', "Diaper base unit must be pack");
+assert.strictEqual(diaper.bulk_unit, 'bag', "Diaper bulk unit must be bag (NOT carton)");
+const dpBulk = diaper.units.find(u => !u.is_base);
+assert.strictEqual(dpBulk.unit_symbol, 'bag', "Diaper bulk symbol must be bag");
+assert.strictEqual(dpBulk.conversion_ratio, 10, "Diaper bag ratio must be 10");
+console.log('✅ PASS: Respective conversion unit for Diaper verified (pack -> bag x10)');
+
+const swiss = cat.find(i => i.name === 'SWISS GEL');
+assert(swiss, "Must find SWISS GEL in catalog");
+assert.strictEqual(swiss.base_unit, 'pack', "Swiss Gel base unit must be pack");
+assert.strictEqual(swiss.bulk_unit, 'ctn', "Swiss Gel bulk unit must be ctn");
+console.log('✅ PASS: Respective conversion unit for Swiss Gel verified (pack -> ctn x12)');
 
 console.log('\n====================================================');
 console.log('✅ ALL QUANTITY & TENDER INTEGRITY TESTS PASSED!');

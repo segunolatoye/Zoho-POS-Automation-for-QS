@@ -172,6 +172,41 @@ async function createZohoSession() {
   return { context, page, frame, headers, invOrgId };
 }
 
+function getUnitSymbol(name) {
+  const n = (name || '').toLowerCase().trim();
+  if (n === 'piece' || n === 'pieces' || n === 'pcs') return 'pcs';
+  if (n === 'carton' || n === 'cartons' || n === 'ctn') return 'ctn';
+  if (n === 'pack' || n === 'packs') return 'pack';
+  if (n === 'bag' || n === 'bags') return 'bag';
+  if (n === 'roll' || n === 'rolls') return 'roll';
+  if (n === 'box' || n === 'boxes') return 'box';
+  if (n === 'jar' || n === 'jars') return 'jar';
+  if (n === 'dozen') return 'dzn';
+  if (n === 'unit' || n === 'units') return 'unit';
+  if (n === 'tin' || n === 'tins') return 'tin';
+  if (n === 'bottle' || n === 'bottles' || n === 'btl') return 'btl';
+  if (n === 'can' || n === 'cans') return 'can';
+  if (n === 'sachet' || n === 'sachets') return 'sachet';
+  return n || 'unit';
+}
+
+function parseUnitGroup(g) {
+  if (!g) return null;
+  let m = g.match(/^([A-Za-z\s]+)\s*\(([\d\.]+)\)\s*-\s*([A-Za-z\s]+)$/);
+  if (m) {
+    let ratio = parseFloat(m[2]);
+    if (ratio < 1 && ratio > 0) ratio = Math.round(1 / ratio);
+    return { base: m[1].trim(), bulk: m[3].trim(), ratio };
+  }
+  m = g.match(/^([A-Za-z\s]+)\s*-\s*([A-Za-z\s]+)\s*\(([\d\.]+)\)$/);
+  if (m) {
+    let ratio = parseFloat(m[3]);
+    if (ratio < 1 && ratio > 0) ratio = Math.round(1 / ratio);
+    return { bulk: m[1].trim(), base: m[2].trim(), ratio };
+  }
+  return null;
+}
+
 // Helper to construct a new catalog item from Zoho with conversions
 function buildCatalogItemFromZoho(z, unitGroupsMap) {
   const itemId = String(z.item_id);
@@ -199,52 +234,91 @@ function buildCatalogItemFromZoho(z, unitGroupsMap) {
     }
   }
 
+  const effectiveGroup = unitGroup || matchedGroup?.unit_group_name || '';
+  const parsed = parseUnitGroup(effectiveGroup);
+
   let units = [];
   let baseUnit = (z.unit || 'pcs').toLowerCase();
   let bulkUnit = 'carton';
   let cartonPrice = retailPrice;
   let cartonCostPrice = costPrice;
 
-  if (matchedGroup && Array.isArray(matchedGroup.unit_conversions) && matchedGroup.unit_conversions.length > 0) {
-    const conv = matchedGroup.unit_conversions[0];
-    const ratio = Number(conv.conversion_rate) || 1;
-    baseUnit = (matchedGroup.base_unit_name || z.unit || 'pcs').toLowerCase();
-    bulkUnit = (conv.target_unit_name || 'carton').toLowerCase();
+  if (parsed && parsed.ratio > 1) {
+    baseUnit = parsed.base.toLowerCase();
+    bulkUnit = parsed.bulk.toLowerCase();
+    const ratio = parsed.ratio;
+    const baseSym = getUnitSymbol(parsed.base);
+    const bulkSym = getUnitSymbol(parsed.bulk);
+    const convId = matchedGroup?.unit_conversions?.[0]?.unit_conversion_id || '';
+
     cartonPrice = Number(z.cf_carton_price || z.carton_price) || (retailPrice * ratio);
     cartonCostPrice = costPrice * ratio;
 
     units = [
       {
         name: baseUnit,
-        label: `${baseUnit.toUpperCase()} (Retail Single Unit)`,
+        label: `${baseSym.toUpperCase()} (Retail Single Unit)`,
         price: retailPrice,
         is_base: true,
         conversion_ratio: 1,
         unit_conversion_id: '',
-        unit_symbol: baseUnit,
+        unit_symbol: baseSym,
         cost: costPrice
       },
       {
         name: bulkUnit,
-        label: `${bulkUnit.toUpperCase()} (Full Bulk - ${ratio} ${baseUnit}s)`,
+        label: `${bulkSym.toUpperCase()} (Full Bulk - ${ratio} ${baseSym}s)`,
         price: cartonPrice,
         is_base: false,
         conversion_ratio: ratio,
-        unit_conversion_id: conv.unit_conversion_id || '',
-        unit_symbol: bulkUnit === 'carton' ? 'ctn' : bulkUnit,
+        unit_conversion_id: convId,
+        unit_symbol: bulkSym,
         cost: cartonCostPrice
       }
     ];
-  } else {
+  } else if (matchedGroup && Array.isArray(matchedGroup.unit_conversions) && matchedGroup.unit_conversions.length > 0) {
+    const conv = matchedGroup.unit_conversions[0];
+    const ratio = Number(conv.conversion_rate) || 1;
+    baseUnit = (matchedGroup.base_unit_name || z.unit || 'pcs').toLowerCase();
+    bulkUnit = (conv.target_unit_name || 'carton').toLowerCase();
+    const baseSym = getUnitSymbol(baseUnit);
+    const bulkSym = getUnitSymbol(bulkUnit);
+    cartonPrice = Number(z.cf_carton_price || z.carton_price) || (retailPrice * ratio);
+    cartonCostPrice = costPrice * ratio;
+
     units = [
       {
         name: baseUnit,
-        label: `${baseUnit.toUpperCase()} (Standard Unit)`,
+        label: `${baseSym.toUpperCase()} (Retail Single Unit)`,
         price: retailPrice,
         is_base: true,
         conversion_ratio: 1,
         unit_conversion_id: '',
-        unit_symbol: baseUnit,
+        unit_symbol: baseSym,
+        cost: costPrice
+      },
+      {
+        name: bulkUnit,
+        label: `${bulkSym.toUpperCase()} (Full Bulk - ${ratio} ${baseSym}s)`,
+        price: cartonPrice,
+        is_base: false,
+        conversion_ratio: ratio,
+        unit_conversion_id: conv.unit_conversion_id || '',
+        unit_symbol: bulkSym,
+        cost: cartonCostPrice
+      }
+    ];
+  } else {
+    const singleSym = getUnitSymbol(baseUnit);
+    units = [
+      {
+        name: baseUnit,
+        label: `${singleSym.toUpperCase()} (Standard Unit)`,
+        price: retailPrice,
+        is_base: true,
+        conversion_ratio: 1,
+        unit_conversion_id: '',
+        unit_symbol: singleSym,
         cost: costPrice
       }
     ];
