@@ -1015,6 +1015,17 @@ const server = http.createServer(async (req, res) => {
       const saleData = await parseJsonBody(req);
       const queue = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8'));
 
+      // 0a. Check idempotency for emergency standalone re-flushes
+      const existing = queue.find(s => (saleData.id && s.id === saleData.id) || 
+                                       (saleData.receipt_number && s.receipt_number === saleData.receipt_number));
+      if (existing) {
+        return res.end(JSON.stringify({
+          success: true,
+          sale: existing,
+          message: 'Sale already recorded in queue.'
+        }));
+      }
+
       // 0. Enforce PIN Login Security: Reject unauthenticated sales postings
       const usersPath = path.join(DATA_DIR, 'pos_users.json');
       const users = fs.existsSync(usersPath)
@@ -1141,18 +1152,21 @@ const server = http.createServer(async (req, res) => {
       }
       fs.writeFileSync(CATALOG_PATH, JSON.stringify(catalog, null, 2), 'utf8');
 
-      // 3. Issue Sequential Retail Order ID & Explicit Till Tracking (Monotonic counter: prevents clash even after archives)
+      // 3. Issue Sequential Retail Order ID & Explicit Till Tracking (Monotonic counter; preserves emergency standalone receipt numbers)
       const term = saleData.terminal_id || activeUser.terminal_id || 'TERM-01';
-      let maxNum = 0;
-      for (const s of queue) {
-        const m = (s.order_id || s.receipt_number || '').match(/QS-(\d+)/i);
-        if (m) {
-          const num = parseInt(m[1], 10);
-          if (num > maxNum) maxNum = num;
+      let orderId = (saleData.standalone_offline && saleData.receipt_number) ? saleData.receipt_number : null;
+      if (!orderId) {
+        let maxNum = 0;
+        for (const s of queue) {
+          const m = (s.order_id || s.receipt_number || '').match(/QS-(\d+)/i);
+          if (m) {
+            const num = parseInt(m[1], 10);
+            if (num > maxNum) maxNum = num;
+          }
         }
+        const nextNum = Math.max(maxNum + 1, queue.length + 1);
+        orderId = `QS-${String(nextNum).padStart(5, '0')}`;
       }
-      const nextNum = Math.max(maxNum + 1, queue.length + 1);
-      const orderId = `QS-${String(nextNum).padStart(5, '0')}`;
 
       const newSale = {
         id: `sale_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,

@@ -88,5 +88,5 @@ build_*.js
 apply_*.js
 analyze_*.js
 test_*.js
-!scripts/test_catalog.js
+!scripts/test_*.js
 data/active_shifts.json

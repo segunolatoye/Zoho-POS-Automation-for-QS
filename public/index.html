@@ -1610,25 +1610,63 @@ function calcTotals() {
   return { sub, n, disc, total };
 }
 
-// Load from server
+// Emergency Standalone Queue Accessors
+function getEmergencySalesQueue() {
+  try {
+    return JSON.parse(localStorage.getItem('qs_emergency_sales') || '[]');
+  } catch(e) {
+    return [];
+  }
+}
+
+// Load from server with persistent standalone offline fallback
 async function loadCatalog() {
   try {
     const r = await fetch('/api/catalog');
-    state.items = await r.json();
-    renderMain();
+    if (r.ok) {
+      state.items = await r.json();
+      try { localStorage.setItem('qs_cached_catalog', JSON.stringify(state.items)); } catch(e) {}
+      renderMain();
+      return;
+    }
   } catch(e) {
-    console.error('Failed to load catalog:', e);
+    console.warn('Host Hub offline. Loading catalog from standalone browser storage...', e);
+  }
+  // Standalone offline fallback
+  const cached = localStorage.getItem('qs_cached_catalog');
+  if (cached) {
+    try {
+      state.items = JSON.parse(cached);
+      console.log('✓ Loaded catalog from local standalone cache (' + state.items.length + ' items)');
+      renderMain();
+    } catch(e) {}
   }
 }
 
 async function loadCustomers() {
   try {
     const r = await fetch('/api/customers');
-    state.customers = await r.json();
-    if (state.customers.length && !state.customer.id) {
-      state.customer = { id: state.customers[0].id, name: state.customers[0].display_name || state.customers[0].name };
+    if (r.ok) {
+      state.customers = await r.json();
+      try { localStorage.setItem('qs_cached_customers', JSON.stringify(state.customers)); } catch(e) {}
+      if (state.customers.length && !state.customer.id) {
+        state.customer = { id: state.customers[0].id, name: state.customers[0].display_name || state.customers[0].name };
+      }
+      return;
     }
-  } catch(e) {}
+  } catch(e) {
+    console.warn('Host Hub offline. Loading customers from standalone browser storage...', e);
+  }
+  // Standalone offline fallback
+  const cached = localStorage.getItem('qs_cached_customers');
+  if (cached) {
+    try {
+      state.customers = JSON.parse(cached);
+      if (state.customers.length && !state.customer.id) {
+        state.customer = { id: state.customers[0].id, name: state.customers[0].display_name || state.customers[0].name };
+      }
+    } catch(e) {}
+  }
 }
 
 async function loadQueueStatus() {
@@ -1637,6 +1675,12 @@ async function loadQueueStatus() {
       fetch('/api/queue').then(r => r.json()).catch(() => null),
       fetch('/api/status').then(r => r.json()).catch(() => null)
     ]);
+    if (qRes || sRes) {
+      state.hubOffline = false;
+      flushEmergencySalesToHub();
+    } else {
+      state.hubOffline = true;
+    }
     if (qRes) {
       state.pendingCount = qRes.pending_count || 0;
       state.sales = qRes.sales || [];
@@ -1663,7 +1707,12 @@ async function loadQueueStatus() {
     renderNav();
     renderSb();
     if (state.view === 'orders') renderMain();
-  } catch(e) {}
+  } catch(e) {
+    state.hubOffline = true;
+    renderTop();
+    renderNav();
+    renderSb();
+  }
 }
 
 // Header Bar
@@ -1851,9 +1900,51 @@ async function submitPin() {
       setTimeout(() => renderLockScreen(), 600);
     }
   } catch(e) {
+    // Standalone fallback: Authenticate against cached staff accounts
+    const cachedUsersStr = localStorage.getItem('qs_cached_users');
+    let fallbackUser = null;
+    if (cachedUsersStr) {
+      try {
+        const users = JSON.parse(cachedUsersStr);
+        fallbackUser = users.find(u => u.pin === pin);
+      } catch(err) {}
+    } else {
+      // Default built-in emergency fallback accounts
+      const emergencyUsers = [
+        { id: 'u1', name: 'Funmilayo', pin: '9545', role: 'admin', terminal_id: 'TERM-01' },
+        { id: 'u5', name: 'Oluwatobi', pin: '6935', role: 'finance', terminal_id: 'OFFICE-01' },
+        { id: 'u2', name: 'Oluwatosin', pin: '5713', role: 'cashier', terminal_id: 'KETERE 2' },
+        { id: 'u3', name: 'Cashier 2', pin: '5917', role: 'cashier', terminal_id: 'TERM-02' }
+      ];
+      fallbackUser = emergencyUsers.find(u => u.pin === pin);
+    }
+
+    if (fallbackUser) {
+      state.user = fallbackUser;
+      sessionStorage.setItem('pos_user', JSON.stringify(fallbackUser));
+      state.isLocked = false;
+      state.pinInput = '';
+      if (fallbackUser.terminal_id) {
+        state.terminalId = fallbackUser.terminal_id;
+        localStorage.setItem('pos_terminal_id', fallbackUser.terminal_id);
+      }
+      renderLockScreen();
+      renderTop();
+      renderNav();
+      renderSb();
+      toast(`⚡ Standalone Mode: Unlocked as ${fallbackUser.name} (Hub Server Offline)`);
+      return;
+    }
+
+    const card = $('#pin-card');
+    if (card) {
+      card.classList.add('shake');
+      setTimeout(() => card.classList.remove('shake'), 450);
+    }
     const errEl = $('#pin-err');
-    if (errEl) errEl.textContent = 'Server connection error';
+    if (errEl) errEl.textContent = 'Hub Offline: Enter valid staff PIN';
     state.pinInput = '';
+    setTimeout(() => renderLockScreen(), 600);
   }
 }
 
@@ -1965,9 +2056,19 @@ function renderSb() {
   const isSyncing = sync?.is_syncing;
   const lastTime = sync?.last_sync_time ? sync.last_sync_time.split(' ')[1] : '';
   const isManagerOrFinance = state.user && (state.user.role === 'admin' || state.user.role === 'finance' || state.user.role === 'manager');
+  const emgQueue = getEmergencySalesQueue();
+  const emgCount = emgQueue.length;
+  const isHubDown = state.hubOffline;
 
   $('#sb').innerHTML = `
-    <span style="color:var(--brand);font-weight:700">● POS Hub Connected</span>
+    <span style="color:${isHubDown ? '#f59e0b' : 'var(--brand)'};font-weight:700">
+      ${isHubDown ? '⚡ Standalone Mode (Hub Offline)' : '● POS Hub Connected'}
+    </span>
+    ${emgCount > 0 ? `
+    <span style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-weight:700;color:#92400e;background:#fef3c7;padding:2px 8px;border-radius:4px;border:1px solid #f59e0b" onclick="flushEmergencySalesToHub()" title="Click to manually retry flushing standalone sales to Hub server">
+      <i class="fa-solid fa-bolt"></i> <b>${emgCount} Standalone Sale(s) on This PC</b> (Click to Sync)
+    </span>
+    ` : ''}
     <span style="display:inline-flex;align-items:center;gap:6px;font-weight:600;color:var(--ink);background:var(--bg);padding:2px 8px;border-radius:4px;border:1px solid var(--line)" title="Open this URL on other PCs, phones, or tablets on this Wi-Fi">
       <i class="fa-solid fa-wifi" style="color:var(--brand)"></i> LAN Hub: <b style="color:var(--brand);font-family:monospace;letter-spacing:0.5px">${lanUrl}</b>
     </span>
@@ -2769,6 +2870,98 @@ function renderCartHTML() {
   `;
 }
 
+// =============================================================================
+// EMERGENCY IN-BROWSER STANDALONE ENGINE (ACTIVE WHEN SERVER HUB IS OFF)
+// =============================================================================
+function saveEmergencyStandaloneSale(payload) {
+  const term = state.terminalId || 'STATION';
+  const termClean = term.replace(/[^A-Za-z0-9]/g, '').slice(-6).toUpperCase();
+  const seqKey = `qs_emg_seq_${termClean}`;
+  let seq = parseInt(localStorage.getItem(seqKey) || '0', 10) + 1;
+  localStorage.setItem(seqKey, String(seq));
+
+  const orderId = `QS-EMG-${termClean}-${String(seq).padStart(4, '0')}`;
+  const tiller = state.user?.name || 'Staff';
+
+  const emgSale = {
+    ...payload,
+    id: `emg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    order_id: orderId,
+    receipt_number: orderId,
+    tilled_by: tiller,
+    salesperson: tiller,
+    terminal_id: state.terminalId,
+    standalone_offline: true,
+    status: 'STANDALONE_LOCAL_QUEUE',
+    created_at: new Date().toISOString()
+  };
+
+  const emgQueue = getEmergencySalesQueue();
+  emgQueue.push(emgSale);
+  try { localStorage.setItem('qs_emergency_sales', JSON.stringify(emgQueue)); } catch(e) {}
+
+  return {
+    success: true,
+    sale: emgSale,
+    is_standalone: true,
+    message: `Standalone Mode: Sale queued locally as ${orderId}`
+  };
+}
+
+let isFlushingEmergency = false;
+async function flushEmergencySalesToHub() {
+  if (isFlushingEmergency) return;
+  const emgQueue = getEmergencySalesQueue();
+  if (!emgQueue || emgQueue.length === 0) return;
+
+  isFlushingEmergency = true;
+  try {
+    const ping = await fetch('/api/status').then(r => r.json()).catch(() => null);
+    if (!ping) {
+      isFlushingEmergency = false;
+      return;
+    }
+
+    let syncedCount = 0;
+    const remaining = [];
+
+    for (const emgSale of emgQueue) {
+      try {
+        const r = await fetch('/api/sales', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(emgSale)
+        });
+        const res = await r.json();
+        if (res && res.success) {
+          syncedCount++;
+        } else {
+          remaining.push(emgSale);
+        }
+      } catch (err) {
+        remaining.push(emgSale);
+      }
+    }
+
+    try { localStorage.setItem('qs_emergency_sales', JSON.stringify(remaining)); } catch(e) {}
+
+    if (syncedCount > 0) {
+      toast(`☁️ Hub Reconnected! Synced ${syncedCount} standalone offline sale(s) to server.`);
+      playSound('success');
+      await loadQueueStatus();
+      renderSb();
+    }
+  } catch(e) {
+    console.warn('Auto-flush error:', e);
+  } finally {
+    isFlushingEmergency = false;
+  }
+}
+
+// Background auto-flush timer & online listener
+setInterval(flushEmergencySalesToHub, 12000);
+window.addEventListener('online', flushEmergencySalesToHub);
+
 // Complete sale & save to offline outbox
 async function chargeSale() {
   const t = calcTotals();
@@ -2872,54 +3065,66 @@ async function chargeSale() {
     line_items: lineItems
   };
 
+  let res = null;
+  let isStandaloneOffline = false;
+
   try {
     const r = await fetch('/api/sales', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(salePayload)
     });
-    const res = await r.json();
-
-    if (res.success) {
-      lineItems.forEach(l => {
-        const it = getItem(l.item_id);
-        if (it) {
-          const u = (it.units || []).find(x => (x.unit_symbol === l.unit || x.name === l.unit)) || it.units?.[0];
-          const ratio = getUnitRatio(u);
-          const bulkUnit = (it.units || []).find(x => !x.is_base) || it.units?.[it.units.length - 1];
-          const bulkRatio = getUnitRatio(bulkUnit);
-          const soldBulk = (l.quantity * ratio) / bulkRatio;
-          it.stock = Math.max(0, (parseFloat(it.stock) || 0) - soldBulk);
-        }
-      });
-      state.cart = {};
-      state.disc = 0;
-      state.managerDiscountApproved = false;
-      state.managerApprovedBy = null;
-      state.managerPriceApproved = false;
-      state.managerPriceApprovedBy = null;
-      state.tender = '';
-      state.split = { cash: 0, moniepoint: 0, transfer: 0 };
-      await loadQueueStatus();
-      renderMain();
-      playSound('success');
-
-      // Printing & Cash Drawer Kick (Terminal local print by default, or Server Hub if configured)
-      if (state.pp.autoPrint !== false) {
-        if (state.pp.destination === 'server') {
-          doDirectPrint(res.sale);
-        } else {
-          printTerminalReceipt(res.sale);
-        }
-      } else {
-        showReceiptModal(res.sale);
-      }
-      toast(`Receipt ${res.sale.receipt_number} saved & settled.`);
-    } else {
-      toast('❌ Error: ' + res.message);
-    }
+    res = await r.json();
   } catch(e) {
-    toast('❌ Server communication error: ' + e.message);
+    console.warn('Host Hub Server unreachable. Saving sale in Standalone Emergency Outbox...', e);
+    isStandaloneOffline = true;
+    res = saveEmergencyStandaloneSale(salePayload);
+  }
+
+  if (res && res.success) {
+    lineItems.forEach(l => {
+      const it = getItem(l.item_id);
+      if (it) {
+        const u = (it.units || []).find(x => (x.unit_symbol === l.unit || x.name === l.unit)) || it.units?.[0];
+        const ratio = getUnitRatio(u);
+        const bulkUnit = (it.units || []).find(x => !x.is_base) || it.units?.[it.units.length - 1];
+        const bulkRatio = getUnitRatio(bulkUnit);
+        const soldBulk = (l.quantity * ratio) / bulkRatio;
+        it.stock = Math.max(0, (parseFloat(it.stock) || 0) - soldBulk);
+      }
+    });
+    try { localStorage.setItem('qs_cached_catalog', JSON.stringify(state.items)); } catch(err) {}
+
+    state.cart = {};
+    state.disc = 0;
+    state.managerDiscountApproved = false;
+    state.managerApprovedBy = null;
+    state.managerPriceApproved = false;
+    state.managerPriceApprovedBy = null;
+    state.tender = '';
+    state.split = { cash: 0, moniepoint: 0, transfer: 0 };
+    await loadQueueStatus();
+    renderMain();
+    playSound('success');
+
+    // Printing & Cash Drawer Kick (Always use station local printer in standalone mode)
+    if (state.pp.autoPrint !== false) {
+      if (!isStandaloneOffline && state.pp.destination === 'server') {
+        doDirectPrint(res.sale);
+      } else {
+        printTerminalReceipt(res.sale);
+      }
+    } else {
+      showReceiptModal(res.sale);
+    }
+
+    if (isStandaloneOffline) {
+      toast(`⚡ Standalone Mode: Receipt ${res.sale.receipt_number} saved locally (Hub Server Offline)`);
+    } else {
+      toast(`Receipt ${res.sale.receipt_number} saved & settled.`);
+    }
+  } else {
+    toast('❌ Error: ' + (res?.message || 'Transaction could not be completed'));
   }
 }
 
