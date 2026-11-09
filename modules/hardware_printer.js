@@ -76,7 +76,7 @@ function padLeft(str, len) {
   return s.length >= len ? s.slice(0, len) : ' '.repeat(len - s.length) + s;
 }
 
-function formatEscPosReceipt(sale, options = {}) {
+function formatSingleEscPosReceipt(sale, options = {}) {
   const width = options.paper === '58' ? 32 : 42;
   const divider = '-'.repeat(width);
   const doubleDivider = '='.repeat(width);
@@ -84,8 +84,8 @@ function formatEscPosReceipt(sale, options = {}) {
   let p = '';
   p += CMD.RESET;
 
-  // Drawer Kick pulse only if explicitly requested
-  if (options.kickDrawer === true) {
+  // Drawer Kick pulse only if explicitly requested on the first copy
+  if (options.kickDrawer === true && options.isFirstCopy) {
     p += CMD.DRAWER_KICK;
   }
 
@@ -96,6 +96,9 @@ function formatEscPosReceipt(sale, options = {}) {
   p += CMD.NORMAL_TEXT;
   p += '16, Ogo Oluwa St, Ketere Market,\nSango, Ogun State\n';
   p += 'Tel: +234 803 000 0000\n';
+  if (options.copyLabel) {
+    p += CMD.BOLD_ON + `*** ${options.copyLabel} ***\n` + CMD.BOLD_OFF;
+  }
   p += divider + '\n';
 
   // Sale Metadata
@@ -195,7 +198,24 @@ function formatEscPosReceipt(sale, options = {}) {
   return Buffer.from(p, 'binary');
 }
 
-function formatEscPosZReport(report, options = {}) {
+function formatEscPosReceipt(sale, options = {}) {
+  const copies = parseInt(options.copies, 10) || 2;
+  const buffers = [];
+  const labels = copies === 2 ? ['CUSTOMER COPY', 'STORE COPY'] : [];
+
+  for (let c = 0; c < copies; c++) {
+    const copyLabel = labels[c] || (copies > 1 ? `COPY ${c + 1}` : '');
+    buffers.push(formatSingleEscPosReceipt(sale, {
+      ...options,
+      copyLabel,
+      isFirstCopy: c === 0
+    }));
+  }
+
+  return Buffer.concat(buffers);
+}
+
+function formatSingleEscPosZReport(report, options = {}) {
   const width = options.paper === '58' ? 32 : 42;
   const divider = '-'.repeat(width);
   const doubleDivider = '='.repeat(width);
@@ -211,6 +231,9 @@ function formatEscPosZReport(report, options = {}) {
   p += '16, Ogo Oluwa St, Ketere Market,\nSango, Ogun State\n';
   p += CMD.BOLD_ON;
   p += '*** SHIFT CLOSE / Z-REPORT ***\n';
+  if (options.copyLabel) {
+    p += `*** ${options.copyLabel} ***\n`;
+  }
   p += CMD.BOLD_OFF;
   p += divider + '\n';
 
@@ -278,6 +301,23 @@ function formatEscPosZReport(report, options = {}) {
   p += CMD.FEED_AND_CUT;
 
   return Buffer.from(p, 'binary');
+}
+
+function formatEscPosZReport(report, options = {}) {
+  const copies = parseInt(options.copies, 10) || 2;
+  const buffers = [];
+  const labels = copies === 2 ? ['ORIGINAL COPY', 'OFFICE COPY'] : [];
+
+  for (let c = 0; c < copies; c++) {
+    const copyLabel = labels[c] || (copies > 1 ? `COPY ${c + 1}` : '');
+    buffers.push(formatSingleEscPosZReport(report, {
+      ...options,
+      copyLabel,
+      isFirstCopy: c === 0
+    }));
+  }
+
+  return Buffer.concat(buffers);
 }
 
 function printDirect(printerName, buffer) {

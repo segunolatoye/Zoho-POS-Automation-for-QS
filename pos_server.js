@@ -1690,6 +1690,7 @@ const server = http.createServer(async (req, res) => {
 
       const buffer = hardwarePrinter.formatEscPosReceipt(sale, {
         paper: body.paper || '80',
+        copies: parseInt(body.copies, 10) || 2,
         kickDrawer: kickDrawer
       });
 
@@ -1930,7 +1931,10 @@ const server = http.createServer(async (req, res) => {
       const body = await parseJsonBody(req);
       const report = body.report || body;
       const printerName = body.printer_name || '';
-      const buffer = hardwarePrinter.formatEscPosZReport(report, { paper: body.paper || '80' });
+      const buffer = hardwarePrinter.formatEscPosZReport(report, {
+        paper: body.paper || '80',
+        copies: parseInt(body.copies, 10) || 2
+      });
       const result = await hardwarePrinter.printDirect(printerName, buffer);
       res.writeHead(result.success ? 200 : 500);
       return res.end(JSON.stringify(result));

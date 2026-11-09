@@ -1539,7 +1539,7 @@ let state = {
     printer: 'System default printer',
     printMode: 'direct',
     paper: '80',
-    copies: 1,
+    copies: 2,
     hdr: true,
     vat: false,
     companyName: 'QUALITY SUPERSTORES',
@@ -1563,6 +1563,9 @@ try {
       }
       if (state.pp.address === 'Ketere Market Road, Saki, Oyo State' || !state.pp.address) {
         state.pp.address = '16, Ogo Oluwa St, Ketere Market, Sango, Ogun State';
+      }
+      if (!state.pp.copies || state.pp.copies < 2) {
+        state.pp.copies = 2;
       }
     }
   }
@@ -4137,7 +4140,7 @@ async function triggerPullSync() {
 }
 
 // Thermal Receipt Modal & Printing
-function tickHTML(s, p) {
+function tickHTML(s, p, copyLabel = '') {
   const dt = s.created_at ? new Date(s.created_at).toLocaleString('en-NG', { dateStyle: 'short', timeStyle: 'short' }) : (s.date || '');
   const comp = p.companyName || 'QUALITY SUPERSTORES';
   const addr = p.address || '16, Ogo Oluwa St, Ketere Market, Sango, Ogun State';
@@ -4169,6 +4172,7 @@ function tickHTML(s, p) {
       <div class="rc-c rc-b" style="font-size:16px;letter-spacing:0.8px;margin-bottom:2px">${comp}</div>
       <div class="rc-c" style="font-size:12px;line-height:1.25">${addr}</div>
       <div class="rc-c" style="font-size:12px">Tel: ${phones}</div>
+      ${copyLabel ? `<div class="rc-c rc-b" style="font-size:12.5px;margin:3px 0;letter-spacing:1px">*** ${copyLabel} ***</div>` : ''}
       ${isNoPrice ? `<div class="rc-c rc-b" style="font-size:13px;margin:4px 0;letter-spacing:0.5px">*** DELIVERY NOTE / WAYBILL ***</div>` : ''}
       <hr class="rc-hr">
       <div class="rc-r" style="font-size:12.5px"><span>Order No:</span><span class="rc-b">${s.order_id || s.receipt_number}</span></div>
@@ -4259,6 +4263,7 @@ async function openCashDrawer() {
 async function doDirectPrint(sale) {
   try {
     const targetPrinter = state.pp.printer === 'System default printer' ? '' : state.pp.printer;
+    const numCopies = parseInt(state.pp.copies, 10) || 2;
     const r = await fetch('/api/hardware/print', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -4266,12 +4271,13 @@ async function doDirectPrint(sale) {
         sale: sale,
         printer_name: targetPrinter,
         paper: state.pp.paper || '80',
+        copies: numCopies,
         open_drawer: false
       })
     });
     const res = await r.json();
     if (res && res.success) {
-      toast(`⚡ Printed silently to ${targetPrinter || 'thermal printer'} (${sale.receipt_number || sale.order_id}).`);
+      toast(`⚡ Printed ${numCopies} copies silently to ${targetPrinter || 'thermal printer'} (${sale.receipt_number || sale.order_id}).`);
       return true;
     } else {
       console.warn('Direct print note:', res?.message);
@@ -4289,11 +4295,21 @@ async function doDirectPrint(sale) {
 
 function printTerminalReceipt(sale) {
   const p = state.pp;
+  const numCopies = parseInt(p.copies, 10) || 2;
+  const labels = numCopies === 2 ? ['CUSTOMER COPY', 'STORE COPY'] : [];
+  let html = '';
+  for (let i = 0; i < numCopies; i++) {
+    const label = labels[i] || (numCopies > 1 ? `COPY ${i + 1}` : '');
+    html += tickHTML(sale, p, label);
+    if (i < numCopies - 1) {
+      html += '<div style="page-break-after:always;height:24px;border-bottom:1.5px dashed #000;margin:16px 0"></div>';
+    }
+  }
   $('#pgs').textContent = '@page{margin:0;size:' + (p.paper === 'A4' ? 'A4' : p.paper + 'mm auto') + '}';
-  $('#prt').innerHTML = Array(parseInt(p.copies, 10) || 1).fill(tickHTML(sale, p)).join('');
+  $('#prt').innerHTML = html;
   setTimeout(() => {
     window.print();
-    toast(`Receipt dispatched (${sale.receipt_number || sale.order_id}).`);
+    toast(`Receipt dispatched (${numCopies} copies - ${sale.receipt_number || sale.order_id}).`);
   }, 100);
 }
 
@@ -4341,6 +4357,15 @@ function showReceiptModal(sale, isSettings = false) {
               <option value="80" ${p.paper==='80'?'selected':''}>80 mm Thermal Roll (Standard)</option>
               <option value="58" ${p.paper==='58'?'selected':''}>58 mm Mini Thermal Roll</option>
               <option value="A4" ${p.paper==='A4'?'selected':''}>A4 Full Sheet</option>
+            </select>
+          </label>
+
+          <label>
+            Print Copies
+            <select id="pp-copies" onchange="updatePrintPref('copies', parseInt(this.value, 10))">
+              <option value="2" ${p.copies==2?'selected':''}>2 Copies (Customer & Store Copy - Default)</option>
+              <option value="1" ${p.copies==1?'selected':''}>1 Single Copy</option>
+              <option value="3" ${p.copies==3?'selected':''}>3 Copies</option>
             </select>
           </label>
 
