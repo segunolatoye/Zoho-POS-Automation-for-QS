@@ -3945,6 +3945,7 @@ function renderOrdersView() {
               <th>Tilled By</th>
               <th>Terminal</th>
               <th>Date</th>
+              <th>Time</th>
               <th>Customer</th>
               <th>Payment</th>
               <th>Total</th>
@@ -3954,7 +3955,11 @@ function renderOrdersView() {
             </tr>
           </thead>
           <tbody>
-            ${state.sales.length ? state.sales.map(s => `
+            ${state.sales.length ? state.sales.map(s => {
+              const timeDisplay = s.created_at
+                ? new Date(s.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+                : (s.time || '–');
+              return `
               <tr style="cursor:pointer" onclick="viewOrderDetails('${s.id}')" title="Click to view full contents of this order">
                 <td><b style="color:var(--brand)">${s.order_id || s.receipt_number}</b></td>
                 <td>
@@ -3965,6 +3970,7 @@ function renderOrdersView() {
                 </td>
                 <td><kbd class="kk">${s.terminal_id || 'TERM-01'}</kbd></td>
                 <td>${s.date}</td>
+                <td><b style="font-size:12px;color:var(--ink);white-space:nowrap"><i class="fa-regular fa-clock" style="color:var(--mute);font-size:11px;margin-right:4px"></i>${timeDisplay}</b></td>
                 <td><b>${s.customer_name || 'Walk in Customer'}</b></td>
                 <td>${s.payment_mode || 'Cash'}</td>
                 <td><b>${NGN(s.total)}</b></td>
@@ -3977,8 +3983,9 @@ function renderOrdersView() {
                   </div>
                 </td>
               </tr>
-            `).join('') : `
-              <tr><td colspan="10" style="text-align:center;color:var(--mute);padding:30px">No sales recorded yet.</td></tr>
+            `;
+            }).join('') : `
+              <tr><td colspan="11" style="text-align:center;color:var(--mute);padding:30px">No sales recorded yet.</td></tr>
             `}
           </tbody>
         </table>
@@ -4014,7 +4021,7 @@ function viewOrderDetails(saleId) {
                 <span class="st ${isSynced ? 'ok' : ''}" style="font-size:11px">${isSynced ? '✓ Synced to Zoho' : '⏳ Pending Cloud Sync'}</span>
                 ${isCredit ? '<span class="pill" style="background:#f3f0ff;color:#7950f2;font-size:10.5px">Credit / On Account</span>' : ''}
               </h3>
-              <small style="color:var(--mute)">Recorded on ${s.date || 'N/A'} ${s.created_at ? 'at ' + new Date(s.created_at).toLocaleTimeString() : ''} · Station: ${s.terminal_id || 'TERM-01'}</small>
+              <small style="color:var(--mute);font-size:12px">Recorded on <b>${s.date || 'N/A'}</b> ${s.created_at ? 'at <b style="color:var(--ink)">' + new Date(s.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) + '</b>' : ''} · Station: <b>${s.terminal_id || 'TERM-01'}</b></small>
             </div>
           </div>
           <button class="rs" onclick="closeModal()" style="font-size:16px;padding:4px 10px">✕</button>
