@@ -95,7 +95,7 @@
     "company_name": "ABY STORE",
     "phone": "",
     "email": "",
-    "outstanding": 0,
+    "outstanding": 34000.08,
     "display_name": "ABY STORE"
   },
   {
@@ -1049,7 +1049,7 @@
     "company_name": "",
     "phone": "",
     "email": "",
-    "outstanding": 5000,
+    "outstanding": 6150,
     "display_name": "HENRY"
   },
   {
@@ -1130,7 +1130,7 @@
     "company_name": "",
     "phone": "",
     "email": "",
-    "outstanding": 1700,
+    "outstanding": 828398.97,
     "display_name": "IJEOMA"
   },
   {
@@ -1314,6 +1314,15 @@
     "display_name": "KAY BEE"
   },
   {
+    "id": "1560234000000102202",
+    "name": "kay bee",
+    "company_name": "Walk in Customer",
+    "phone": "57667677667",
+    "email": "",
+    "outstanding": 0,
+    "display_name": "kay bee"
+  },
+  {
     "id": "1560234000000101124",
     "name": "KAZEEM",
     "company_name": "",
@@ -1391,7 +1400,7 @@
     "company_name": "KIKIOGO",
     "phone": "",
     "email": "",
-    "outstanding": 0,
+    "outstanding": 56500.08,
     "display_name": "KIKIOGO"
   },
   {
@@ -2165,7 +2174,7 @@
     "company_name": "OYINLADUN STORE",
     "phone": "",
     "email": "",
-    "outstanding": 0,
+    "outstanding": 28600,
     "display_name": "OYINLADUN STORE"
   },
   {
@@ -2228,7 +2237,7 @@
     "company_name": "Pop Light Store",
     "phone": "",
     "email": "",
-    "outstanding": 0,
+    "outstanding": 22300,
     "display_name": "Pop Light Store"
   },
   {
@@ -2696,7 +2705,7 @@
     "company_name": "",
     "phone": "",
     "email": "",
-    "outstanding": 0,
+    "outstanding": 48000,
     "display_name": "VICTOR MDV SALES REP"
   },
   {
@@ -2824,14 +2833,5 @@
     "email": "",
     "outstanding": 0,
     "display_name": "ZUNAS STORE"
-  },
-  {
-    "id": "1560234000000102202",
-    "name": "kay bee",
-    "company_name": "",
-    "phone": "57667677667",
-    "email": "",
-    "outstanding": 0,
-    "display_name": "kay bee"
   }
 ]

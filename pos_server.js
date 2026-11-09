@@ -4,8 +4,10 @@ const path = require('path');
 const os = require('os');
 const dns = require('dns');
 const { chromium } = require('playwright-core');
+const { spawn, execSync } = require('child_process');
 const hardwarePrinter = require('./modules/hardware_printer');
 const backupManager = require('./modules/backup_manager');
+const updateEngine = require('./scripts/update_pos');
 
 // Global crash resilience: ensure unexpected network/DNS drops never kill POS server
 process.on('uncaughtException', (err) => {
@@ -130,46 +132,134 @@ function parseJsonBody(req) {
   });
 }
 
+// Concurrency mutex & session management for Zoho off-screen Playwright operations
+let isZohoSessionBusy = false;
+
+function cleanStaleProfileLocks(userDataDir) {
+  const locks = ['lockfile', 'SingletonLock', 'SingletonCookie', 'SingletonSocket'];
+  for (const f of locks) {
+    const p = path.join(userDataDir, f);
+    if (fs.existsSync(p)) {
+      try { fs.unlinkSync(p); } catch (e) {}
+    }
+  }
+}
+
+function getAvailableBrowserChannel() {
+  const chromePaths = [
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+    path.join(process.env.LOCALAPPDATA || '', 'Google\\Chrome\\Application\\chrome.exe')
+  ];
+  for (const p of chromePaths) {
+    if (fs.existsSync(p)) return 'chrome';
+  }
+  return 'msedge';
+}
+
+function killOrphanBrowserProfileProcesses() {
+  try {
+    const { execSync } = require('child_process');
+    execSync('powershell -NoProfile -Command "Get-Process -Name chrome,msedge -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue"', { stdio: 'ignore', timeout: 6000 });
+  } catch (e) {}
+}
+
 // Helper to launch Zoho Playwright session (Off-screen, zero cashier interruption)
 async function createZohoSession() {
+  if (isZohoSessionBusy) {
+    throw new Error('A Zoho cloud synchronization session is already actively in progress.');
+  }
+  isZohoSessionBusy = true;
+
   const userDataDir = path.join(__dirname, '.browser_profile');
-  const lockPath = path.join(userDataDir, 'lockfile');
-  if (fs.existsSync(lockPath)) {
-    try { fs.unlinkSync(lockPath); } catch (e) { }
+  cleanStaleProfileLocks(userDataDir);
+
+  const channel = getAvailableBrowserChannel();
+  let context;
+  try {
+    context = await chromium.launchPersistentContext(userDataDir, {
+      channel: channel,
+      headless: false,
+      args: [
+        '--window-position=-2400,-2400',
+        '--window-size=1280,800',
+        '--no-first-run',
+        '--disable-background-timer-throttling'
+      ]
+    });
+  } catch (launchErr) {
+    if (launchErr.message && launchErr.message.includes('Opening in existing browser session')) {
+      console.warn('⚠️ Stale Chromium profile lock detected. Auto-clearing orphan processes and retrying...');
+      killOrphanBrowserProfileProcesses();
+      cleanStaleProfileLocks(userDataDir);
+      await new Promise(r => setTimeout(r, 1200));
+      try {
+        context = await chromium.launchPersistentContext(userDataDir, {
+          channel: channel,
+          headless: false,
+          args: [
+            '--window-position=-2400,-2400',
+            '--window-size=1280,800',
+            '--no-first-run',
+            '--disable-background-timer-throttling'
+          ]
+        });
+      } catch (retryErr) {
+        isZohoSessionBusy = false;
+        throw retryErr;
+      }
+    } else {
+      isZohoSessionBusy = false;
+      throw launchErr;
+    }
   }
 
-  const context = await chromium.launchPersistentContext(userDataDir, {
-    channel: 'chrome',
-    headless: false,
-    args: [
-      '--window-position=-2400,-2400',
-      '--window-size=1280,800',
-      '--no-first-run',
-      '--disable-background-timer-throttling'
-    ]
-  });
-  const page = context.pages().length > 0 ? context.pages()[0] : await context.newPage();
-  const invOrgId = '943392252';
+  try {
+    const page = context.pages().length > 0 ? context.pages()[0] : await context.newPage();
+    const invOrgId = '943392252';
 
-  await page.goto(`https://pos.zoho.com/qualitysuperstores/index.do/zxapp/posapi/app/${invOrgId}?embeddingService=pos#/home/inventory-dashboard`, { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(3000);
+    try {
+      await page.goto(`https://pos.zoho.com/qualitysuperstores/index.do/zxapp/posapi/app/${invOrgId}?embeddingService=pos#/home/inventory-dashboard`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    } catch (navErr) {
+      console.warn('Zoho navigation timeout or notice:', navErr.message);
+    }
+    await page.waitForTimeout(3000);
 
-  const frameElement = await page.waitForSelector('iframe[name="serviceFrame"], iframe#serviceFrame', { state: 'attached', timeout: 30000 });
-  const frame = await frameElement.contentFrame();
+    const currentUrl = page.url();
+    if (currentUrl.includes('accounts.zoho.com') || currentUrl.includes('signin')) {
+      throw new Error('Zoho session unauthenticated on this computer. Please double-click "login_zoho.bat" to sign into Zoho once.');
+    }
 
-  const cookies = await context.cookies();
-  const zoscscook = cookies.find(c => c.name === 'zoscscook');
-  const token = zoscscook ? 'zoscsparam=' + zoscscook.value : '';
+    const frameElement = await page.waitForSelector('iframe[name="serviceFrame"], iframe#serviceFrame', { state: 'attached', timeout: 30000 });
+    const frame = await frameElement.contentFrame();
 
-  const headers = {
-    'Content-Type': 'application/json;charset=UTF-8',
-    'Accept': 'application/json',
-    'x-zcsrf-token': token,
-    'x-zb-source': 'zbclient',
-    'x-role-id': '1560234000000110197'
-  };
+    const cookies = await context.cookies();
+    const zoscscook = cookies.find(c => c.name === 'zoscscook');
+    const token = zoscscook ? 'zoscsparam=' + zoscscook.value : '';
 
-  return { context, page, frame, headers, invOrgId };
+    const headers = {
+      'Content-Type': 'application/json;charset=UTF-8',
+      'Accept': 'application/json',
+      'x-zcsrf-token': token,
+      'x-zb-source': 'zbclient',
+      'x-role-id': '1560234000000110197'
+    };
+
+    return { context, page, frame, headers, invOrgId };
+  } catch (err) {
+    await closeZohoSession({ context });
+    throw err;
+  }
+}
+
+async function closeZohoSession(session) {
+  try {
+    if (session && session.context) {
+      await session.context.close().catch(() => {});
+    }
+  } finally {
+    isZohoSessionBusy = false;
+  }
 }
 
 function getUnitSymbol(name) {
@@ -347,9 +437,10 @@ async function pullCloudDataFromZoho() {
   const startTime = Date.now();
   writeSyncLog('INFO', 'Starting background pull from Zoho (Customers, Ledgers, New Items & Inventory)...');
 
-  const { context, frame, headers, invOrgId } = await createZohoSession();
-
+  let session = null;
   try {
+    session = await createZohoSession();
+    const { context, frame, headers, invOrgId } = session;
     // 1. Pull Customers & Debts
     const allContacts = [];
     let custPage = 1;
@@ -529,7 +620,7 @@ async function pullCloudDataFromZoho() {
       message: `Sync complete! Pulled ${formattedCustomers.length} customers and updated ${updatedStockCount} items (${newItemsAdded} new).`
     };
   } finally {
-    await context.close();
+    await closeZohoSession(session);
   }
 }
 
@@ -624,9 +715,10 @@ async function syncOfflineSalesToZoho() {
 
   console.log(`Starting background sync for ${pending.length} pending sale(s)...`);
 
-  const { context, page, frame, headers, invOrgId } = await createZohoSession();
-
+  let session = null;
   try {
+    session = await createZohoSession();
+    const { context, page, frame, headers, invOrgId } = session;
     const paymentModeMap = {
       'Cash': { mode: 'Cash', accountId: '1560234000000000361' }, // Petty Cash
       'Moniepoint POS': { mode: 'POS', accountId: '1560234000000114266' }, // Moniepoint
@@ -759,42 +851,51 @@ async function syncOfflineSalesToZoho() {
         }
 
         // 3. Record Payment(s) (supports single or multi-account split payments)
-        const paymentList = (Array.isArray(sale.payments) && sale.payments.length > 0)
-          ? sale.payments
-          : [{ mode: sale.payment_mode || 'Cash', amount: inv.total }];
+        const isCreditSale = sale.is_credit || 
+                             (sale.payment_mode || '').toLowerCase().includes('credit') || 
+                             (sale.payment_mode || '').toLowerCase().includes('account') || 
+                             (sale.amount_paid === 0 && (!sale.payments || sale.payments.length === 0 || sale.payments[0]?.mode?.includes('Credit') || sale.payments[0]?.mode?.includes('Account')));
 
         const recordedPaymentIds = [];
 
-        for (let i = 0; i < paymentList.length; i++) {
-          const split = paymentList[i];
-          const splitAmt = Math.round(Number(split.amount));
-          if (!splitAmt || splitAmt <= 0) continue;
+        if (isCreditSale) {
+          console.log(`  📝 Credit Sale: Invoice ${inv.invoice_number} sent & left unpaid in Zoho (Customer owing balance officially increased by ₦${Number(inv.total).toLocaleString()}).`);
+        } else {
+          const paymentList = (Array.isArray(sale.payments) && sale.payments.length > 0)
+            ? sale.payments
+            : [{ mode: sale.payment_mode || 'Cash', amount: inv.total }];
 
-          const payCfg = paymentModeMap[split.mode] ||
-            (split.mode?.includes('POS') || split.mode?.includes('Moniepoint') ? paymentModeMap['Moniepoint POS'] :
-              split.mode?.includes('Transfer') || split.mode?.includes('First') ? paymentModeMap['First Bank Transfer'] :
-                paymentModeMap['Cash']);
+          for (let i = 0; i < paymentList.length; i++) {
+            const split = paymentList[i];
+            const splitAmt = Math.round(Number(split.amount));
+            if (!splitAmt || splitAmt <= 0) continue;
 
-          const payPayload = {
-            customer_id: inv.customer_id,
-            payment_mode: payCfg.mode,
-            amount: splitAmt,
-            date: sale.date,
-            account_id: payCfg.accountId,
-            reference_number: paymentList.length > 1 ? `${sale.receipt_number}-${i + 1}` : sale.receipt_number,
-            invoices: [{ invoice_id: inv.invoice_id, amount_applied: splitAmt }]
-          };
+            const payCfg = paymentModeMap[split.mode] ||
+              (split.mode?.includes('POS') || split.mode?.includes('Moniepoint') ? paymentModeMap['Moniepoint POS'] :
+                split.mode?.includes('Transfer') || split.mode?.includes('First') ? paymentModeMap['First Bank Transfer'] :
+                  paymentModeMap['Cash']);
 
-          const payRes = await frame.evaluate(async ({ url, h, b }) => {
-            const r = await fetch(url, { method: 'POST', headers: h, body: JSON.stringify(b) });
-            return await r.json();
-          }, { url: `/posapi/api/v1/customerpayments?organization_id=${invOrgId}`, h: headers, b: payPayload });
+            const payPayload = {
+              customer_id: inv.customer_id,
+              payment_mode: payCfg.mode,
+              amount: splitAmt,
+              date: sale.date,
+              account_id: payCfg.accountId,
+              reference_number: paymentList.length > 1 ? `${sale.receipt_number}-${i + 1}` : sale.receipt_number,
+              invoices: [{ invoice_id: inv.invoice_id, amount_applied: splitAmt }]
+            };
 
-          if (payRes.code === 0 && payRes.payment) {
-            recordedPaymentIds.push(payRes.payment.payment_id);
-            console.log(`    💳 Payment logged: ₦${splitAmt.toLocaleString()} -> ${payCfg.mode} (${payCfg.accountId})`);
-          } else {
-            console.log(`    ⚠️ Warning recording payment (${split.mode}):`, payRes.message);
+            const payRes = await frame.evaluate(async ({ url, h, b }) => {
+              const r = await fetch(url, { method: 'POST', headers: h, body: JSON.stringify(b) });
+              return await r.json();
+            }, { url: `/posapi/api/v1/customerpayments?organization_id=${invOrgId}`, h: headers, b: payPayload });
+
+            if (payRes.code === 0 && payRes.payment) {
+              recordedPaymentIds.push(payRes.payment.payment_id);
+              console.log(`    💳 Payment logged: ₦${splitAmt.toLocaleString()} -> ${payCfg.mode} (${payCfg.accountId})`);
+            } else {
+              console.log(`    ⚠️ Warning recording payment (${split.mode}):`, payRes.message);
+            }
           }
         }
 
@@ -817,9 +918,7 @@ async function syncOfflineSalesToZoho() {
 
     return { count: syncedCount, message: `Successfully synced ${syncedCount} of ${pending.length} pending sale(s) to Zoho!` };
   } finally {
-    if (context) {
-      await context.close().catch(() => { });
-    }
+    await closeZohoSession(session);
   }
 }
 
@@ -940,6 +1039,72 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // 0e. GET /api/system/version (Check Current Version and GitHub Updates)
+  if (req.method === 'GET' && pathname === '/api/system/version') {
+    try {
+      const checkRemote = req.url.includes('check_remote=true');
+      const current = updateEngine.getCurrentVersion();
+      let remoteInfo = { updatesAvailable: false, behindCount: 0, commits: [] };
+      if (checkRemote) {
+        remoteInfo = updateEngine.checkRemoteUpdates('dev');
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({
+        success: true,
+        current,
+        ...remoteInfo
+      }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: false, error: err.message }));
+    }
+  }
+
+  // 0f. POST /api/system/update (Pull Latest Code from GitHub and Restart)
+  if (req.method === 'POST' && pathname === '/api/system/update') {
+    try {
+      console.log('[System Update] Remote update requested via API...');
+      const result = updateEngine.applyUpdate('dev');
+      if (result.success) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: true,
+          message: 'Update applied successfully! Restarting POS server...',
+          ...result
+        }));
+
+        // Restart server after response completes
+        setTimeout(() => {
+          try {
+            if (process.env.pm_id !== undefined || process.env.PM2_HOME) {
+              console.log('[System Update] Exiting process for PM2 auto-restart...');
+              process.exit(0);
+            } else {
+              console.log('[System Update] Relaunching POS server process...');
+              const child = spawn(process.argv[0], [path.join(__dirname, 'pos_server.js')], {
+                detached: true,
+                stdio: 'ignore',
+                cwd: __dirname
+              });
+              child.unref();
+              process.exit(0);
+            }
+          } catch (e) {
+            console.error('[System Update] Restart error:', e);
+            process.exit(0);
+          }
+        }, 1500);
+        return;
+      } else {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: false, error: result.error, log: result.log }));
+      }
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: false, error: err.message }));
+    }
+  }
+
   // 0. POST /api/terminal/init (Multi-Terminal Auto-Discovery)
   if (req.method === 'POST' && pathname === '/api/terminal/init') {
     try {
@@ -1040,37 +1205,37 @@ const server = http.createServer(async (req, res) => {
       writeSyncLog('INFO', `Locally registered new customer "${name}" (Phone: ${phone || 'N/A'}).`);
 
       // Attempt immediate background sync to Zoho if online
-      if (syncState.isOnline && !syncState.isSyncing) {
+      if (syncState.isOnline && !syncState.isSyncing && !isZohoSessionBusy) {
         (async () => {
+          let session = null;
           try {
-            const { context, frame, headers, invOrgId } = await createZohoSession();
-            try {
-              const res = await frame.evaluate(async ({ url, h, b }) => {
-                const r = await fetch(url, { method: 'POST', headers: h, body: JSON.stringify(b) });
-                return await r.json();
-              }, {
-                url: `/posapi/api/v1/contacts?organization_id=${invOrgId}`,
-                h: headers,
-                b: {
-                  contact_name: name,
-                  company_name: company,
-                  contact_type: 'customer',
-                  phone: phone,
-                  email: email
-                }
-              });
-              if (res.code === 0 && res.contact) {
-                newCust.id = res.contact.contact_id;
-                newCust.zoho_contact_id = res.contact.contact_id;
-                delete newCust.is_local_created;
-                fs.writeFileSync(CUSTOMERS_PATH, JSON.stringify(custs, null, 2), 'utf8');
-                writeSyncLog('SUCCESS', `Synced customer "${name}" to Zoho Books (Contact ID: ${res.contact.contact_id}).`);
+            session = await createZohoSession();
+            const { frame, headers, invOrgId } = session;
+            const res = await frame.evaluate(async ({ url, h, b }) => {
+              const r = await fetch(url, { method: 'POST', headers: h, body: JSON.stringify(b) });
+              return await r.json();
+            }, {
+              url: `/posapi/api/v1/contacts?organization_id=${invOrgId}`,
+              h: headers,
+              b: {
+                contact_name: name,
+                company_name: company,
+                contact_type: 'customer',
+                phone: phone,
+                email: email
               }
-            } finally {
-              await context.close();
+            });
+            if (res.code === 0 && res.contact) {
+              newCust.id = res.contact.contact_id;
+              newCust.zoho_contact_id = res.contact.contact_id;
+              delete newCust.is_local_created;
+              fs.writeFileSync(CUSTOMERS_PATH, JSON.stringify(custs, null, 2), 'utf8');
+              writeSyncLog('SUCCESS', `Synced customer "${name}" to Zoho Books (Contact ID: ${res.contact.contact_id}).`);
             }
           } catch(e) {
             writeSyncLog('WARN', `Customer "${name}" will be synced to Zoho on next scheduled cycle: ${e.message}`);
+          } finally {
+            await closeZohoSession(session);
           }
         })();
       }
@@ -1089,14 +1254,44 @@ const server = http.createServer(async (req, res) => {
       const saleData = await parseJsonBody(req);
       const queue = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8'));
 
-      // 0a. Check idempotency for emergency standalone re-flushes
-      const existing = queue.find(s => (saleData.id && s.id === saleData.id) || 
-                                       (saleData.receipt_number && s.receipt_number === saleData.receipt_number));
+      // 0a. Check idempotency for client transaction UUID or emergency standalone re-flushes
+      const clientTxnId = saleData.client_txn_id || saleData.id;
+      const existing = queue.find(s => 
+        (clientTxnId && (s.client_txn_id === clientTxnId || s.id === clientTxnId)) || 
+        (saleData.receipt_number && s.receipt_number === saleData.receipt_number)
+      );
       if (existing) {
         return res.end(JSON.stringify({
           success: true,
           sale: existing,
+          duplicate_prevented: true,
           message: 'Sale already recorded in queue.'
+        }));
+      }
+
+      // 0b. Rapid double-tap debounce window (4 seconds)
+      const nowMs = Date.now();
+      const recentDuplicate = queue.slice(-20).find(s => {
+        if (!s.created_at) return false;
+        const sTime = new Date(s.created_at).getTime();
+        const diffMs = nowMs - sTime;
+        if (diffMs < 0 || diffMs > 4000) return false;
+        if (s.terminal_id !== saleData.terminal_id) return false;
+        if (s.user_id !== saleData.user_id && s.tilled_by !== saleData.tilled_by) return false;
+        if (s.customer_id !== saleData.customer_id) return false;
+        if (Math.abs(s.total - saleData.total) > 0.01) return false;
+        if ((s.line_items || []).length !== (saleData.line_items || []).length) return false;
+        const sIds = (s.line_items || []).map(l => `${l.item_id}_${l.quantity}`).sort().join('|');
+        const reqIds = (saleData.line_items || []).map(l => `${l.item_id}_${l.quantity}`).sort().join('|');
+        return sIds === reqIds;
+      });
+      if (recentDuplicate) {
+        console.warn(`[Debounce Guard] Blocked rapid duplicate sale within 4s from terminal ${saleData.terminal_id}`);
+        return res.end(JSON.stringify({
+          success: true,
+          sale: recentDuplicate,
+          duplicate_prevented: true,
+          message: 'Duplicate checkout tap prevented. Sale already recorded.'
         }));
       }
 
@@ -1242,8 +1437,25 @@ const server = http.createServer(async (req, res) => {
         orderId = `QS-${String(nextNum).padStart(5, '0')}`;
       }
 
+      const isCreditSale = (saleData.payment_mode === 'Credit / On Account' || 
+                            saleData.is_credit === true || 
+                            (saleData.amount_paid === 0 && (!saleData.payments || saleData.payments.length === 0 || saleData.payments[0]?.mode === 'Credit / On Account')));
+
+      // Enforce valid customer for on-account / credit sales
+      if (isCreditSale) {
+        const isWalkIn = !saleData.customer_id || saleData.customer_id === '1560234000000095179' || /walk\s*[-]?\s*in/i.test(saleData.customer_name || '');
+        if (isWalkIn) {
+          res.writeHead(400);
+          return res.end(JSON.stringify({
+            success: false,
+            message: 'Credit / On-Account sales require selecting a registered customer to track debt balance.'
+          }));
+        }
+      }
+
       const newSale = {
         id: `sale_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        client_txn_id: saleData.client_txn_id || null,
         order_id: orderId,
         receipt_number: orderId,
         tilled_by: tillerName,
@@ -1254,34 +1466,43 @@ const server = http.createServer(async (req, res) => {
         customer_id: saleData.customer_id,
         customer_name: saleData.customer_name,
         date: saleData.date,
-        payment_mode: saleData.payment_mode,
-        payments: saleData.payments || [],
-        amount_paid: saleData.amount_paid !== undefined ? saleData.amount_paid : saleData.total,
-        change: saleData.change || 0,
+        payment_mode: isCreditSale ? 'Credit / On Account' : saleData.payment_mode,
+        payments: isCreditSale ? [{ mode: 'Credit / On Account', amount: 0 }] : (saleData.payments || []),
+        amount_paid: isCreditSale ? 0 : (saleData.amount_paid !== undefined ? saleData.amount_paid : saleData.total),
+        change: isCreditSale ? 0 : (saleData.change || 0),
         subtotal: saleData.subtotal !== undefined ? saleData.subtotal : saleData.total,
         discount: saleData.discount || 0,
         manager_override: saleData.manager_override || false,
         manager_override_by: saleData.manager_override_by || null,
         total: saleData.total,
         line_items: saleData.line_items,
+        is_credit: isCreditSale,
+        without_price: !!saleData.without_price,
         status: 'PENDING_SYNC',
         created_at: new Date().toISOString()
       };
 
+      // Atomically update customer outstanding debt balance if credit invoice
+      let updatedCustomer = null;
+      if (isCreditSale) {
+        const custs = fs.existsSync(CUSTOMERS_PATH) ? JSON.parse(fs.readFileSync(CUSTOMERS_PATH, 'utf8')) : [];
+        const cust = custs.find(c => String(c.id) === String(newSale.customer_id) || (c.name && c.name.toLowerCase() === (newSale.customer_name || '').toLowerCase()));
+        if (cust) {
+          cust.outstanding = Math.round(((parseFloat(cust.outstanding) || 0) + parseFloat(newSale.total)) * 100) / 100;
+          fs.writeFileSync(CUSTOMERS_PATH, JSON.stringify(custs, null, 2), 'utf8');
+          updatedCustomer = cust;
+          writeSyncLog('INFO', `Invoice #${orderId} billed to ${cust.name} on account. Added ₦${newSale.total.toLocaleString()} to debt. New owing balance: ₦${cust.outstanding.toLocaleString()}.`);
+        }
+      }
+
       queue.push(newSale);
       fs.writeFileSync(QUEUE_PATH, JSON.stringify(queue, null, 2), 'utf8');
-
-      // 4. Auto-kick Cash Drawer (RJ11 Pulse) on Cash transactions
-      const isCashSale = (newSale.payment_mode === 'CASH' || (newSale.payments && newSale.payments.some(p => (p.mode || '').toLowerCase() === 'cash')));
-      if (isCashSale && saleData.auto_kick_drawer !== false) {
-        hardwarePrinter.kickCashDrawer(saleData.printer_name || '').catch(() => {});
-      }
 
       res.writeHead(200);
       return res.end(JSON.stringify({ 
         success: true, 
         sale: newSale,
-        cash_drawer_kicked: isCashSale
+        customer: updatedCustomer
       }));
     } catch (err) {
       res.writeHead(500);
@@ -1465,9 +1686,7 @@ const server = http.createServer(async (req, res) => {
       const body = await parseJsonBody(req);
       const sale = body.sale || body;
       const printerName = body.printer_name || '';
-      const kickDrawer = body.open_drawer !== undefined
-        ? body.open_drawer
-        : (sale.payment_mode === 'CASH' || (sale.payments && sale.payments.some(p => (p.mode || '').toLowerCase() === 'cash')));
+      const kickDrawer = body.open_drawer === true;
 
       const buffer = hardwarePrinter.formatEscPosReceipt(sale, {
         paper: body.paper || '80',
@@ -1723,6 +1942,17 @@ const server = http.createServer(async (req, res) => {
 
   res.writeHead(404);
   res.end(JSON.stringify({ error: 'Endpoint Not Found' }));
+});
+
+// Global Process Watchdog: Guarantee POS Hub never crashes due to cloud sync or Playwright glitches
+process.on('uncaughtException', (err) => {
+  console.error('⚠️ [POS Server Watchdog] Uncaught exception safely handled:', err.message);
+  try { writeSyncLog('ERROR', `Watchdog caught uncaught exception: ${err.message}`); } catch (e) {}
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('⚠️ [POS Server Watchdog] Unhandled promise rejection safely handled:', reason?.message || reason);
+  try { writeSyncLog('WARN', `Watchdog caught unhandled rejection: ${reason?.message || reason}`); } catch (e) {}
 });
 
 function startServer() {

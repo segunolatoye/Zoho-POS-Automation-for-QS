@@ -156,3 +156,4 @@ console.log('\nSample Diaper (Bag conversion):', JSON.stringify(sampleDiaper.uni
 
 const sampleCarton = catalog.find(i => i.name === 'SWISS GEL');
 console.log('\nSample Swiss Gel (Carton conversion):', JSON.stringify(sampleCarton.units, null, 2));
+

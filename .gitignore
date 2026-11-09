@@ -80,6 +80,9 @@ summarize_*.js
 sync_default_sales_units.js
 trigger_*.js
 update_*.js
+!scripts/update_pos.js
+!scripts/update_catalog_units.js
+!scripts/login_zoho.js
 upload_*.js
 verify_*.js
 audit_*.js

@@ -57,7 +57,7 @@ const CMD = {
   DOUBLE_HEIGHT_ON: `${ESC}!\x10`,
   DOUBLE_BOTH_ON: `${ESC}!\x30`,
   NORMAL_TEXT: `${ESC}!\x00`,
-  FEED_AND_CUT: `${GS}V\x41\x03`,
+  FEED_AND_CUT: `${GS}V\x42\x01`,
   DRAWER_KICK: `${ESC}p\x00\x19\xFA${ESC}p\x01\x19\xFA`
 };
 
@@ -84,8 +84,8 @@ function formatEscPosReceipt(sale, options = {}) {
   let p = '';
   p += CMD.RESET;
 
-  // Drawer Kick pulse if requested at start
-  if (options.kickDrawer) {
+  // Drawer Kick pulse only if explicitly requested
+  if (options.kickDrawer === true) {
     p += CMD.DRAWER_KICK;
   }
 
@@ -104,10 +104,16 @@ function formatEscPosReceipt(sale, options = {}) {
   p += `Date:       ${sale.date || new Date().toLocaleString()}\n`;
   p += `Tilled By:  ${sale.tilled_by || sale.salesperson || 'Staff'}\n`;
   p += `Customer:   ${sale.customer_name || 'Walk in Customer'}\n`;
+  if (sale.without_price) {
+    p += CMD.BOLD_ON + `*** DELIVERY NOTE / WAYBILL (NO PRICES) ***\n` + CMD.BOLD_OFF;
+  }
   p += doubleDivider + '\n';
 
   // Line Items
-  if (width === 32) {
+  const isNoPrice = !!sale.without_price;
+  if (isNoPrice) {
+    p += padRight('ITEM', width - 8) + padLeft('QTY', 8) + '\n';
+  } else if (width === 32) {
     p += padRight('ITEM', 18) + padLeft('TOTAL', 14) + '\n';
   } else {
     p += padRight('ITEM', 22) + padLeft('QTY', 6) + padLeft('PRICE', 7) + padLeft('TOTAL', 7) + '\n';
@@ -126,7 +132,9 @@ function formatEscPosReceipt(sale, options = {}) {
     const priceStr = price.toLocaleString('en-NG');
     const totStr = total.toLocaleString('en-NG');
 
-    if (width === 32) {
+    if (isNoPrice) {
+      p += padRight(`  Quantity:`, width - 12) + padLeft(qtyStr, 12) + '\n';
+    } else if (width === 32) {
       p += padRight(`  ${qtyStr} @ ${priceStr}`, 18) + padLeft(totStr, 14) + '\n';
     } else {
       p += padRight(`  ${qtyStr}`, 20) + padLeft(priceStr, 11) + padLeft(totStr, 11) + '\n';
@@ -139,23 +147,39 @@ function formatEscPosReceipt(sale, options = {}) {
   const subtotal = (sale.line_items || []).reduce((acc, i) => acc + (parseFloat(i.total || (i.quantity * (i.unit_price || i.rate))) || 0), 0);
   const discount = parseFloat(sale.discount || sale.disc) || 0;
   const grandTotal = parseFloat(sale.total) || (subtotal - discount);
+  const isCredit = (sale.payment_mode || '').toLowerCase().includes('credit') || (sale.payment_mode || '').toLowerCase().includes('account') || sale.is_credit;
 
-  if (discount > 0) {
-    p += padRight('Subtotal:', width - 15) + padLeft(formatNaira(subtotal), 15) + '\n';
-    p += padRight('Discount:', width - 15) + padLeft('-' + formatNaira(discount), 15) + '\n';
-  }
+  if (!isNoPrice) {
+    if (discount > 0) {
+      p += padRight('Subtotal:', width - 15) + padLeft(formatNaira(subtotal), 15) + '\n';
+      p += padRight('Discount:', width - 15) + padLeft('-' + formatNaira(discount), 15) + '\n';
+    }
 
-  p += CMD.BOLD_ON + CMD.DOUBLE_HEIGHT_ON;
-  p += padRight('TOTAL DUE:', width - 17) + padLeft(formatNaira(grandTotal), 17) + '\n';
-  p += CMD.NORMAL_TEXT;
+    p += CMD.BOLD_ON + CMD.DOUBLE_HEIGHT_ON;
+    p += padRight('TOTAL DUE:', width - 17) + padLeft(formatNaira(grandTotal), 17) + '\n';
+    p += CMD.NORMAL_TEXT;
 
-  p += divider + '\n';
-  const payMode = (sale.payment_mode || 'CASH').toUpperCase();
-  p += padRight(`Payment Mode (${payMode}):`, width - 15) + padLeft(formatNaira(sale.amount_paid || grandTotal), 15) + '\n';
+    p += divider + '\n';
+    const payMode = (sale.payment_mode || (isCredit ? 'CREDIT / ON ACCOUNT' : 'CASH')).toUpperCase();
+    const modeLen = Math.max(payMode.length, 16);
+    p += padRight(`Payment Mode:`, width - modeLen) + padLeft(payMode, modeLen) + '\n';
+    p += padRight(`Amount Paid:`, width - 15) + padLeft(formatNaira(sale.amount_paid || (isCredit ? 0 : grandTotal)), 15) + '\n';
 
-  if (payMode === 'CASH' || (sale.change && sale.change > 0)) {
-    const change = parseFloat(sale.change) || 0;
-    p += padRight('Change Due:', width - 15) + padLeft(formatNaira(change), 15) + '\n';
+    if (isCredit) {
+      p += CMD.BOLD_ON;
+      p += padRight('BILLED TO ACCOUNT:', width - 17) + padLeft(formatNaira(grandTotal), 17) + '\n';
+      p += CMD.BOLD_OFF;
+    } else if (payMode === 'CASH' || (sale.change && sale.change > 0)) {
+      const change = parseFloat(sale.change) || 0;
+      p += padRight('Change Due:', width - 15) + padLeft(formatNaira(change), 15) + '\n';
+    }
+  } else {
+    p += CMD.BOLD_ON;
+    p += padRight('TOTAL ITEMS DELIVERED:', width - 10) + padLeft(String((sale.line_items || []).length), 10) + '\n';
+    if (isCredit) {
+      p += padRight('STATUS:', width - 18) + padLeft('ON ACCOUNT', 18) + '\n';
+    }
+    p += CMD.BOLD_OFF;
   }
 
   p += doubleDivider + '\n';
@@ -164,9 +188,8 @@ function formatEscPosReceipt(sale, options = {}) {
   p += CMD.ALIGN_CENTER;
   p += 'Thank you for shopping with us!\n';
   p += 'Goods sold in good condition\ncannot be returned.\n';
-  p += '\n\n\n';
 
-  // Cut Paper
+  // Cut Paper (Tight feed, no extra bottom spacing)
   p += CMD.FEED_AND_CUT;
 
   return Buffer.from(p, 'binary');
@@ -252,7 +275,6 @@ function formatEscPosZReport(report, options = {}) {
 
   p += CMD.ALIGN_CENTER;
   p += 'Shift officially closed and verified.\n';
-  p += '\n\n\n';
   p += CMD.FEED_AND_CUT;
 
   return Buffer.from(p, 'binary');

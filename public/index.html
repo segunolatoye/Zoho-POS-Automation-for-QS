@@ -551,6 +551,7 @@ button { cursor: pointer; transition: all 0.15s ease; }
   min-height: 34px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   color: var(--ink);
@@ -786,6 +787,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 input[type=number] {
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .ln .qty {
@@ -1231,57 +1233,102 @@ tr:last-child td { border-bottom: 0; }
 .modal h3 { margin: 0 0 8px; font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
 
 .modal.pd {
-  width: 780px;
-  max-width: 94vw;
+  width: 880px;
+  max-width: 95vw;
   display: grid;
-  grid-template-columns: 290px 1fr;
+  grid-template-columns: 380px 1fr;
   padding: 0;
   overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
 }
-.pdl { padding: 24px; display: grid; gap: 14px; align-content: start; }
-.pdl label { display: grid; gap: 5px; font-weight: 700; font-size: 12px; color: var(--mute); }
-.pdl label.ck { display: flex; gap: 8px; align-items: center; color: var(--ink); }
+.pdl {
+  padding: 24px 28px;
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  background: var(--card);
+}
+.pdl label {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--mute);
+}
+.pdl label.ck {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--ink);
+  font-size: 13px;
+}
 .pdl select, .pdl input {
-  border: 1px solid var(--line);
+  border: 1.5px solid var(--line);
   background: var(--bg);
-  border-radius: 8px;
-  padding: 8px 10px;
+  border-radius: 9px;
+  padding: 10px 12px;
   color: var(--ink);
   font-weight: 600;
+  font-size: 13px;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+.pdl select:focus, .pdl input:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
 }
 .pv {
-  background: var(--bg);
+  background: #2b3035;
   padding: 24px;
   overflow: auto;
-  max-height: 80vh;
+  max-height: 85vh;
   border-left: 1px solid var(--line);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
 }
 .paper {
   background: #fff;
   color: #000;
-  padding: 12px;
+  padding: 18px 22px;
   margin: 0 auto;
-  width: max-content;
+  width: 330px;
   max-width: 100%;
-  box-shadow: 0 4px 20px rgba(0,0,0,.25);
-  border-radius: 4px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.35);
+  border-radius: 6px;
 }
-.rc { font: 11px/1.25 'Courier New', ui-monospace, monospace; color: #000; background: #fff; margin: 0 auto; padding: 0; }
+.rc {
+  font: 13px/1.35 'Courier New', ui-monospace, monospace;
+  color: #000;
+  background: #fff;
+  margin: 0 auto;
+  padding: 0;
+}
 .rc .rc-c, .rc .c { text-align: center; }
-.rc .rc-r, .rc .r { display: flex; justify-content: space-between; gap: 4px; line-height: 1.2; }
-.rc hr, .rc .rc-hr { border: 0; border-top: 1px dashed #000; margin: 3px 0; }
+.rc .rc-r, .rc .r { display: flex; justify-content: space-between; gap: 8px; line-height: 1.35; }
+.rc hr, .rc .rc-hr { border: 0; border-top: 1.5px dashed #000; margin: 6px 0; }
 .rc .rc-b, .rc .b { font-weight: 700; }
-.rc.w80 { width: 72mm; } .rc.w58 { width: 48mm; } .rc.wA4 { width: 100mm; }
-.rc-tbl { width: 100%; border-collapse: collapse; font-size: 10px; margin: 2px 0; line-height: 1.2; }
-.rc-tbl th { border-bottom: 1px dashed #000; padding: 1px 0; font-weight: 700; font-size: 9.5px; text-transform: uppercase; }
-.rc-tbl td { padding: 1.5px 0; vertical-align: top; }
+.rc.w80 { width: 100%; font-size: 13.5px; }
+.rc.w58 { width: 100%; font-size: 12px; }
+.rc.wA4 { width: 100%; font-size: 14.5px; }
+.rc-tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 4px 0; line-height: 1.35; }
+.rc-tbl th { border-bottom: 1.5px dashed #000; padding: 3px 0; font-weight: 700; font-size: 12px; text-transform: uppercase; }
+.rc-tbl td { padding: 3px 0; vertical-align: top; }
 
 #prt { display: none; }
 @media print {
   body > *:not(#prt) { display: none !important; }
-  html, body { height: auto; background: #fff; overflow: visible; }
-  #prt { display: block; }
-  .rc { page-break-after: always; padding: 2mm 0; }
+  html, body { height: auto !important; margin: 0 !important; padding: 0 !important; background: #fff !important; overflow: visible !important; }
+  #prt { display: block !important; margin: 0 !important; padding: 0 !important; }
+  .rc { font: 14px/1.35 'Courier New', ui-monospace, monospace !important; color: #000 !important; background: #fff !important; }
+  .rc.w80 { width: 76mm !important; margin: 0 auto !important; padding: 0 0 2mm 0 !important; font-size: 14px !important; }
+  .rc.w58 { width: 52mm !important; margin: 0 auto !important; padding: 0 0 2mm 0 !important; font-size: 12px !important; }
+  .rc-tbl { font-size: 13px !important; }
+  .rc-tbl th { font-size: 12.5px !important; }
+  .rc { page-break-after: avoid !important; break-after: avoid !important; break-inside: avoid !important; }
 }
 
 #toast {
@@ -1465,8 +1512,8 @@ let state = {
   vw: 'list', // 'list' or 'grid'
   theme: 'auto',
   terminalId: localStorage.getItem('pos_terminal_id') || '',
-  user: JSON.parse(sessionStorage.getItem('pos_user') || 'null'),
-  isLocked: !sessionStorage.getItem('pos_user'),
+  user: null,
+  isLocked: true,
   pinInput: '',
   customer: { id: '1560234000000095179', name: 'Walk-in Customer' },
   cat: 'All',
@@ -1487,11 +1534,10 @@ let state = {
   lanUrl: 'http://192.168.100.18:3001',
   installedPrinters: [],
   pp: {
-    destination: 'terminal', // 'terminal' (Print from this station) or 'server' (Central Server Hub)
+    destination: 'direct', // 'direct' (Silent thermal print without dialog) or 'browser' (Manual print dialog)
     autoPrint: true,
     printer: 'System default printer',
     printMode: 'direct',
-    autoKickDrawer: true, // Auto kick RJ11 drawer pulse on Cash sales
     paper: '80',
     copies: 1,
     hdr: true,
@@ -1511,7 +1557,10 @@ try {
     state.theme = p.theme || 'auto';
     if (p.pp) {
       Object.assign(state.pp, p.pp);
-      if (!state.pp.destination) state.pp.destination = 'terminal';
+      // Migrate old 'terminal' or 'server' destination to 'direct' for silent zero-dialog printing
+      if (state.pp.destination === 'terminal' || state.pp.destination === 'server' || !state.pp.destination) {
+        state.pp.destination = 'direct';
+      }
       if (state.pp.address === 'Ketere Market Road, Saki, Oyo State' || !state.pp.address) {
         state.pp.address = '16, Ogo Oluwa St, Ketere Market, Sango, Ogun State';
       }
@@ -1665,9 +1714,9 @@ async function loadCatalog() {
     try {
       state.items = JSON.parse(cached);
       console.log('✓ Loaded catalog from local standalone cache (' + state.items.length + ' items)');
-      renderMain();
     } catch(e) {}
   }
+  renderMain();
 }
 
 async function loadCustomers() {
@@ -1914,6 +1963,7 @@ async function submitPin() {
       renderTop();
       renderNav();
       renderSb();
+      renderMain();
       toast(`✓ Unlocked! Welcome, ${res.user.name}`);
     } else {
       const card = $('#pin-card');
@@ -1959,6 +2009,7 @@ async function submitPin() {
       renderTop();
       renderNav();
       renderSb();
+      renderMain();
       toast(`⚡ Standalone Mode: Unlocked as ${fallbackUser.name} (Hub Server Offline)`);
       return;
     }
@@ -2065,6 +2116,11 @@ function renderNav() {
       <i class="fa-solid fa-file-waveform" style="font-size:13px;width:16px;text-align:center;color:#6366f1"></i>
       <span>Sync Logs</span>
     </button>
+    <button onclick="openSystemUpdateModal()" title="Check for remote code updates and update POS from GitHub">
+      <i class="fa-solid fa-cloud-arrow-down" style="font-size:13px;width:16px;text-align:center;color:#3b82f6"></i>
+      <span>System Updates</span>
+      <span id="update-badge" style="display:${state.updateAvailable ? 'inline-block' : 'none'};background:var(--brand);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700">New</span>
+    </button>
 
     <div class="nb" style="margin-top:auto">
       <small class="gl" style="padding:0 0 4px">Wi-Fi Terminal Hub</small>
@@ -2114,7 +2170,7 @@ function renderSb() {
     <span>${p} offline receipt(s) waiting</span>
     <span class="sp"></span>
     <span style="cursor:pointer" onclick="openPrinterModal()" title="Click to configure station printer">
-      <i class="fa-solid fa-print" style="color:var(--brand)"></i> Printer: <b>${state.pp.destination === 'server' ? 'Server Hub' : 'This Station'} (${state.pp.paper}mm)</b>
+      <i class="fa-solid fa-print" style="color:var(--brand)"></i> Printer: <b>${state.pp.destination === 'browser' ? 'Browser Dialog' : 'Silent Direct'} (${state.pp.paper}mm)</b>
     </span>
   `;
 }
@@ -2170,46 +2226,337 @@ async function openSyncLogModal() {
   }
 }
 
+// Remote System Updater Modal
+async function openSystemUpdateModal(forceCheckRemote = false) {
+  $('#ov').innerHTML = `
+    <div class="ov"><div class="modal" style="max-width:640px;width:95%">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3 style="margin:0;display:flex;align-items:center;gap:8px">
+          <i class="fa-solid fa-cloud-arrow-down" style="color:var(--brand)"></i> System Updates
+        </h3>
+        <button class="btn" onclick="closeModal()">✕</button>
+      </div>
+
+      <div id="update-content" style="display:grid;gap:12px">
+        <div style="padding:24px 16px;background:var(--soft);border:1px solid var(--line);border-radius:8px;text-align:center">
+          <i class="fa-solid fa-circle-notch fa-spin" style="font-size:24px;color:var(--brand);margin-bottom:10px"></i>
+          <p style="margin:0;font-size:13px;font-weight:600">Connecting to GitHub repository...</p>
+          <small style="color:var(--mute)">Checking branch: origin/dev</small>
+        </div>
+      </div>
+    </div></div>
+  `;
+
+  try {
+    const res = await fetch('/api/system/version?check_remote=true').then(r => r.json());
+    renderSystemUpdateView(res);
+  } catch (err) {
+    const el = $('#update-content');
+    if (el) {
+      el.innerHTML = `
+        <div style="padding:16px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b">
+          <b>Unable to check updates:</b> ${escapeHtml(err.message)}
+          <div style="margin-top:8px;font-size:12px">Ensure this computer is connected to the internet.</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn" style="flex:1" onclick="closeModal()">Close</button>
+          <button class="btn p" style="flex:1" onclick="openSystemUpdateModal()"><i class="fa-solid fa-rotate"></i> Retry</button>
+        </div>
+      `;
+    }
+  }
+}
+
+function renderSystemUpdateView(data) {
+  const el = $('#update-content');
+  if (!el) return;
+
+  const cur = data.current || {};
+  const isUpToDate = !data.updatesAvailable;
+
+  if (data.updatesAvailable) {
+    state.updateAvailable = true;
+    const badge = $('#update-badge');
+    if (badge) badge.style.display = 'inline-block';
+  } else {
+    state.updateAvailable = false;
+  }
+
+  let commitsHtml = '';
+  if (data.commits && data.commits.length) {
+    commitsHtml = `
+      <div style="margin-top:6px">
+        <span style="font-size:12px;font-weight:700;display:block;margin-bottom:6px">New Changes Ready to Install:</span>
+        <div style="max-height:160px;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px">
+          ${data.commits.map(c => `
+            <div style="padding:6px 0;border-bottom:1px solid var(--line);font-size:12px;display:flex;justify-content:space-between;gap:8px">
+              <div>
+                <b style="font-family:monospace;color:var(--brand)">${escapeHtml(c.hash)}</b>
+                <span style="margin-left:6px">${escapeHtml(c.subject)}</span>
+              </div>
+              <small style="color:var(--mute);white-space:nowrap">${escapeHtml(c.date)}</small>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  el.innerHTML = `
+    <!-- Current Version Box -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px">
+      <div style="padding:10px;background:var(--soft);border-radius:8px;border:1px solid var(--line)">
+        <span style="color:var(--mute);display:block;font-size:11px">CURRENT INSTALLED COMMIT</span>
+        <b style="font-family:monospace;font-size:13px;color:var(--ink)">${escapeHtml(cur.commit || 'Unknown')}</b>
+        <small style="color:var(--mute);display:block;margin-top:2px">${escapeHtml(cur.date || '')}</small>
+      </div>
+      <div style="padding:10px;background:var(--soft);border-radius:8px;border:1px solid var(--line)">
+        <span style="color:var(--mute);display:block;font-size:11px">STATUS</span>
+        <b style="font-size:13px;color:${isUpToDate ? 'var(--brand)' : '#f59e0b'}">
+          ${isUpToDate ? '✓ Up to Date' : '🚀 ' + (data.behindCount || 1) + ' Update(s) Available'}
+        </b>
+        <small style="color:var(--mute);display:block;margin-top:2px">Branch: origin/dev</small>
+      </div>
+    </div>
+
+    <!-- Active Commit Details -->
+    <div style="padding:8px 12px;background:var(--bg);border:1px solid var(--line);border-radius:6px;font-size:12px">
+      <span style="color:var(--mute)">Current Release: </span>
+      <b>${escapeHtml(cur.subject || '')}</b>
+    </div>
+
+    ${commitsHtml}
+
+    <!-- Notice -->
+    <div style="padding:10px 12px;background:rgba(16, 185, 129, 0.08);border:1px solid rgba(16, 185, 129, 0.2);border-radius:8px;font-size:12px;color:var(--ink)">
+      <i class="fa-solid fa-shield-halved" style="color:var(--brand);margin-right:6px"></i>
+      <b>Zero Data Loss Guarantee:</b> Live offline sales queues, customer balances, and staff PINs are automatically snapshotted before any update and restored safely.
+    </div>
+
+    <div id="update-action-area" style="display:flex;gap:10px;margin-top:10px">
+      <button class="btn" style="flex:1" onclick="closeModal()">Close</button>
+      <button class="btn" style="flex:1" onclick="openSystemUpdateModal()"><i class="fa-solid fa-rotate"></i> Re-check GitHub</button>
+      ${!isUpToDate ? `
+        <button class="btn p" style="flex:1.6" onclick="applyRemoteSystemUpdate()"><i class="fa-solid fa-cloud-arrow-down"></i> Apply Update Now</button>
+      ` : `
+        <button class="btn" style="flex:1" onclick="applyRemoteSystemUpdate(true)" title="Force re-sync and reload from GitHub"><i class="fa-solid fa-arrows-rotate"></i> Re-sync Code</button>
+      `}
+    </div>
+  `;
+}
+
+async function applyRemoteSystemUpdate(isForce = false) {
+  const area = $('#update-action-area');
+  const content = $('#update-content');
+  if (area) {
+    area.innerHTML = `
+      <div style="width:100%;text-align:center;padding:12px;font-weight:700;color:var(--brand);display:flex;align-items:center;justify-content:center;gap:10px">
+        <i class="fa-solid fa-circle-notch fa-spin" style="font-size:18px"></i>
+        <span>Applying update... Backing up store data and pulling latest code from GitHub...</span>
+      </div>
+    `;
+  }
+
+  try {
+    const res = await fetch('/api/system/update', { method: 'POST' }).then(r => r.json());
+    if (res.success) {
+      if (content) {
+        content.innerHTML = `
+          <div style="padding:20px;text-align:center;background:rgba(16, 185, 129, 0.1);border:1.5px solid var(--brand);border-radius:10px">
+            <i class="fa-solid fa-circle-check" style="font-size:36px;color:var(--brand);margin-bottom:10px"></i>
+            <h4 style="margin:0 0 8px;font-size:16px;color:var(--ink)">Update Applied Successfully!</h4>
+            <p style="margin:0 0 12px;font-size:13px;color:var(--mute)">POS Server is restarting now with the new code release (${escapeHtml(res.newCommit || 'latest')}).</p>
+            <div style="font-size:13px;font-weight:700;color:var(--brand)" id="reload-counter">Register will reload in 4 seconds...</div>
+          </div>
+        `;
+      }
+
+      let count = 4;
+      const interval = setInterval(() => {
+        count--;
+        const cntEl = $('#reload-counter');
+        if (cntEl) cntEl.textContent = 'Register will reload in ' + count + ' second' + (count === 1 ? '' : 's') + '...';
+        if (count <= 0) {
+          clearInterval(interval);
+          window.location.reload(true);
+        }
+      }, 1000);
+    } else {
+      if (content) {
+        content.innerHTML = `
+          <div style="padding:16px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b">
+            <b style="font-size:14px">Update Failed:</b>
+            <p style="margin:6px 0;font-size:12px">${escapeHtml(res.error || 'Unknown error occurred.')}</p>
+            ${res.log ? '<pre style="font-size:10.5px;max-height:120px;overflow:auto;background:#fff;padding:6px;border-radius:4px">' + escapeHtml(res.log.join('\n')) + '</pre>' : ''}
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn" style="flex:1" onclick="closeModal()">Close</button>
+            <button class="btn p" style="flex:1" onclick="applyRemoteSystemUpdate()"><i class="fa-solid fa-rotate"></i> Try Again</button>
+          </div>
+        `;
+      }
+    }
+  } catch (err) {
+    if (content) {
+      content.innerHTML = `
+        <div style="padding:16px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b">
+          <b>Update Connection Interrupted:</b> ${escapeHtml(err.message)}
+          <p style="margin:6px 0;font-size:12px">The server may already be restarting. Checking in 3 seconds...</p>
+        </div>
+      `;
+      setTimeout(() => window.location.reload(true), 3500);
+    }
+  }
+}
+
 function goView(v) {
   state.view = v;
   renderNav();
   renderMain();
 }
 
-// Main Workspace
+// Main Workspace (Crash-Proof Error Boundary)
 function renderMain() {
-  if (state.view === 'sell') {
-    $('#main').innerHTML = `
-      <div class="sell" style="flex:1">
-        <section class="left">
-          <div class="tools">
-            <div class="search-wrap">
-              <i class="fa-solid fa-magnifying-glass search-ico"></i>
-              <input class="search" id="q" placeholder="Search 440+ products by name, SKU or barcode... (Press F2)" value="${state.q}" oninput="handleSearch(this.value)" onkeydown="handleSearchKey(event)" autocomplete="off">
-              <span class="search-kbd"><kbd>F2</kbd></span>
-            </div>
-            <select class="cat-select" onchange="setCategory(this.value)" title="Filter by Category" aria-label="Category">
-              <option value="All" ${(state.cat||'All')==='All'?'selected':''}>All Categories</option>
-              <option value="BEVERAGES" ${(state.cat||'').toUpperCase()==='BEVERAGES'?'selected':''}>Beverages & Drinks</option>
-              <option value="FOODS" ${(state.cat||'').toUpperCase()==='FOODS'?'selected':''}>Foods & Seasoning</option>
-              <option value="TOILETRIES" ${(state.cat||'').toUpperCase()==='TOILETRIES'?'selected':''}>Toiletries</option>
-              <option value="BODY CARE" ${(state.cat||'').toUpperCase()==='BODY CARE'?'selected':''}>Body Care</option>
-              <option value="HOUSEHOLD" ${(state.cat||'').toUpperCase()==='HOUSEHOLD'?'selected':''}>Household</option>
-              <option value="GENERAL" ${(state.cat||'').toUpperCase()==='GENERAL'?'selected':''}>General</option>
-            </select>
-            <div class="seg">
-              <button class="${state.vw==='list'?'on':''}" onclick="setViewMode('list')" title="List View"><i class="fa-solid fa-list"></i> List</button>
-              <button class="${state.vw==='grid'?'on':''}" onclick="setViewMode('grid')" title="Grid View"><i class="fa-solid fa-table-cells-large"></i> Grid</button>
-            </div>
+  try {
+    if (state.view === 'sell') {
+      let catalogContent = '';
+      try {
+        catalogContent = renderCatalogHTML();
+      } catch (errCat) {
+        console.error('Catalog render failure:', errCat);
+        catalogContent = `
+          <div style="padding:24px;background:var(--soft);border:1px solid var(--line);border-radius:10px;margin:16px;text-align:center">
+            <h4 style="color:var(--ink);margin:0 0 8px"><i class="fa-solid fa-rotate" style="color:var(--brand)"></i> Catalog View Interruption</h4>
+            <p style="color:var(--mute);font-size:12px;margin:0 0 14px">${escapeHtml(errCat.message || 'Catalog data could not be rendered.')}</p>
+            <button class="btn p" onclick="forceCatalogReload()" style="font-size:12px;padding:6px 14px"><i class="fa-solid fa-rotate"></i> Reload Catalog Data</button>
           </div>
-          <div class="grid ${state.vw}" id="grid">${renderCatalogHTML()}</div>
-        </section>
-        <aside class="cart" id="cart">${renderCartHTML()}</aside>
-      </div>
-    `;
-  } else {
-    renderOrdersView();
+        `;
+      }
+
+      let cartContent = '';
+      try {
+        cartContent = renderCartHTML();
+      } catch (errCart) {
+        console.error('Cart render failure:', errCart);
+        cartContent = `
+          <div style="padding:16px;background:var(--soft);border:1px solid var(--line);border-radius:10px">
+            <h4 style="color:var(--ink);margin:0 0 6px">Cart Display Glitch</h4>
+            <p style="color:var(--mute);font-size:11.5px;margin:0 0 10px">${escapeHtml(errCart.message)}</p>
+            <button class="btn" onclick="clearCart(); renderMain();" style="font-size:11.5px">Reset Cart</button>
+          </div>
+        `;
+      }
+
+      $('#main').innerHTML = `
+        <div class="sell" style="flex:1">
+          <section class="left">
+            <div class="tools">
+              <div class="search-wrap">
+                <i class="fa-solid fa-magnifying-glass search-ico"></i>
+                <input class="search" id="q" placeholder="Search 440+ products by name, SKU or barcode... (Press F2)" value="${escapeHtml(state.q)}" oninput="handleSearch(this.value)" onkeydown="handleSearchKey(event)" autocomplete="off">
+                <span class="search-kbd"><kbd>F2</kbd></span>
+              </div>
+              <select class="cat-select" onchange="setCategory(this.value)" title="Filter by Category" aria-label="Category">
+                <option value="All" ${(state.cat||'All')==='All'?'selected':''}>All Categories</option>
+                <option value="BEVERAGES" ${(state.cat||'').toUpperCase()==='BEVERAGES'?'selected':''}>Beverages & Drinks</option>
+                <option value="FOODS" ${(state.cat||'').toUpperCase()==='FOODS'?'selected':''}>Foods & Seasoning</option>
+                <option value="TOILETRIES" ${(state.cat||'').toUpperCase()==='TOILETRIES'?'selected':''}>Toiletries</option>
+                <option value="BODY CARE" ${(state.cat||'').toUpperCase()==='BODY CARE'?'selected':''}>Body Care</option>
+                <option value="HOUSEHOLD" ${(state.cat||'').toUpperCase()==='HOUSEHOLD'?'selected':''}>Household</option>
+                <option value="GENERAL" ${(state.cat||'').toUpperCase()==='GENERAL'?'selected':''}>General</option>
+              </select>
+              <div class="seg">
+                <button class="${state.vw==='list'?'on':''}" onclick="setViewMode('list')" title="List View"><i class="fa-solid fa-list"></i> List</button>
+                <button class="${state.vw==='grid'?'on':''}" onclick="setViewMode('grid')" title="Grid View"><i class="fa-solid fa-table-cells-large"></i> Grid</button>
+              </div>
+            </div>
+            <div class="grid ${state.vw}" id="grid">${catalogContent}</div>
+          </section>
+          <aside class="cart" id="cart">${cartContent}</aside>
+        </div>
+      `;
+    } else {
+      renderOrdersView();
+    }
+  } catch (fatalErr) {
+    console.error('Fatal workspace render exception:', fatalErr);
+    renderCrashRecoveryUI(fatalErr);
   }
+}
+
+// Workspace Self-Healing Crash Recovery UI
+function renderCrashRecoveryUI(err) {
+  const main = $('#main');
+  if (!main) return;
+  main.innerHTML = `
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg)">
+      <div style="max-width:540px;width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:28px;box-shadow:0 8px 30px rgba(0,0,0,0.12)">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <div style="width:44px;height:44px;border-radius:50%;background:#ffe3e3;display:flex;align-items:center;justify-content:center;color:#c92a2a;font-size:22px">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div>
+            <h3 style="margin:0;font-size:17px;color:var(--ink)">Workspace Display Recovery</h3>
+            <small style="color:var(--mute)">The POS encountered a UI interruption and prevented a screen crash.</small>
+          </div>
+        </div>
+
+        <div style="background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:12px;font-family:monospace;font-size:12px;color:#c92a2a;margin-bottom:18px;max-height:120px;overflow:auto;word-break:break-all">
+          ${escapeHtml(err?.message || String(err) || 'Unknown render interruption')}
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <button class="btn p" style="padding:10px 14px;font-weight:700" onclick="forceCatalogReload()">
+            <i class="fa-solid fa-rotate"></i> 1. Reload Catalog & UI
+          </button>
+          <button class="btn" style="padding:10px 14px;font-weight:700;color:#c92a2a" onclick="hardResetAppCache()">
+            <i class="fa-solid fa-broom"></i> 2. Clear Stale Cache & PWA
+          </button>
+        </div>
+
+        <small style="display:block;text-align:center;color:var(--mute);font-size:11px">
+          No sales data is lost. All pending sales and queue items remain safely saved.
+        </small>
+      </div>
+    </div>
+  `;
+}
+
+async function forceCatalogReload() {
+  try {
+    toast('🔄 Refreshing catalog data...');
+    localStorage.removeItem('qs_cached_catalog');
+    await loadCatalog();
+    renderMain();
+    toast('✅ Catalog refreshed successfully!');
+  } catch(e) {
+    toast('Error reloading: ' + e.message);
+  }
+}
+
+async function hardResetAppCache() {
+  if (confirm('This will purge the browser service worker cache and reload fresh code from the server. Proceed?')) {
+    try {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const reg of registrations) {
+          await reg.unregister();
+        }
+      }
+      if ('caches' in window) {
+        const cacheKeys = await caches.keys();
+        for (const key of cacheKeys) {
+          await caches.delete(key);
+        }
+      }
+      localStorage.removeItem('qs_cached_catalog');
+    } catch(e) {}
+    window.location.reload(true);
+  }
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function setCategory(c) {
@@ -2271,11 +2618,11 @@ function getUnitRatio(u) {
 function getStockInfo(it, unitIdx) {
   const units = getItemUnits(it);
   const curIdx = unitIdx != null ? unitIdx : (itemPickUnit[it.id] || 0);
-  const selectedUnit = units[curIdx] || units[0];
+  const selectedUnit = units[curIdx] || units[0] || { name: 'pcs', unit_symbol: 'pcs', is_base: true };
 
-  const bulkUnit = units.find(u => !u.is_base) || units[units.length - 1];
-  const baseUnit = units.find(u => u.is_base) || units[0];
-  const ratio = getUnitRatio(bulkUnit);
+  const bulkUnit = units.find(u => u && !u.is_base) || units[units.length - 1] || selectedUnit;
+  const baseUnit = units.find(u => u && u.is_base) || units[0] || selectedUnit;
+  const ratio = getUnitRatio(bulkUnit) || 1;
 
   // Raw recorded stock in bulk units
   const rawBulk = parseFloat(it.stock) || 0;
@@ -2297,8 +2644,8 @@ function getStockInfo(it, unitIdx) {
     };
   }
 
-  if (selectedUnit.is_base || ratio === 1) {
-    const sym = (selectedUnit.unit_symbol || selectedUnit.name || 'pcs').toLowerCase();
+  if (!selectedUnit || selectedUnit.is_base || ratio === 1) {
+    const sym = (selectedUnit?.unit_symbol || selectedUnit?.name || 'pcs').toLowerCase();
     return {
       totalBase: totalBase,
       isOut: false,
@@ -2308,8 +2655,8 @@ function getStockInfo(it, unitIdx) {
   } else {
     const whole = Math.floor(totalBase / ratio);
     const rem = totalBase % ratio;
-    const bulkSym = (selectedUnit.unit_symbol || selectedUnit.name || 'ctn').toLowerCase();
-    const baseSym = (baseUnit.unit_symbol || baseUnit.name || 'pcs').toLowerCase();
+    const bulkSym = (selectedUnit?.unit_symbol || selectedUnit?.name || 'ctn').toLowerCase();
+    const baseSym = (baseUnit?.unit_symbol || baseUnit?.name || 'pcs').toLowerCase();
 
     let text = `${whole} ${bulkSym}`;
     if (rem > 0) {
@@ -2326,6 +2673,19 @@ function getStockInfo(it, unitIdx) {
 }
 
 function renderCatalogHTML() {
+  if (!state.items || !state.items.length) {
+    return `
+      <div class="empty" style="grid-column:1/-1;padding:60px 24px;text-align:center">
+        <div class="spin" style="margin:0 auto 16px;width:36px;height:36px;border:3px solid var(--line);border-top-color:var(--brand);border-radius:50%"></div>
+        <h3 style="margin:0 0 8px;color:var(--ink);font-size:16px">Connecting to POS Register...</h3>
+        <p style="margin:0 0 16px;color:var(--mute);font-size:12px">Loading products and pricing catalog from local terminal hub...</p>
+        <button class="btn p" onclick="forceCatalogReload()" style="font-size:12px;padding:8px 18px">
+          <i class="fa-solid fa-rotate"></i> Retry Connection
+        </button>
+      </div>
+    `;
+  }
+
   const q = state.q.toLowerCase().trim();
   const cat = (state.cat || 'All').toUpperCase();
   const filtered = state.items.filter(it => {
@@ -2366,50 +2726,57 @@ function renderCatalogHTML() {
         </thead>
         <tbody>
           ${filtered.map(it => {
-            const units = getItemUnits(it);
-            const curIdx = itemPickUnit[it.id] != null ? itemPickUnit[it.id] : 0;
-            const activeUnit = units[curIdx] || units[0];
-            const stockInfo = getStockInfo(it, curIdx);
+            try {
+              const units = getItemUnits(it);
+              const curIdx = (itemPickUnit[it.id] != null && units[itemPickUnit[it.id]]) ? itemPickUnit[it.id] : 0;
+              const activeUnit = units[curIdx] || units[0] || { name: 'PCS', unit_symbol: 'PCS', price: it.retail_price || 0 };
+              const stockInfo = getStockInfo(it, curIdx);
 
-            const baseUnit = units.find(u => u.is_base) || units[0];
-            const bulkUnit = units.find(u => !u.is_base);
-            const singlePrice = baseUnit ? baseUnit.price : (it.retail_price || 0);
-            const bulkPrice = bulkUnit ? bulkUnit.price : (it.carton_price || null);
+              const baseUnit = units.find(u => u && u.is_base) || units[0] || activeUnit;
+              const bulkUnit = units.find(u => u && !u.is_base);
+              const singlePrice = baseUnit ? (baseUnit.price != null ? baseUnit.price : (it.retail_price || 0)) : (it.retail_price || 0);
+              const bulkPrice = bulkUnit ? bulkUnit.price : null;
+              const itemName = it.name || 'Unnamed Product';
+              const bulkSymbol = bulkUnit ? (bulkUnit.unit_symbol || bulkUnit.name || 'Bulk').toUpperCase() : '';
 
-            return `
-              <tr class="pr ${stockInfo.isOut ? 'out' : ''}" onclick="${stockInfo.isOut ? '' : `addToCart('${it.id}')`}">
-                <td class="td-name">
-                  <div style="display:flex;align-items:center">
-                    <span class="av" style="--h:${getHue(it.category)}">${it.name[0]}</span>
-                    <div style="min-width:0;flex:1">
-                      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-                        <b style="font-size:12.5px;color:var(--ink)">${it.name}</b>
-                        <span class="cat-tag" style="--h:${getHue(it.category)}">${it.category || 'General'}</span>
+              return `
+                <tr class="pr ${stockInfo.isOut ? 'out' : ''}" onclick="${stockInfo.isOut ? '' : `addToCart('${it.id}')`}">
+                  <td class="td-name">
+                    <div style="display:flex;align-items:center">
+                      <span class="av" style="--h:${getHue(it.category)}">${(itemName[0] || 'P').toUpperCase()}</span>
+                      <div style="min-width:0;flex:1">
+                        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                          <b style="font-size:12.5px;color:var(--ink)">${itemName}</b>
+                          <span class="cat-tag" style="--h:${getHue(it.category)}">${it.category || 'General'}</span>
+                        </div>
+                        ${it.upc ? `<div style="color:var(--mute);font-size:10px;margin-top:1px"><i class="fa-solid fa-barcode"></i> ${it.upc}</div>` : ''}
                       </div>
-                      ${it.upc ? `<div style="color:var(--mute);font-size:10px;margin-top:1px"><i class="fa-solid fa-barcode"></i> ${it.upc}</div>` : ''}
                     </div>
-                  </div>
-                </td>
-                <td onclick="event.stopPropagation()">
-                  <select class="us" onchange="setItemUnit('${it.id}', this.value)" ${stockInfo.isOut ? 'disabled' : ''}>
-                    ${units.map((u, idx) => `<option value="${idx}" ${idx===curIdx?'selected':''}>${(u.unit_symbol || u.name).toUpperCase()}</option>`).join('')}
-                  </select>
-                </td>
-                <td style="text-align:right">
-                  <span class="stock-pill ${stockInfo.isOut ? 'out' : (stockInfo.isLow ? 'low' : 'in')}">
-                    ${stockInfo.text}
-                  </span>
-                </td>
-                <td style="text-align:right;font-weight:700;font-size:12px">${NGN(singlePrice)}</td>
-                <td style="text-align:right;font-weight:800;font-size:12px;color:var(--brand)">${bulkPrice ? `${NGN(bulkPrice)} <small style="font-size:10px;font-weight:700;color:var(--mute)">/${(bulkUnit.unit_symbol || bulkUnit.name).toUpperCase()}</small>` : '<span style="color:var(--mute)">–</span>'}</td>
-                <td class="col-act" style="text-align:right">
-                  ${stockInfo.isOut
-                    ? `<button class="btn" style="padding:4px 6px;font-size:10.5px;opacity:0.5;cursor:not-allowed" disabled>Out</button>`
-                    : `<button class="btn p" style="padding:4px 10px;font-size:11.5px;font-weight:700" onclick="event.stopPropagation(); addToCart('${it.id}')">+ Add</button>`
-                  }
-                </td>
-              </tr>
-            `;
+                  </td>
+                  <td onclick="event.stopPropagation()">
+                    <select class="us" onchange="setItemUnit('${it.id}', this.value)" ${stockInfo.isOut ? 'disabled' : ''}>
+                      ${units.map((u, idx) => `<option value="${idx}" ${idx===curIdx?'selected':''}>${(u?.unit_symbol || u?.name || 'Unit').toUpperCase()}</option>`).join('')}
+                    </select>
+                  </td>
+                  <td style="text-align:right">
+                    <span class="stock-pill ${stockInfo.isOut ? 'out' : (stockInfo.isLow ? 'low' : 'in')}">
+                      ${stockInfo.text}
+                    </span>
+                  </td>
+                  <td style="text-align:right;font-weight:700;font-size:12px">${NGN(singlePrice)}</td>
+                  <td style="text-align:right;font-weight:800;font-size:12px;color:var(--brand)">${bulkUnit && bulkPrice != null ? `${NGN(bulkPrice)} <small style="font-size:10px;font-weight:700;color:var(--mute)">/${bulkSymbol}</small>` : '<span style="color:var(--mute)">–</span>'}</td>
+                  <td class="col-act" style="text-align:right">
+                    ${stockInfo.isOut
+                      ? `<button class="btn" style="padding:4px 6px;font-size:10.5px;opacity:0.5;cursor:not-allowed" disabled>Out</button>`
+                      : `<button class="btn p" style="padding:4px 10px;font-size:11.5px;font-weight:700" onclick="event.stopPropagation(); addToCart('${it.id}')">+ Add</button>`
+                    }
+                  </td>
+                </tr>
+              `;
+            } catch(eRow) {
+              console.warn('Skipping unrenderable catalog row:', it?.id, eRow);
+              return '';
+            }
           }).join('')}
         </tbody>
       </table>
@@ -2417,37 +2784,44 @@ function renderCatalogHTML() {
   }
 
   return filtered.map(it => {
-    const units = getItemUnits(it);
-    const curIdx = itemPickUnit[it.id] != null ? itemPickUnit[it.id] : 0;
-    const activeUnit = units[curIdx] || units[0];
-    const stockInfo = getStockInfo(it, curIdx);
+    try {
+      const units = getItemUnits(it);
+      const curIdx = (itemPickUnit[it.id] != null && units[itemPickUnit[it.id]]) ? itemPickUnit[it.id] : 0;
+      const activeUnit = units[curIdx] || units[0] || { name: 'PCS', unit_symbol: 'PCS', price: it.retail_price || 0 };
+      const stockInfo = getStockInfo(it, curIdx);
 
-    const baseUnit = units.find(u => u.is_base) || units[0];
-    const bulkUnit = units.find(u => !u.is_base);
-    const singlePrice = baseUnit ? baseUnit.price : (it.retail_price || 0);
-    const bulkPrice = bulkUnit ? bulkUnit.price : (it.carton_price || null);
+      const baseUnit = units.find(u => u && u.is_base) || units[0] || activeUnit;
+      const bulkUnit = units.find(u => u && !u.is_base);
+      const singlePrice = baseUnit ? (baseUnit.price != null ? baseUnit.price : (it.retail_price || 0)) : (it.retail_price || 0);
+      const bulkPrice = bulkUnit ? bulkUnit.price : null;
+      const itemName = it.name || 'Unnamed Product';
+      const bulkSymbol = bulkUnit ? (bulkUnit.unit_symbol || bulkUnit.name || 'Bulk').toUpperCase() : '';
 
-    return `
-      <div class="tile ${stockInfo.isOut ? 'out' : ''}" onclick="${stockInfo.isOut ? '' : `addToCart('${it.id}')`}">
-        <div class="art" style="--h:${getHue(it.category)}">${it.name.slice(0, 2).toUpperCase()}</div>
-        <b>${it.name}</b>
-        <div class="m">
-          <div style="display:flex;gap:6px;align-items:baseline;overflow:hidden">
-            <span style="font-size:13px;font-weight:800;color:var(--ink)" title="Single Unit Price">${NGN(singlePrice)}</span>
-            ${bulkPrice ? `<span style="font-size:11px;font-weight:700;color:var(--brand);white-space:nowrap" title="Bulk Price (${(bulkUnit.name || '').toUpperCase()})">${(bulkUnit.unit_symbol || bulkUnit.name || 'Bulk').toUpperCase()}: ${NGN(bulkPrice)}</span>` : ''}
+      return `
+        <div class="tile ${stockInfo.isOut ? 'out' : ''}" onclick="${stockInfo.isOut ? '' : `addToCart('${it.id}')`}">
+          <div class="art" style="--h:${getHue(it.category)}">${itemName.slice(0, 2).toUpperCase()}</div>
+          <b>${itemName}</b>
+          <div class="m">
+            <div style="display:flex;gap:6px;align-items:baseline;overflow:hidden">
+              <span style="font-size:13px;font-weight:800;color:var(--ink)" title="Single Unit Price">${NGN(singlePrice)}</span>
+              ${bulkUnit && bulkPrice != null ? `<span style="font-size:11px;font-weight:700;color:var(--brand);white-space:nowrap" title="Bulk Price">${bulkSymbol}: ${NGN(bulkPrice)}</span>` : ''}
+            </div>
+            <span class="stock-pill ${stockInfo.isOut ? 'out' : (stockInfo.isLow ? 'low' : 'in')}">${stockInfo.text}</span>
           </div>
-          <span class="stock-pill ${stockInfo.isOut ? 'out' : (stockInfo.isLow ? 'low' : 'in')}">${stockInfo.text}</span>
+          <div style="display:flex;gap:6px;align-items:center;margin-top:auto" onclick="event.stopPropagation()">
+            <select class="us" style="flex:1" onchange="setItemUnit('${it.id}', this.value)" ${stockInfo.isOut ? 'disabled' : ''}>
+              ${units.map((u, idx) => `<option value="${idx}" ${idx===curIdx?'selected':''}>${(u?.unit_symbol || u?.name || 'Unit').toUpperCase()}</option>`).join('')}
+            </select>
+            <button class="btn p" style="padding:4px 8px;font-size:11px;font-weight:700;white-space:nowrap" onclick="addToCart('${it.id}')" ${stockInfo.isOut ? 'disabled' : ''}>
+              + Add
+            </button>
+          </div>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;margin-top:auto" onclick="event.stopPropagation()">
-          <select class="us" style="flex:1" onchange="setItemUnit('${it.id}', this.value)" ${stockInfo.isOut ? 'disabled' : ''}>
-            ${units.map((u, idx) => `<option value="${idx}" ${idx===curIdx?'selected':''}>${(u.unit_symbol || u.name).toUpperCase()}</option>`).join('')}
-          </select>
-          <button class="btn p" style="padding:4px 8px;font-size:11px;font-weight:700;white-space:nowrap" onclick="addToCart('${it.id}')" ${stockInfo.isOut ? 'disabled' : ''}>
-            + Add
-          </button>
-        </div>
-      </div>
-    `;
+      `;
+    } catch (eTile) {
+      console.warn('Skipping unrenderable catalog tile:', it?.id, eTile);
+      return '';
+    }
   }).join('');
 }
 
@@ -2755,10 +3129,19 @@ function updateTenderUI() {
   if (btn) {
     let chargeDisabled = !t.n;
     let chargeButtonLabel = 'Charge ' + NGN(t.total) + ' (F8)';
+    const isWalkIn = !state.customer || state.customer.id === '1560234000000095179' || /walk\s*[-]?\s*in/i.test(state.customer.name || '');
+
     if (state.pay === 'Cash') {
       if (short) {
         chargeDisabled = true;
         chargeButtonLabel = 'Cash received is too low';
+      }
+    } else if (state.pay === 'Credit / On Account') {
+      if (isWalkIn) {
+        chargeDisabled = true;
+        chargeButtonLabel = '⚠️ Select Registered Customer (F4)';
+      } else {
+        chargeButtonLabel = 'Create Invoice ' + NGN(t.total) + ' (On Account)';
       }
     }
     btn.disabled = chargeDisabled;
@@ -2820,6 +3203,7 @@ function renderCartHTML() {
   const ids = Object.keys(state.cart);
   const tend = parseFloat(state.tender) || 0;
   const short = state.pay === 'Cash' && state.tender !== '' && tend < t.total;
+  const isWalkIn = !state.customer || state.customer.id === '1560234000000095179' || /walk\s*[-]?\s*in/i.test(state.customer.name || '');
 
   const splitCash = parseFloat(state.split?.cash) || 0;
   const splitMoniepoint = parseFloat(state.split?.moniepoint) || 0;
@@ -2842,6 +3226,13 @@ function renderCartHTML() {
       chargeButtonLabel = splitDiff > 0 ? `Allocate remaining ₦${splitDiff.toLocaleString()}` : `Over-allocated by ₦${(-splitDiff).toLocaleString()}`;
     } else {
       chargeButtonLabel = `Charge ${NGN(t.total)} (Split Tender)`;
+    }
+  } else if (state.pay === 'Credit / On Account') {
+    if (isWalkIn) {
+      chargeDisabled = true;
+      chargeButtonLabel = '⚠️ Select Registered Customer (F4)';
+    } else {
+      chargeButtonLabel = `Create Invoice ${NGN(t.total)} (On Account)`;
     }
   }
 
@@ -2947,12 +3338,37 @@ function renderCartHTML() {
       <div class="row t"><span>Total</span><span id="cart-total-val">${NGN(t.total)}</span></div>
     </div>
 
-    <div class="pay">
+    <div class="pay" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1.15fr;gap:4px">
       <button class="${state.pay==='Cash'?'on':''}" onclick="setPaymentMode('Cash')"><i class="fa-solid fa-money-bill-1"></i> Cash</button>
       <button class="${state.pay==='Moniepoint POS'?'on':''}" onclick="setPaymentMode('Moniepoint POS')"><i class="fa-solid fa-credit-card"></i> Moniepoint</button>
       <button class="${state.pay==='First Bank Transfer'?'on':''}" onclick="setPaymentMode('First Bank Transfer')"><i class="fa-solid fa-building-columns"></i> First Bank</button>
-      <button class="${state.pay==='Split'?'on':''}" onclick="setPaymentMode('Split')"><i class="fa-solid fa-layer-group"></i> Split Pay</button>
+      <button class="${state.pay==='Split'?'on':''}" onclick="setPaymentMode('Split')"><i class="fa-solid fa-layer-group"></i> Split</button>
+      <button class="${state.pay==='Credit / On Account'?'on':''}" style="${state.pay==='Credit / On Account'?'background:#7950f2;color:#fff;border-color:#7950f2':''}" onclick="setPaymentMode('Credit / On Account')"><i class="fa-solid fa-file-invoice-dollar"></i> On Account</button>
     </div>
+
+    ${state.pay === 'Credit / On Account' ? `
+      <div style="background:var(--soft);border:1px solid #7950f2;border-radius:8px;padding:8px 10px;margin:8px 0;font-size:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-weight:700;color:var(--ink)"><i class="fa-solid fa-file-invoice-dollar" style="color:#7950f2"></i> Invoice On Account (Credit / Pay Later)</span>
+          <span class="pill" style="background:#f3f0ff;color:#7950f2;font-size:10px;font-weight:700">Debt Billed</span>
+        </div>
+        ${isWalkIn ? `
+          <div style="color:#c92a2a;font-weight:700;font-size:11.5px;margin-top:4px">
+            <i class="fa-solid fa-triangle-exclamation"></i> Anonymous Walk-in customer cannot buy on credit.<br>
+            <button class="btn p" style="padding:4px 8px;font-size:11px;margin-top:6px" onclick="openCustomerModal()"><i class="fa-solid fa-users"></i> Press F4 to Select Customer Account</button>
+          </div>
+        ` : `
+          <div style="font-size:11.5px;color:var(--ink);margin-top:2px;display:grid;gap:2px">
+            <div>Customer: <b>${state.customer.name}</b></div>
+            <div>Previous Debt: <span style="color:#c92a2a;font-weight:700">₦${Number(state.customer.outstanding || 0).toLocaleString()}</span></div>
+            <div>Invoice Amount: <span style="color:#7950f2;font-weight:700">+ ₦${t.total.toLocaleString()}</span></div>
+            <div style="border-top:1px dashed var(--line);padding-top:3px;margin-top:2px;font-weight:800;font-size:12.5px;color:#c92a2a">
+              New Total Debt: ₦${(Number(state.customer.outstanding || 0) + t.total).toLocaleString()}
+            </div>
+          </div>
+        `}
+      </div>
+    ` : ''}
 
     ${state.pay === 'Split' ? `
       <div class="split-box">
@@ -2989,7 +3405,14 @@ function renderCartHTML() {
       </div>
     ` : ''}
 
-    <button id="btn-charge" class="charge" onclick="chargeSale()" ${chargeDisabled ? 'disabled' : ''}>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 2px;margin:6px 0">
+      <label style="font-size:11.5px;font-weight:600;display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--mute)" title="Hide product rates and amounts on printed receipt (Waybill / Delivery Slip)">
+        <input type="checkbox" id="no-price-toggle" ${state.printWithoutPrice ? 'checked' : ''} onchange="state.printWithoutPrice = this.checked">
+        <span><i class="fa-solid fa-file-lines"></i> Print invoice without prices (Waybill / Delivery Slip)</span>
+      </label>
+    </div>
+
+    <button id="btn-charge" class="charge" style="${state.pay === 'Credit / On Account' ? 'background:#7950f2;border-color:#7950f2' : ''}" onclick="chargeSale()" ${chargeDisabled ? 'disabled' : ''}>
       ${chargeButtonLabel}
     </button>
   `;
@@ -2999,6 +3422,29 @@ function renderCartHTML() {
 // EMERGENCY IN-BROWSER STANDALONE ENGINE (ACTIVE WHEN SERVER HUB IS OFF)
 // =============================================================================
 function saveEmergencyStandaloneSale(payload) {
+  const emgQueue = getEmergencySalesQueue();
+  const nowMs = Date.now();
+
+  // Rapid multi-tap debounce guard: block duplicate taps within 4 seconds in standalone mode
+  const lastSale = emgQueue[emgQueue.length - 1];
+  if (lastSale && lastSale.created_at) {
+    const diffMs = nowMs - new Date(lastSale.created_at).getTime();
+    if (diffMs >= 0 && diffMs < 4000) {
+      if (lastSale.total === payload.total && 
+          (lastSale.line_items || []).length === (payload.line_items || []).length &&
+          lastSale.customer_id === payload.customer_id) {
+        console.warn('⛔ [Standalone Guard] Rapid duplicate checkout tap ignored.');
+        return {
+          success: true,
+          sale: lastSale,
+          is_standalone: true,
+          duplicate_prevented: true,
+          message: `Standalone Mode: Sale already queued as ${lastSale.receipt_number}`
+        };
+      }
+    }
+  }
+
   const term = state.terminalId || 'STATION';
   const termClean = term.replace(/[^A-Za-z0-9]/g, '').slice(-6).toUpperCase();
   const seqKey = `qs_emg_seq_${termClean}`;
@@ -3010,7 +3456,8 @@ function saveEmergencyStandaloneSale(payload) {
 
   const emgSale = {
     ...payload,
-    id: `emg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    id: payload.client_txn_id || `emg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    client_txn_id: payload.client_txn_id || null,
     order_id: orderId,
     receipt_number: orderId,
     tilled_by: tiller,
@@ -3021,7 +3468,6 @@ function saveEmergencyStandaloneSale(payload) {
     created_at: new Date().toISOString()
   };
 
-  const emgQueue = getEmergencySalesQueue();
   emgQueue.push(emgSale);
   try { localStorage.setItem('qs_emergency_sales', JSON.stringify(emgQueue)); } catch(e) {}
 
@@ -3087,170 +3533,229 @@ async function flushEmergencySalesToHub() {
 setInterval(flushEmergencySalesToHub, 12000);
 window.addEventListener('online', flushEmergencySalesToHub);
 
+// Checkout mutex locking against rapid double/triple clicks
+let isProcessingCheckout = false;
+
 // Complete sale & save to offline outbox
 async function chargeSale() {
+  if (isProcessingCheckout) {
+    console.warn('⛔ Checkout already in progress. Ignoring duplicate trigger.');
+    return;
+  }
+
   const t = calcTotals();
   if (!t.n) {
     toast('Add items to the cart first.');
     return;
   }
 
-  // Strict stock validation: block checkout if any item is out of stock or exceeds stock
-  for (const id of Object.keys(state.cart)) {
-    const it = getItem(id);
-    if (!it) continue;
-    const units = getItemUnits(it);
-    const cartEntry = state.cart[id];
-    const unit = units[cartEntry.unitIndex] || units[0];
-    const unitRatio = getUnitRatio(unit);
-    const bulkUnit = units.find(u => !u.is_base) || units[units.length - 1];
-    const bulkRatio = getUnitRatio(bulkUnit);
-    const rawBulk = parseFloat(it.stock) || 0;
-    const maxAvailableBase = Math.round((rawBulk * bulkRatio) * 100) / 100;
-    const requestedBase = Math.round((cartEntry.qty * unitRatio) * 100) / 100;
-
-    if (maxAvailableBase <= 0) {
-      toast(`⛔ Checkout blocked: "${it.name}" is OUT OF STOCK. Remove it to proceed.`);
-      return;
-    }
-    if (requestedBase > maxAvailableBase) {
-      const unitName = (unit.name || unit.unit_symbol || 'units').toUpperCase();
-      const isBulk = !unit.is_base;
-      const maxUnitsInSelected = isBulk ? (Math.floor(maxAvailableBase / unitRatio * 2) / 2) : Math.floor(maxAvailableBase / unitRatio);
-      toast(`⛔ Checkout blocked: Insufficient stock for "${it.name}". Only ${maxUnitsInSelected} ${unitName} available.`);
-      return;
-    }
+  isProcessingCheckout = true;
+  const chargeBtn = document.getElementById('btn-charge');
+  if (chargeBtn) {
+    chargeBtn.disabled = true;
+    chargeBtn.style.opacity = '0.7';
+    chargeBtn.innerHTML = '<span class="spin" style="display:inline-block;width:13px;height:13px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;margin-right:8px;vertical-align:middle"></span> Processing Checkout...';
   }
-
-  let paymentModeDisplay = state.pay;
-  let paymentArray = [];
-
-  if (state.pay === 'Split') {
-    const sc = parseFloat(state.split?.cash) || 0;
-    const sm = parseFloat(state.split?.moniepoint) || 0;
-    const st = parseFloat(state.split?.transfer) || 0;
-    const totalAlloc = sc + sm + st;
-    if (Math.abs(totalAlloc - t.total) >= 1) {
-      toast(`Split amounts (₦${totalAlloc.toLocaleString()}) must match total (₦${t.total.toLocaleString()})`);
-      return;
-    }
-    if (sc > 0) paymentArray.push({ mode: 'Cash', amount: sc });
-    if (sm > 0) paymentArray.push({ mode: 'Moniepoint POS', amount: sm });
-    if (st > 0) paymentArray.push({ mode: 'First Bank Transfer', amount: st });
-
-    paymentModeDisplay = `Split (${paymentArray.map(p => `${p.mode.replace(' POS', '').replace(' Bank Transfer', '')}: ₦${p.amount.toLocaleString()}`).join(', ')})`;
-  } else {
-    paymentArray.push({ mode: state.pay, amount: t.total });
-  }
-
-  const lineItems = Object.keys(state.cart).map(id => {
-    const L = getCartLine(id);
-    return {
-      item_id: L.item.id,
-      name: L.item.name,
-      unit: L.unit.unit_symbol || L.unit.name,
-      unit_display: (L.unit.name || '').toUpperCase(),
-      unit_conversion_id: L.unit.unit_conversion_id || '',
-      quantity: L.qty,
-      rate: L.price,
-      list_price: L.listPrice,
-      is_custom_price: L.price !== L.listPrice,
-      total: L.total
-    };
-  });
-
-  const tenderVal = parseFloat(state.tender) || 0;
-  if (!state.user) {
-    state.isLocked = true;
-    renderLockScreen();
-    toast('🔒 Login required: Please enter your cashier PIN.');
-    return;
-  }
-
-  const amountPaid = tenderVal >= t.total ? tenderVal : t.total;
-  const changeDue = Math.max(0, amountPaid - t.total);
-
-  const salePayload = {
-    terminal_id: state.terminalId,
-    user_id: state.user.id,
-    user_name: state.user.name,
-    customer_id: state.customer.id,
-    customer_name: state.customer.name,
-    salesperson: state.user.name,
-    tilled_by: state.user.name,
-    date: new Date().toISOString().split('T')[0],
-    payment_mode: paymentModeDisplay,
-    payments: paymentArray,
-    amount_paid: amountPaid,
-    change: changeDue,
-    subtotal: t.sub,
-    discount: state.disc || 0,
-    manager_override: !!(state.managerDiscountApproved || state.managerPriceApproved),
-    manager_override_by: state.managerApprovedBy || state.managerPriceApprovedBy || null,
-    total: t.total,
-    line_items: lineItems
-  };
-
-  let res = null;
-  let isStandaloneOffline = false;
 
   try {
-    const r = await fetch('/api/sales', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(salePayload)
-    });
-    res = await r.json();
-  } catch(e) {
-    console.warn('Host Hub Server unreachable. Saving sale in Standalone Emergency Outbox...', e);
-    isStandaloneOffline = true;
-    res = saveEmergencyStandaloneSale(salePayload);
-  }
+    // Strict stock validation: block checkout if any item is out of stock or exceeds stock
+    for (const id of Object.keys(state.cart)) {
+      const it = getItem(id);
+      if (!it) continue;
+      const units = getItemUnits(it);
+      const cartEntry = state.cart[id];
+      const unit = units[cartEntry.unitIndex] || units[0];
+      const unitRatio = getUnitRatio(unit);
+      const bulkUnit = units.find(u => !u.is_base) || units[units.length - 1];
+      const bulkRatio = getUnitRatio(bulkUnit);
+      const rawBulk = parseFloat(it.stock) || 0;
+      const maxAvailableBase = Math.round((rawBulk * bulkRatio) * 100) / 100;
+      const requestedBase = Math.round((cartEntry.qty * unitRatio) * 100) / 100;
 
-  if (res && res.success) {
-    lineItems.forEach(l => {
-      const it = getItem(l.item_id);
-      if (it) {
-        const u = (it.units || []).find(x => (x.unit_symbol === l.unit || x.name === l.unit)) || it.units?.[0];
-        const ratio = getUnitRatio(u);
-        const bulkUnit = (it.units || []).find(x => !x.is_base) || it.units?.[it.units.length - 1];
-        const bulkRatio = getUnitRatio(bulkUnit);
-        const soldBulk = (l.quantity * ratio) / bulkRatio;
-        it.stock = Math.max(0, (parseFloat(it.stock) || 0) - soldBulk);
+      if (maxAvailableBase <= 0) {
+        toast(`⛔ Checkout blocked: "${it.name}" is OUT OF STOCK. Remove it to proceed.`);
+        return;
       }
+      if (requestedBase > maxAvailableBase) {
+        const unitName = (unit.name || unit.unit_symbol || 'units').toUpperCase();
+        const isBulk = !unit.is_base;
+        const maxUnitsInSelected = isBulk ? (Math.floor(maxAvailableBase / unitRatio * 2) / 2) : Math.floor(maxAvailableBase / unitRatio);
+        toast(`⛔ Checkout blocked: Insufficient stock for "${it.name}". Only ${maxUnitsInSelected} ${unitName} available.`);
+        return;
+      }
+    }
+
+    let paymentModeDisplay = state.pay;
+    let paymentArray = [];
+    const isCredit = state.pay === 'Credit / On Account';
+
+    if (isCredit) {
+      const isWalkIn = !state.customer || state.customer.id === '1560234000000095179' || /walk\s*[-]?\s*in/i.test(state.customer.name || '');
+      if (isWalkIn) {
+        toast('⚠️ Please select a registered customer account (F4) to create an invoice on credit.');
+        openCustomerModal();
+        return;
+      }
+      paymentModeDisplay = 'Credit / On Account';
+      paymentArray = [{ mode: 'Credit / On Account', amount: 0 }];
+    } else if (state.pay === 'Split') {
+      const sc = parseFloat(state.split?.cash) || 0;
+      const sm = parseFloat(state.split?.moniepoint) || 0;
+      const st = parseFloat(state.split?.transfer) || 0;
+      const totalAlloc = sc + sm + st;
+      if (Math.abs(totalAlloc - t.total) >= 1) {
+        toast(`Split amounts (₦${totalAlloc.toLocaleString()}) must match total (₦${t.total.toLocaleString()})`);
+        return;
+      }
+      if (sc > 0) paymentArray.push({ mode: 'Cash', amount: sc });
+      if (sm > 0) paymentArray.push({ mode: 'Moniepoint POS', amount: sm });
+      if (st > 0) paymentArray.push({ mode: 'First Bank Transfer', amount: st });
+
+      paymentModeDisplay = `Split (${paymentArray.map(p => `${p.mode.replace(' POS', '').replace(' Bank Transfer', '')}: ₦${p.amount.toLocaleString()}`).join(', ')})`;
+    } else {
+      paymentArray.push({ mode: state.pay, amount: t.total });
+    }
+
+    const lineItems = Object.keys(state.cart).map(id => {
+      const L = getCartLine(id);
+      return {
+        item_id: L.item.id,
+        name: L.item.name,
+        unit: L.unit.unit_symbol || L.unit.name,
+        unit_display: (L.unit.name || '').toUpperCase(),
+        unit_conversion_id: L.unit.unit_conversion_id || '',
+        quantity: L.qty,
+        rate: L.price,
+        list_price: L.listPrice,
+        is_custom_price: L.price !== L.listPrice,
+        total: L.total
+      };
     });
-    try { localStorage.setItem('qs_cached_catalog', JSON.stringify(state.items)); } catch(err) {}
 
-    state.cart = {};
-    state.disc = 0;
-    state.managerDiscountApproved = false;
-    state.managerApprovedBy = null;
-    state.managerPriceApproved = false;
-    state.managerPriceApprovedBy = null;
-    state.tender = '';
-    state.split = { cash: 0, moniepoint: 0, transfer: 0 };
-    await loadQueueStatus();
-    renderMain();
-    playSound('success');
+    const tenderVal = parseFloat(state.tender) || 0;
+    if (!state.user) {
+      state.isLocked = true;
+      renderLockScreen();
+      toast('🔒 Login required: Please enter your cashier PIN.');
+      return;
+    }
 
-    // Printing & Cash Drawer Kick (Always use station local printer in standalone mode)
-    if (state.pp.autoPrint !== false) {
-      if (!isStandaloneOffline && state.pp.destination === 'server') {
-        doDirectPrint(res.sale);
+    const amountPaid = isCredit ? 0 : (tenderVal >= t.total ? tenderVal : t.total);
+    const changeDue = isCredit ? 0 : Math.max(0, amountPaid - t.total);
+    const clientTxnId = 'qs_txn_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+
+    const salePayload = {
+      client_txn_id: clientTxnId,
+      terminal_id: state.terminalId,
+      user_id: state.user.id,
+      user_name: state.user.name,
+      customer_id: state.customer.id,
+      customer_name: state.customer.name,
+      salesperson: state.user.name,
+      tilled_by: state.user.name,
+      date: new Date().toISOString().split('T')[0],
+      payment_mode: paymentModeDisplay,
+      payments: paymentArray,
+      amount_paid: amountPaid,
+      change: changeDue,
+      subtotal: t.sub,
+      discount: state.disc || 0,
+      manager_override: !!(state.managerDiscountApproved || state.managerPriceApproved),
+      manager_override_by: state.managerApprovedBy || state.managerPriceApprovedBy || null,
+      total: t.total,
+      line_items: lineItems,
+      is_credit: isCredit,
+      without_price: !!state.printWithoutPrice
+    };
+
+    let res = null;
+    let isStandaloneOffline = false;
+
+    try {
+      const r = await fetch('/api/sales', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(salePayload)
+      });
+      res = await r.json();
+    } catch(e) {
+      console.warn('Host Hub Server unreachable. Saving sale in Standalone Emergency Outbox...', e);
+      isStandaloneOffline = true;
+      res = saveEmergencyStandaloneSale(salePayload);
+    }
+
+    if (res && res.success) {
+      if (!res.duplicate_prevented) {
+        lineItems.forEach(l => {
+          const it = getItem(l.item_id);
+          if (it) {
+            const u = (it.units || []).find(x => (x.unit_symbol === l.unit || x.name === l.unit)) || it.units?.[0];
+            const ratio = getUnitRatio(u);
+            const bulkUnit = (it.units || []).find(x => !x.is_base) || it.units?.[it.units.length - 1];
+            const bulkRatio = getUnitRatio(bulkUnit);
+            const soldBulk = (l.quantity * ratio) / bulkRatio;
+            it.stock = Math.max(0, (parseFloat(it.stock) || 0) - soldBulk);
+          }
+        });
+        try { localStorage.setItem('qs_cached_catalog', JSON.stringify(state.items)); } catch(err) {}
+
+        // If credit sale, update customer's owing debt balance locally and in memory
+        if (isCredit && state.customer) {
+          const prevDebt = parseFloat(state.customer.outstanding) || 0;
+          const newDebt = Math.round((prevDebt + t.total) * 100) / 100;
+          state.customer.outstanding = newDebt;
+          const cIdx = state.customers.findIndex(c => String(c.id) === String(state.customer.id));
+          if (cIdx >= 0) {
+            state.customers[cIdx].outstanding = newDebt;
+          }
+          try { localStorage.setItem('qs_cached_customers', JSON.stringify(state.customers)); } catch(e) {}
+        }
+      }
+
+      state.cart = {};
+      state.disc = 0;
+      state.managerDiscountApproved = false;
+      state.managerApprovedBy = null;
+      state.managerPriceApproved = false;
+      state.managerPriceApprovedBy = null;
+      state.tender = '';
+      state.split = { cash: 0, moniepoint: 0, transfer: 0 };
+      await loadQueueStatus();
+      renderMain();
+      playSound('success');
+
+      // Printing & Cash Drawer Kick (Silent direct thermal printing without dialog)
+      if (state.pp.autoPrint !== false) {
+        if (state.pp.destination === 'browser') {
+          printTerminalReceipt(res.sale);
+        } else {
+          doDirectPrint(res.sale);
+        }
       } else {
-        printTerminalReceipt(res.sale);
+        showReceiptModal(res.sale);
+      }
+
+      if (res.duplicate_prevented) {
+        toast(`ℹ️ Duplicate prevented: Order #${res.sale.receipt_number || res.sale.order_id} already recorded.`);
+      } else if (isCredit) {
+        toast(`✅ Invoice #${res.sale.receipt_number || res.sale.order_id} created on account! ${state.customer.name} owes ₦${Number(state.customer.outstanding).toLocaleString()}`);
+      } else if (isStandaloneOffline) {
+        toast(`⚡ Standalone Mode: Receipt ${res.sale.receipt_number} saved locally (Hub Server Offline)`);
+      } else {
+        toast(`Receipt ${res.sale.receipt_number} saved & settled.`);
       }
     } else {
-      showReceiptModal(res.sale);
+      toast('❌ Error: ' + (res?.message || 'Transaction could not be completed'));
     }
-
-    if (isStandaloneOffline) {
-      toast(`⚡ Standalone Mode: Receipt ${res.sale.receipt_number} saved locally (Hub Server Offline)`);
-    } else {
-      toast(`Receipt ${res.sale.receipt_number} saved & settled.`);
-    }
-  } else {
-    toast('❌ Error: ' + (res?.message || 'Transaction could not be completed'));
+  } finally {
+    setTimeout(() => {
+      isProcessingCheckout = false;
+      const btn = document.getElementById('btn-charge');
+      if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      }
+    }, 1200);
   }
 }
 
@@ -3445,8 +3950,8 @@ function renderOrdersView() {
           </thead>
           <tbody>
             ${state.sales.length ? state.sales.map(s => `
-              <tr>
-                <td><b>${s.order_id || s.receipt_number}</b></td>
+              <tr style="cursor:pointer" onclick="viewOrderDetails('${s.id}')" title="Click to view full contents of this order">
+                <td><b style="color:var(--brand)">${s.order_id || s.receipt_number}</b></td>
                 <td>
                   <span class="user-chip" style="font-weight:700;font-size:11.5px">
                     <i class="fa-solid fa-circle-user" style="color:var(--brand)"></i>
@@ -3455,18 +3960,127 @@ function renderOrdersView() {
                 </td>
                 <td><kbd class="kk">${s.terminal_id || 'TERM-01'}</kbd></td>
                 <td>${s.date}</td>
-                <td>${s.customer_name || 'Walk in'}</td>
-                <td>${s.payment_mode}</td>
+                <td><b>${s.customer_name || 'Walk in Customer'}</b></td>
+                <td>${s.payment_mode || 'Cash'}</td>
                 <td><b>${NGN(s.total)}</b></td>
                 <td><span class="st ${s.status==='SYNCED'?'ok':''}">${s.status==='SYNCED'?'Synced':'Pending Sync'}</span></td>
                 <td>${s.zoho_invoice_number || '–'}</td>
-                <td><button class="rs" onclick="previewPrintReceipt('${s.id}')">Print Receipt</button></td>
+                <td onclick="event.stopPropagation()">
+                  <div style="display:flex;gap:4px">
+                    <button class="rs" onclick="viewOrderDetails('${s.id}')" title="View order items breakdown"><i class="fa-solid fa-eye"></i> View</button>
+                    <button class="rs" onclick="previewPrintReceipt('${s.id}')" title="Print receipt"><i class="fa-solid fa-print"></i></button>
+                  </div>
+                </td>
               </tr>
             `).join('') : `
               <tr><td colspan="10" style="text-align:center;color:var(--mute);padding:30px">No sales recorded yet.</td></tr>
             `}
           </tbody>
         </table>
+      </div>
+    </div>
+  `;
+}
+
+// Order History Item Inspector Modal
+function viewOrderDetails(saleId) {
+  const s = state.sales.find(x => x.id === saleId);
+  if (!s) {
+    toast('Order details not found.');
+    return;
+  }
+
+  const isCredit = (s.payment_mode || '').toLowerCase().includes('credit') || (s.payment_mode || '').toLowerCase().includes('account') || s.is_credit;
+  const isSynced = s.status === 'SYNCED';
+  const lines = s.line_items || [];
+  const totalUnits = lines.reduce((acc, x) => acc + (parseFloat(x.quantity) || 0), 0);
+
+  $('#ov').innerHTML = `
+    <div class="ov">
+      <div class="modal" style="width:720px;max-height:88vh;display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:42px;height:42px;border-radius:10px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--brand);font-size:20px;border:1px solid var(--line)">
+              <i class="fa-solid fa-receipt"></i>
+            </div>
+            <div>
+              <h3 style="margin:0;font-size:16px;display:flex;align-items:center;gap:8px">
+                Order #${s.order_id || s.receipt_number}
+                <span class="st ${isSynced ? 'ok' : ''}" style="font-size:11px">${isSynced ? '✓ Synced to Zoho' : '⏳ Pending Cloud Sync'}</span>
+                ${isCredit ? '<span class="pill" style="background:#f3f0ff;color:#7950f2;font-size:10.5px">Credit / On Account</span>' : ''}
+              </h3>
+              <small style="color:var(--mute)">Recorded on ${s.date || 'N/A'} ${s.created_at ? 'at ' + new Date(s.created_at).toLocaleTimeString() : ''} · Station: ${s.terminal_id || 'TERM-01'}</small>
+            </div>
+          </div>
+          <button class="rs" onclick="closeModal()" style="font-size:16px;padding:4px 10px">✕</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:10px;background:var(--soft);padding:12px;border-radius:8px;border:1px solid var(--line);margin-bottom:14px">
+          <div>
+            <span style="font-size:10px;color:var(--mute);text-transform:uppercase;font-weight:700;display:block">Customer</span>
+            <b style="font-size:12.5px;color:var(--ink)">${s.customer_name || 'Walk in Customer'}</b>
+          </div>
+          <div>
+            <span style="font-size:10px;color:var(--mute);text-transform:uppercase;font-weight:700;display:block">Cashier</span>
+            <b style="font-size:12.5px;color:var(--ink)">${s.tilled_by || s.salesperson || 'Staff'}</b>
+          </div>
+          <div>
+            <span style="font-size:10px;color:var(--mute);text-transform:uppercase;font-weight:700;display:block">Payment Method</span>
+            <b style="font-size:12.5px;color:var(--ink)">${s.payment_mode || 'Cash'}</b>
+          </div>
+          <div>
+            <span style="font-size:10px;color:var(--mute);text-transform:uppercase;font-weight:700;display:block">Zoho Invoice #</span>
+            <b style="font-size:12.5px;color:var(--ink)">${s.zoho_invoice_number || 'Pending Sync'}</b>
+          </div>
+        </div>
+
+        <div style="flex:1;overflow-y:auto;border:1px solid var(--line);border-radius:8px;margin-bottom:14px">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead style="background:var(--card);position:sticky;top:0;border-bottom:1px solid var(--line)">
+              <tr>
+                <th style="text-align:left;padding:8px 10px;width:36px">#</th>
+                <th style="text-align:left;padding:8px 10px">Item Name</th>
+                <th style="text-align:center;padding:8px 10px;width:80px">Unit</th>
+                <th style="text-align:center;padding:8px 10px;width:80px">Qty</th>
+                <th style="text-align:right;padding:8px 10px;width:110px">Rate</th>
+                <th style="text-align:right;padding:8px 10px;width:120px">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${lines.length ? lines.map((l, i) => `
+                <tr style="border-bottom:1px solid var(--line)">
+                  <td style="padding:8px 10px;color:var(--mute)">${i + 1}</td>
+                  <td style="padding:8px 10px;font-weight:700;color:var(--ink)">${l.name || l.item_name || 'Item'}</td>
+                  <td style="text-align:center;padding:8px 10px"><span class="pill" style="font-size:10px">${(l.unit_display || l.unit || 'PCS').toUpperCase()}</span></td>
+                  <td style="text-align:center;padding:8px 10px;font-weight:700">${l.quantity}</td>
+                  <td style="text-align:right;padding:8px 10px">${NGN(l.rate != null ? l.rate : l.unit_price || 0)}</td>
+                  <td style="text-align:right;padding:8px 10px;font-weight:700;color:var(--ink)">${NGN(l.total != null ? l.total : (l.quantity * (l.rate || l.unit_price || 0)))}</td>
+                </tr>
+              `).join('') : `
+                <tr><td colspan="6" style="text-align:center;padding:20px;color:var(--mute)">No items recorded in this order</td></tr>
+              `}
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--soft);border-radius:8px;border:1px solid var(--line);margin-bottom:12px">
+          <div style="font-size:12px;color:var(--mute)">
+            <span>Distinct Items: <b style="color:var(--ink)">${lines.length}</b></span> · 
+            <span>Total Units: <b style="color:var(--ink)">${totalUnits}</b></span>
+            ${s.discount > 0 ? ` · <span style="color:var(--warn)">Discount: <b>${s.discount}%</b></span>` : ''}
+          </div>
+          <div style="text-align:right">
+            <span style="font-size:12px;color:var(--mute);margin-right:8px">Order Total:</span>
+            <b style="font-size:19px;color:var(--brand)">${NGN(s.total)}</b>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px">
+          <button class="btn" style="flex:1" onclick="closeModal()">Close</button>
+          <button class="btn p" style="flex:1.4" onclick="closeModal(); previewPrintReceipt('${s.id}')">
+            <i class="fa-solid fa-print"></i> Print / Reprint Receipt
+          </button>
+        </div>
       </div>
     </div>
   `;
@@ -3536,9 +4150,13 @@ function tickHTML(s, p) {
     (s.payments && s.payments.length > 0) ? s.payments.reduce((sum, py) => sum + Number(py.amount || 0), 0) : Number(s.total || 0)
   );
   const change = s.change !== undefined ? Number(s.change) : Math.max(0, paid - Number(s.total || 0));
+  const isCredit = (s.payment_mode || '').toLowerCase().includes('credit') || (s.payment_mode || '').toLowerCase().includes('account') || s.is_credit;
+  const isNoPrice = !!s.without_price;
 
   let methodsStr = '';
-  if (s.payments && s.payments.length > 1) {
+  if (isCredit) {
+    methodsStr = 'Credit / On Account';
+  } else if (s.payments && s.payments.length > 1) {
     methodsStr = s.payments.map(py => `${py.mode}: ${NGN(py.amount)}`).join(', ');
   } else if (s.payments && s.payments.length === 1) {
     methodsStr = s.payments[0].mode;
@@ -3548,42 +4166,58 @@ function tickHTML(s, p) {
 
   return `
     <div class="rc w${p.paper}">
-      <div class="rc-c rc-b" style="font-size:12.5px;letter-spacing:0.5px">${comp}</div>
-      <div class="rc-c" style="font-size:9.5px">${addr}</div>
-      <div class="rc-c" style="font-size:9.5px">Tel: ${phones}</div>
+      <div class="rc-c rc-b" style="font-size:16px;letter-spacing:0.8px;margin-bottom:2px">${comp}</div>
+      <div class="rc-c" style="font-size:12px;line-height:1.25">${addr}</div>
+      <div class="rc-c" style="font-size:12px">Tel: ${phones}</div>
+      ${isNoPrice ? `<div class="rc-c rc-b" style="font-size:13px;margin:4px 0;letter-spacing:0.5px">*** DELIVERY NOTE / WAYBILL ***</div>` : ''}
       <hr class="rc-hr">
-      <div class="rc-r" style="font-size:10px"><span>Order No:</span><span class="rc-b">${s.order_id || s.receipt_number}</span></div>
-      <div class="rc-r" style="font-size:10px"><span>Date:</span><span>${dt}</span></div>
-      <div class="rc-r" style="font-size:10px"><span>Tilled By:</span><span class="rc-b">${s.tilled_by || s.salesperson || cashier}</span></div>
-      <div class="rc-r" style="font-size:10px"><span>Customer:</span><span>${cust}</span></div>
+      <div class="rc-r" style="font-size:12.5px"><span>Order No:</span><span class="rc-b">${s.order_id || s.receipt_number}</span></div>
+      <div class="rc-r" style="font-size:12.5px"><span>Date:</span><span>${dt}</span></div>
+      <div class="rc-r" style="font-size:12.5px"><span>Tilled By:</span><span class="rc-b">${s.tilled_by || s.salesperson || cashier}</span></div>
+      <div class="rc-r" style="font-size:12.5px"><span>Customer:</span><span class="rc-b">${cust}</span></div>
       <hr class="rc-hr">
       <table class="rc-tbl">
         <thead>
           <tr>
-            <th style="text-align:left;width:44%">Item</th>
-            <th style="text-align:center;width:14%">Qty</th>
-            <th style="text-align:right;width:20%">Rate</th>
-            <th style="text-align:right;width:22%">Amount</th>
+            <th style="text-align:left;width:${isNoPrice ? '70%' : '44%'}">Item</th>
+            <th style="text-align:center;width:${isNoPrice ? '30%' : '14%'}">Qty</th>
+            ${isNoPrice ? '' : `
+              <th style="text-align:right;width:20%">Rate</th>
+              <th style="text-align:right;width:22%">Amount</th>
+            `}
           </tr>
         </thead>
         <tbody>
           ${(s.line_items || []).map(l => `
             <tr>
-              <td style="text-align:left;word-break:break-word">${l.name}${l.unit_display ? ` <span style="font-size:8.5px">(${l.unit_display})</span>` : ''}</td>
-              <td style="text-align:center">${l.quantity}</td>
-              <td style="text-align:right">${Math.round(l.rate).toLocaleString()}</td>
-              <td style="text-align:right">${Math.round(l.total).toLocaleString()}</td>
+              <td style="text-align:left;word-break:break-word;font-weight:600">${l.name}${l.unit_display ? ` <span style="font-size:10.5px;font-weight:normal">(${l.unit_display})</span>` : ''}</td>
+              <td style="text-align:center;font-weight:700">${l.quantity}</td>
+              ${isNoPrice ? '' : `
+                <td style="text-align:right">${Math.round(l.rate).toLocaleString()}</td>
+                <td style="text-align:right;font-weight:700">${Math.round(l.total).toLocaleString()}</td>
+              `}
             </tr>
           `).join('')}
         </tbody>
       </table>
       <hr class="rc-hr">
-      <div class="rc-r rc-b" style="font-size:12px"><span>TOTAL:</span><span>${NGN(s.total)}</span></div>
-      <div class="rc-r" style="font-size:10px"><span>Payment Made:</span><span>${NGN(paid)}</span></div>
-      ${change > 0 ? `<div class="rc-r" style="font-size:10px"><span>Change:</span><span>${NGN(change)}</span></div>` : ''}
-      <div class="rc-r" style="font-size:10px"><span>Payment Methods:</span><span>[${methodsStr}]</span></div>
+      ${isNoPrice ? `
+        <div class="rc-r rc-b" style="font-size:13px"><span>Total Items Delivered:</span><span>${(s.line_items || []).length} items</span></div>
+        ${isCredit ? `<div class="rc-r rc-b" style="font-size:12px;color:#c92a2a"><span>Billing:</span><span>BILLED ON ACCOUNT</span></div>` : ''}
+      ` : `
+        <div class="rc-r rc-b" style="font-size:16px;padding:3px 0"><span>TOTAL:</span><span>${NGN(s.total)}</span></div>
+        ${isCredit ? `
+          <div class="rc-r rc-b" style="font-size:12px;color:#c92a2a"><span>STATUS:</span><span>UNPAID / ON ACCOUNT</span></div>
+          <div class="rc-r" style="font-size:12px"><span>Amount Paid:</span><span>₦0.00</span></div>
+          <div class="rc-r rc-b" style="font-size:13px;color:#c92a2a"><span>Billed to Account:</span><span>${NGN(s.total)}</span></div>
+        ` : `
+          <div class="rc-r" style="font-size:12px"><span>Payment Made:</span><span>${NGN(paid)}</span></div>
+          ${change > 0 ? `<div class="rc-r" style="font-size:12px"><span>Change:</span><span>${NGN(change)}</span></div>` : ''}
+        `}
+        <div class="rc-r" style="font-size:12px"><span>Payment Method:</span><span>[${methodsStr}]</span></div>
+      `}
       <hr class="rc-hr">
-      <div class="rc-c rc-b" style="font-size:10.5px;margin-top:2px">Thanks for your patronage!</div>
+      <div class="rc-c rc-b" style="font-size:13px;margin-top:4px">Thanks for your patronage!</div>
     </div>
   `;
 }
@@ -3624,7 +4258,6 @@ async function openCashDrawer() {
 
 async function doDirectPrint(sale) {
   try {
-    const isCash = (sale.payment_mode === 'CASH' || (sale.payments && sale.payments.some(p => (p.mode || '').toLowerCase() === 'cash')));
     const targetPrinter = state.pp.printer === 'System default printer' ? '' : state.pp.printer;
     const r = await fetch('/api/hardware/print', {
       method: 'POST',
@@ -3633,19 +4266,24 @@ async function doDirectPrint(sale) {
         sale: sale,
         printer_name: targetPrinter,
         paper: state.pp.paper || '80',
-        open_drawer: state.pp.autoKickDrawer !== false && isCash
+        open_drawer: false
       })
     });
     const res = await r.json();
-    if (res.success) {
-      toast(`Direct thermal receipt printed (${sale.receipt_number || sale.order_id}).`);
+    if (res && res.success) {
+      toast(`⚡ Printed silently to ${targetPrinter || 'thermal printer'} (${sale.receipt_number || sale.order_id}).`);
+      return true;
     } else {
-      console.warn('Silent print note:', res.message);
-      toast('Direct print: ' + (res.message || 'Printer not responding'));
+      console.warn('Direct print note:', res?.message);
+      toast('⚠️ Direct print note: ' + (res?.message || 'Printer busy') + '. Falling back to browser print...');
+      printTerminalReceipt(sale);
+      return false;
     }
   } catch(e) {
-    console.warn('Silent print error:', e);
-    toast('Silent print error: ' + e.message);
+    console.warn('Direct print error:', e);
+    toast('⚠️ Direct print error: ' + e.message + '. Falling back to browser print...');
+    printTerminalReceipt(sale);
+    return false;
   }
 }
 
@@ -3655,7 +4293,7 @@ function printTerminalReceipt(sale) {
   $('#prt').innerHTML = Array(parseInt(p.copies, 10) || 1).fill(tickHTML(sale, p)).join('');
   setTimeout(() => {
     window.print();
-    toast(`Receipt dispatched to terminal printer (${sale.receipt_number || sale.order_id}).`);
+    toast(`Receipt dispatched (${sale.receipt_number || sale.order_id}).`);
   }, 100);
 }
 
@@ -3673,63 +4311,51 @@ function showReceiptModal(sale, isSettings = false) {
       <div class="modal pd" role="dialog" aria-label="Print receipt">
         <div class="pdl" style="max-height:85vh;overflow-y:auto">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <h3 style="margin:0">${isSettings ? 'Printer & Station Hardware' : 'Sale Completed!'}</h3>
-            <button class="btn" style="padding:2px 8px;font-size:12px" onclick="closeModal()">✕</button>
+            <h3 style="margin:0;font-size:18px">${isSettings ? 'Printer & Station Setup' : 'Sale Completed!'}</h3>
+            <button class="btn" style="padding:4px 10px;font-size:13px" onclick="closeModal()">✕</button>
           </div>
-          <p style="margin:0 0 10px;color:var(--mute);font-size:12px">
-            ${isSettings ? 'Configure receipt printing for this register station.' : `Receipt #${sale.receipt_number || sale.order_id} recorded.`}
+          <p style="margin:0 0 10px;color:var(--mute);font-size:12.5px">
+            ${isSettings ? 'Configure receipt printing for this register station.' : `Receipt #${sale.receipt_number || sale.order_id} recorded successfully.`}
           </p>
 
-          <label>Print Destination<select onchange="updatePrintPref('destination', this.value)">
-            <option value="terminal" ${p.destination!=='server'?'selected':''}>🖥️ This Terminal (Print directly to this till's printer)</option>
-            <option value="server" ${p.destination==='server'?'selected':''}>⚡ Central POS Server Hub (Shared machine USB)</option>
-          </select></label>
+          <label>
+            Print Method
+            <select onchange="updatePrintPref('destination', this.value)">
+              <option value="direct" ${p.destination!=='browser'?'selected':''}>⚡ Silent Direct Print (No Dialog)</option>
+              <option value="browser" ${p.destination==='browser'?'selected':''}>🖥️ Windows Print Dialog</option>
+            </select>
+          </label>
 
-          <label>Checkout Action<select onchange="updatePrintPref('autoPrint', this.value === 'true')">
-            <option value="true" ${p.autoPrint!==false?'selected':''}>⚡ Print Immediately on Checkout</option>
-            <option value="false" ${p.autoPrint===false?'selected':''}>🖥️ Show Preview Screen First</option>
-          </select></label>
-
-          ${p.destination === 'server' ? `
-            <label>Server Spooler Printer<select id="pp-printer" onchange="updatePrintPref('printer', this.value)">
+          <label>
+            Thermal Receipt Printer
+            <select id="pp-printer" onchange="updatePrintPref('printer', this.value)">
               ${printerOptions.map(x => `
                 <option value="${x}" ${x===p.printer?'selected':''}>${x}</option>
               `).join('')}
-            </select></label>
-          ` : `
-            <small style="color:var(--mute);font-size:11px;display:block;margin:-2px 0 6px">
-              ℹ️ Print jobs will stay on this device and go directly to your terminal's local printer.
-            </small>
-          `}
+            </select>
+          </label>
 
-          <label>Paper Size<select id="pp-paper" onchange="updatePrintPref('paper', this.value)">
-            <option value="80" ${p.paper==='80'?'selected':''}>80 mm Thermal Roll (Standard)</option>
-            <option value="58" ${p.paper==='58'?'selected':''}>58 mm Mini Thermal Roll</option>
-            <option value="A4" ${p.paper==='A4'?'selected':''}>A4 Full Sheet</option>
-          </select></label>
+          <label>
+            Paper Size
+            <select id="pp-paper" onchange="updatePrintPref('paper', this.value)">
+              <option value="80" ${p.paper==='80'?'selected':''}>80 mm Thermal Roll (Standard)</option>
+              <option value="58" ${p.paper==='58'?'selected':''}>58 mm Mini Thermal Roll</option>
+              <option value="A4" ${p.paper==='A4'?'selected':''}>A4 Full Sheet</option>
+            </select>
+          </label>
 
-          <div style="display:flex;align-items:center;justify-content:space-between;margin:8px 0;background:var(--soft);padding:8px 10px;border-radius:6px;border:1px solid var(--line)">
-            <label style="font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;margin:0;cursor:pointer">
-              <input type="checkbox" ${p.autoKickDrawer!==false?'checked':''} onchange="updatePrintPref('autoKickDrawer', this.checked)">
-              Auto-kick Cash Drawer on Cash Sales
-            </label>
-            <button class="rs" onclick="openCashDrawer()" title="Test drawer kick pulse" style="font-size:11px;padding:3px 8px">
-              <i class="fa-solid fa-vault"></i> Test Kick
-            </button>
-          </div>
-
-          <details style="margin:8px 0;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:6px 8px">
-            <summary style="cursor:pointer;font-weight:600;font-size:11.5px;color:var(--ink)">Edit Receipt Header Info</summary>
-            <div style="display:grid;gap:6px;margin-top:6px">
-              <label style="font-size:11px">Company Name<input type="text" value="${p.companyName || ''}" oninput="updatePrintPref('companyName', this.value)"></label>
-              <label style="font-size:11px">Address<input type="text" value="${p.address || ''}" oninput="updatePrintPref('address', this.value)"></label>
-              <label style="font-size:11px">Phone Numbers<input type="text" value="${p.phones || ''}" oninput="updatePrintPref('phones', this.value)"></label>
+          <details style="margin:4px 0;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px 12px">
+            <summary style="cursor:pointer;font-weight:600;font-size:12px;color:var(--ink)">Edit Receipt Header Info</summary>
+            <div style="display:grid;gap:8px;margin-top:10px">
+              <label style="font-size:11.5px">Company Name<input type="text" value="${p.companyName || ''}" oninput="updatePrintPref('companyName', this.value)"></label>
+              <label style="font-size:11.5px">Address<input type="text" value="${p.address || ''}" oninput="updatePrintPref('address', this.value)"></label>
+              <label style="font-size:11.5px">Phone Numbers<input type="text" value="${p.phones || ''}" oninput="updatePrintPref('phones', this.value)"></label>
             </div>
           </details>
 
-          <div style="display:flex;gap:8px;margin-top:10px">
-            <button class="btn" style="flex:1" onclick="closeModal()">Close</button>
-            <button class="btn p" style="flex:1.4" onclick="doPrint()"><i class="fa-solid fa-print"></i> ${isSettings ? 'Test Print on This Station' : 'Print Receipt'}</button>
+          <div style="display:flex;gap:10px;margin-top:14px">
+            <button class="btn" style="flex:1;padding:10px 14px;font-weight:600;font-size:13px" onclick="closeModal()">Close</button>
+            <button class="btn p" style="flex:1.5;padding:10px 14px;font-weight:700;font-size:13px" onclick="doPrint()"><i class="fa-solid fa-print"></i> ${isSettings ? 'Test Print on This Station' : 'Print Receipt'}</button>
           </div>
         </div>
         <div class="pv">
@@ -3780,14 +4406,12 @@ async function doPrint(forceBrowser = false) {
 
   closeModal();
 
-  // If server destination chosen
-  if (p.destination === 'server' && !forceBrowser) {
-    await doDirectPrint(s);
+  if (p.destination === 'browser' || forceBrowser) {
+    printTerminalReceipt(s);
     return;
   }
 
-  // Terminal local print directly from this till
-  printTerminalReceipt(s);
+  await doDirectPrint(s);
 }
 
 // Automated Database Backups Modal Engine
@@ -4682,8 +5306,8 @@ async function printShiftZReport() {
     variance: counted - currentShiftData.expected_cash
   };
 
-  // Direct Thermal Printing if server hub destination configured
-  if (state.pp.destination === 'server') {
+  // Direct Thermal Printing (Silent direct print to thermal printer)
+  if (state.pp.destination !== 'browser') {
     try {
       toast('Sending Z-Report to server receipt printer...');
       const r = await fetch('/api/hardware/print-zreport', {
@@ -4854,9 +5478,24 @@ function tickZReportHTML(report, p) {
   `;
 }
 
-// Keyboard shortcuts (F1 - F12, Ctrl+E)
+// Keyboard shortcuts (F1 - F12, Ctrl+E, Lock screen PIN entry)
 document.addEventListener('keydown', e => {
-  if (state.isLocked) return;
+  if (state.isLocked) {
+    if (e.key >= '0' && e.key <= '9') {
+      e.preventDefault();
+      enterPinDigit(e.key);
+    } else if (e.key === 'Backspace') {
+      e.preventDefault();
+      backspacePin();
+    } else if (e.key === 'Escape' || e.key === 'Delete' || e.key === 'c' || e.key === 'C') {
+      e.preventDefault();
+      clearPin();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (state.pinInput.length === 4) submitPin();
+    }
+    return;
+  }
 
   // Ctrl+E: Open Shift Close & Z-Report
   if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
@@ -4903,7 +5542,7 @@ document.addEventListener('keydown', e => {
     openCustomerModal();
   } else if (k === 'F6') {
     e.preventDefault();
-    const modes = ['Cash', 'Moniepoint POS', 'First Bank Transfer', 'Split'];
+    const modes = ['Cash', 'Moniepoint POS', 'First Bank Transfer', 'Split', 'Credit / On Account'];
     const next = modes[(modes.indexOf(state.pay) + 1) % modes.length];
     setPaymentMode(next);
     toast('Payment Mode: ' + next);
@@ -4999,18 +5638,24 @@ async function refreshCurrentUser() {
 
 // App Bootstrap
 document.addEventListener('DOMContentLoaded', async () => {
+  // Always lock register and enforce fresh PIN entry every time the app opens newly
+  sessionStorage.removeItem('pos_user');
+  state.user = null;
+  state.isLocked = true;
+  state.pinInput = '';
+  renderLockScreen();
+
   if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
     navigator.serviceWorker.register('/sw.js').then(reg => {
       reg.update();
     }).catch(e => console.warn('PWA SW notice:', e));
   }
-  await refreshCurrentUser();
-  renderLockScreen();
   await initTerminal();
   await loadInstalledPrinters();
   renderTop();
   renderNav();
   renderSb();
+  renderMain();
   await loadCatalog();
   await loadCustomers();
   await loadQueueStatus();
