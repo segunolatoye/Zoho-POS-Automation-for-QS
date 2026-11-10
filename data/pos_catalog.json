@@ -8,7 +8,7 @@
     "unit_group": "Pack (12) - Carton",
     "retail_price": 2800,
     "carton_price": 33500,
-    "stock": 100,
+    "stock": 99,
     "upc": "6154000107123",
     "sku": "",
     "units": [
@@ -6104,7 +6104,7 @@
     "unit_group": "Pieces (24) - Bag",
     "retail_price": 1600,
     "carton_price": 38000,
-    "stock": 638,
+    "stock": 637,
     "upc": "6156000349206",
     "sku": "",
     "units": [
@@ -12394,7 +12394,7 @@
     "unit_group": "Piece (24) - Carton",
     "retail_price": 1600,
     "carton_price": 37000,
-    "stock": 1132,
+    "stock": 1130,
     "upc": "",
     "sku": "",
     "units": [
