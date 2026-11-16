@@ -54,6 +54,26 @@ const SHIFTS_PATH = path.join(DATA_DIR, 'shift_reports.json');
 const ACTIVE_SHIFTS_PATH = path.join(DATA_DIR, 'active_shifts.json');
 const ORDER_SEQUENCE_PATH = path.join(DATA_DIR, 'order_sequence.json');
 
+// Bulletproof JSON reader: strips UTF-8 & UTF-16 Byte Order Marks (BOM) and handles corruption gracefully
+function safeReadJson(filePath, fallback = null) {
+  try {
+    if (!fs.existsSync(filePath)) return fallback;
+    const raw = fs.readFileSync(filePath);
+    let text;
+    if (raw.length >= 2 && raw[0] === 0xFF && raw[1] === 0xFE) {
+      text = raw.toString('utf16le');
+    } else {
+      text = raw.toString('utf8');
+    }
+    text = text.replace(/^\uFEFF/, '').trim();
+    if (!text) return fallback;
+    return JSON.parse(text);
+  } catch (err) {
+    console.error(`[safeReadJson] Error reading ${filePath}:`, err.message);
+    return fallback;
+  }
+}
+
 // Concurrency mutex lock: serializes checkout processing so simultaneous taps from multiple stations never race
 let saleProcessingLock = Promise.resolve();
 function withSaleLock(fn) {
@@ -65,23 +85,19 @@ function withSaleLock(fn) {
 // Atomic monotonic sequence counter: guarantees strictly sequential, unique order IDs across all stations
 function getNextOrderId(terminalId = 'TERM-01') {
   let currentMax = 0;
-  if (fs.existsSync(ORDER_SEQUENCE_PATH)) {
-    try {
-      const data = JSON.parse(fs.readFileSync(ORDER_SEQUENCE_PATH, 'utf8'));
-      if (typeof data.last_order_num === 'number') currentMax = data.last_order_num;
-    } catch (e) {}
+  const seqData = safeReadJson(ORDER_SEQUENCE_PATH, {});
+  if (seqData && typeof seqData.last_order_num === 'number') {
+    currentMax = seqData.last_order_num;
   }
-  if (fs.existsSync(QUEUE_PATH)) {
-    try {
-      const q = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8'));
-      for (const s of q) {
-        const m = (s.order_id || s.receipt_number || '').match(/QS-(\d+)/i);
-        if (m) {
-          const num = parseInt(m[1], 10);
-          if (num > currentMax) currentMax = num;
-        }
+  const q = safeReadJson(QUEUE_PATH, []);
+  if (Array.isArray(q)) {
+    for (const s of q) {
+      const m = (s.order_id || s.receipt_number || '').match(/QS-(\d+)/i);
+      if (m) {
+        const num = parseInt(m[1], 10);
+        if (num > currentMax) currentMax = num;
       }
-    } catch (e) {}
+    }
   }
   const nextNum = currentMax + 1;
   fs.writeFileSync(ORDER_SEQUENCE_PATH, JSON.stringify({
@@ -108,17 +124,15 @@ if (!fs.existsSync(CATALOG_PATH)) fs.writeFileSync(CATALOG_PATH, JSON.stringify(
 if (!fs.existsSync(CUSTOMERS_PATH)) fs.writeFileSync(CUSTOMERS_PATH, JSON.stringify([], null, 2), 'utf8');
 if (!fs.existsSync(ORDER_SEQUENCE_PATH)) {
   let initialMax = 0;
-  if (fs.existsSync(QUEUE_PATH)) {
-    try {
-      const q = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8'));
-      for (const s of q) {
-        const m = (s.order_id || s.receipt_number || '').match(/QS-(\d+)/i);
-        if (m) {
-          const num = parseInt(m[1], 10);
-          if (num > initialMax) initialMax = num;
-        }
+  const q = safeReadJson(QUEUE_PATH, []);
+  if (Array.isArray(q)) {
+    for (const s of q) {
+      const m = (s.order_id || s.receipt_number || '').match(/QS-(\d+)/i);
+      if (m) {
+        const num = parseInt(m[1], 10);
+        if (num > initialMax) initialMax = num;
       }
-    } catch (e) {}
+    }
   }
   fs.writeFileSync(ORDER_SEQUENCE_PATH, JSON.stringify({ last_order_num: initialMax, updated_at: new Date().toISOString() }, null, 2), 'utf8');
 }
@@ -562,7 +576,7 @@ async function pullCloudDataFromZoho() {
 
     if (formattedCustomers.length > 0) {
       // Preserve any locally created customers that haven't been synced to Zoho yet
-      const existingCusts = fs.existsSync(CUSTOMERS_PATH) ? JSON.parse(fs.readFileSync(CUSTOMERS_PATH, 'utf8')) : [];
+      const existingCusts = safeReadJson(CUSTOMERS_PATH, []);
       const localOnly = existingCusts.filter(c => c.is_local_created && String(c.id).startsWith('loc_cust_'));
       const mergedCustomers = [...formattedCustomers, ...localOnly];
 
@@ -575,7 +589,7 @@ async function pullCloudDataFromZoho() {
     const unitGroupsMap = new Map();
     if (fs.existsSync(UNIT_GROUPS_PATH)) {
       try {
-        const ugs = JSON.parse(fs.readFileSync(UNIT_GROUPS_PATH, 'utf8'));
+        const ugs = safeReadJson(UNIT_GROUPS_PATH, []);
         for (const g of ugs) {
           if (g.unit_group_id) unitGroupsMap.set(String(g.unit_group_id), g);
           if (g.unit_group_name) unitGroupsMap.set(g.unit_group_name.toLowerCase().trim(), g);
@@ -606,7 +620,7 @@ async function pullCloudDataFromZoho() {
     // Build map of existing catalog items
     let catalog = [];
     if (fs.existsSync(CATALOG_PATH)) {
-      catalog = JSON.parse(fs.readFileSync(CATALOG_PATH, 'utf8'));
+      catalog = safeReadJson(CATALOG_PATH, []);
     }
     const catalogMap = new Map(catalog.map(it => [String(it.id), it]));
 
@@ -716,7 +730,7 @@ async function executePullSync(reason = 'scheduled') {
     // Check if there are queued offline sales that need pushing
     try {
       if (fs.existsSync(QUEUE_PATH)) {
-        const queue = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8'));
+        const queue = safeReadJson(QUEUE_PATH, []);
         const pending = queue.filter(q => q.status === 'PENDING_SYNC');
         if (pending.length > 0) {
           writeSyncLog('INFO', `Auto-Push: Found ${pending.length} pending offline sales. Pushing to Zoho Books...`);
@@ -770,7 +784,7 @@ function startSyncScheduler() {
 
 // Background sync function: Push offline sales to Zoho (all pending or single targeted sale)
 async function syncOfflineSalesToZoho(targetSaleId = null) {
-  const queue = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8'));
+  const queue = safeReadJson(QUEUE_PATH, []);
   const pending = targetSaleId
     ? queue.filter(q => q.id === targetSaleId || q.order_id === targetSaleId || q.receipt_number === targetSaleId)
     : queue.filter(q => q.status === 'PENDING_SYNC');
@@ -853,7 +867,7 @@ async function syncOfflineSalesToZoho(targetSaleId = null) {
           sale.customer_id = targetCustomerId;
         }
 
-        const catalog = fs.existsSync(CATALOG_PATH) ? JSON.parse(fs.readFileSync(CATALOG_PATH, 'utf8')) : [];
+        const catalog = safeReadJson(CATALOG_PATH, []);
 
         const invPayload = {
           customer_id: targetCustomerId,
@@ -1051,7 +1065,7 @@ const server = http.createServer(async (req, res) => {
       const { pin } = await parseJsonBody(req);
       const usersPath = path.join(DATA_DIR, 'pos_users.json');
       const users = fs.existsSync(usersPath)
-        ? JSON.parse(fs.readFileSync(usersPath, 'utf8'))
+        ? safeReadJson(usersPath, [])
         : [
           { id: 'u1', name: 'Manager / Admin', pin: '9545', role: 'admin' },
           { id: 'u5', name: 'Finance / Accounts', pin: '6935', role: 'finance' },
@@ -1090,7 +1104,7 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(400);
         return res.end(JSON.stringify({ success: false, message: 'User database not found.' }));
       }
-      const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+      const users = safeReadJson(usersPath, []);
       const user = users.find(u => u.id === user_id && String(u.pin).trim() === String(old_pin).trim());
       if (!user) {
         res.writeHead(400);
@@ -1109,9 +1123,7 @@ const server = http.createServer(async (req, res) => {
   // 0c. GET /api/auth/users (List Available POS Accounts)
   if (req.method === 'GET' && pathname === '/api/auth/users') {
     const usersPath = path.join(DATA_DIR, 'pos_users.json');
-    const users = fs.existsSync(usersPath)
-      ? JSON.parse(fs.readFileSync(usersPath, 'utf8'))
-      : [];
+    const users = safeReadJson(usersPath, []);
     res.writeHead(200);
     return res.end(JSON.stringify(users.map(u => ({ id: u.id, name: u.name, role: u.role, terminal_id: u.terminal_id }))));
   }
@@ -1125,7 +1137,7 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(400);
         return res.end(JSON.stringify({ success: false, message: 'User database not found.' }));
       }
-      const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+      const users = safeReadJson(usersPath, []);
       const user = users.find(u => u.id === user_id);
       if (!user) {
         res.writeHead(404);
@@ -1260,7 +1272,7 @@ const server = http.createServer(async (req, res) => {
   // 2. GET /api/customers
   if (req.method === 'GET' && pathname === '/api/customers') {
     const custs = fs.existsSync(CUSTOMERS_PATH)
-      ? JSON.parse(fs.readFileSync(CUSTOMERS_PATH, 'utf8'))
+      ? safeReadJson(CUSTOMERS_PATH, [])
       : [{ id: '1560234000000095179', name: 'Walk-in Customer', display_name: 'Walk-in Customer' }];
     res.writeHead(200);
     return res.end(JSON.stringify(custs));
@@ -1281,9 +1293,7 @@ const server = http.createServer(async (req, res) => {
       const company = String(body.company_name || name).trim();
       const debt = parseFloat(body.opening_debt) || 0;
 
-      const custs = fs.existsSync(CUSTOMERS_PATH)
-        ? JSON.parse(fs.readFileSync(CUSTOMERS_PATH, 'utf8'))
-        : [];
+      const custs = safeReadJson(CUSTOMERS_PATH, []);
 
       // Check for duplicate
       const existing = custs.find(c => c.name.toLowerCase() === name.toLowerCase() || (phone && c.phone && c.phone === phone));
@@ -1356,7 +1366,7 @@ const server = http.createServer(async (req, res) => {
     return withSaleLock(async () => {
       try {
         const saleData = await parseJsonBody(req);
-        const queue = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8'));
+        const queue = safeReadJson(QUEUE_PATH, []);
 
         // 0a. Check idempotency for client transaction UUID or emergency standalone re-flushes
         const clientTxnId = saleData.client_txn_id || saleData.id;
@@ -1412,7 +1422,7 @@ const server = http.createServer(async (req, res) => {
         // 0. Enforce PIN Login Security: Reject unauthenticated sales postings
         const usersPath = path.join(DATA_DIR, 'pos_users.json');
         const users = fs.existsSync(usersPath)
-          ? JSON.parse(fs.readFileSync(usersPath, 'utf8'))
+          ? safeReadJson(usersPath, [])
           : [
             { id: 'u1', name: 'Manager / Admin', pin: '9545', role: 'admin' },
             { id: 'u5', name: 'Finance / Accounts', pin: '6935', role: 'finance' },
@@ -1435,7 +1445,7 @@ const server = http.createServer(async (req, res) => {
 
         let catalog = [];
         if (fs.existsSync(CATALOG_PATH)) {
-          catalog = JSON.parse(fs.readFileSync(CATALOG_PATH, 'utf8'));
+          catalog = safeReadJson(CATALOG_PATH, []);
         }
 
         // 0b. RBAC Enforcement: Cashiers cannot apply discounts without Manager or Finance PIN authorization
@@ -1598,7 +1608,7 @@ const server = http.createServer(async (req, res) => {
         // Atomically update customer outstanding debt balance if credit invoice
         let updatedCustomer = null;
         if (isCreditSale) {
-          const custs = fs.existsSync(CUSTOMERS_PATH) ? JSON.parse(fs.readFileSync(CUSTOMERS_PATH, 'utf8')) : [];
+          const custs = safeReadJson(CUSTOMERS_PATH, []);
           const cust = custs.find(c => String(c.id) === String(newSale.customer_id) || (c.name && c.name.toLowerCase() === (newSale.customer_name || '').toLowerCase()));
           if (cust) {
             cust.outstanding = Math.round(((parseFloat(cust.outstanding) || 0) + parseFloat(newSale.total)) * 100) / 100;
@@ -1643,7 +1653,7 @@ const server = http.createServer(async (req, res) => {
 
   // 4. GET /api/queue (View Outbox with limit, search & status filter)
   if (req.method === 'GET' && pathname === '/api/queue') {
-    const queue = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8'));
+    const queue = safeReadJson(QUEUE_PATH, []);
     const pending = queue.filter(q => q.status !== 'SYNCED').length;
     const limit = parseInt(parsedUrl.searchParams.get('limit') || '1000', 10);
     const search = (parsedUrl.searchParams.get('search') || '').trim().toLowerCase();
@@ -1752,7 +1762,7 @@ const server = http.createServer(async (req, res) => {
 
       if (user_role === 'cashier') {
         const usersPath = path.join(DATA_DIR, 'pos_users.json');
-        const users = fs.existsSync(usersPath) ? JSON.parse(fs.readFileSync(usersPath, 'utf8')) : [];
+        const users = safeReadJson(usersPath, []);
         const isMgr = users.find(u => u.pin === String(manager_pin).trim() && (u.role === 'admin' || u.role === 'finance' || u.role === 'manager'));
         if (!isMgr) {
           res.writeHead(403);
@@ -1765,7 +1775,7 @@ const server = http.createServer(async (req, res) => {
         return res.end(JSON.stringify({ success: false, message: 'item_id is required' }));
       }
 
-      const catalog = JSON.parse(fs.readFileSync(CATALOG_PATH, 'utf8'));
+      const catalog = safeReadJson(CATALOG_PATH, []);
       const item = catalog.find(it => it.id === item_id);
 
       if (!item) {
@@ -1916,7 +1926,7 @@ const server = http.createServer(async (req, res) => {
       const body = await parseJsonBody(req);
       const pin = String(body.pin || '').trim();
       const usersPath = path.join(DATA_DIR, 'pos_users.json');
-      const users = fs.existsSync(usersPath) ? JSON.parse(fs.readFileSync(usersPath, 'utf8')) : [];
+      const users = safeReadJson(usersPath, []);
       const manager = users.find(u => u.pin === pin && (u.role === 'admin' || u.role === 'finance' || u.role === 'manager'));
       if (manager) {
         res.writeHead(200);
@@ -1940,7 +1950,7 @@ const server = http.createServer(async (req, res) => {
     try {
       const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
       const term = parsedUrl.searchParams.get('terminal_id') || 'TERM-01';
-      const activeShifts = fs.existsSync(ACTIVE_SHIFTS_PATH) ? JSON.parse(fs.readFileSync(ACTIVE_SHIFTS_PATH, 'utf8')) : {};
+      const activeShifts = safeReadJson(ACTIVE_SHIFTS_PATH, {});
       const active = activeShifts[term] || null;
       res.writeHead(200);
       return res.end(JSON.stringify({ success: true, active_shift: active }));
@@ -1955,7 +1965,7 @@ const server = http.createServer(async (req, res) => {
     try {
       const body = await parseJsonBody(req);
       const term = body.terminal_id || 'TERM-01';
-      const activeShifts = fs.existsSync(ACTIVE_SHIFTS_PATH) ? JSON.parse(fs.readFileSync(ACTIVE_SHIFTS_PATH, 'utf8')) : {};
+      const activeShifts = safeReadJson(ACTIVE_SHIFTS_PATH, {});
       const shift = {
         shift_id: `SHIFT-${Date.now().toString(36).toUpperCase()}`,
         terminal_id: term,
@@ -1981,14 +1991,14 @@ const server = http.createServer(async (req, res) => {
     try {
       const body = await parseJsonBody(req);
       const term = body.terminal_id || 'TERM-01';
-      const activeShifts = fs.existsSync(ACTIVE_SHIFTS_PATH) ? JSON.parse(fs.readFileSync(ACTIVE_SHIFTS_PATH, 'utf8')) : {};
+      const activeShifts = safeReadJson(ACTIVE_SHIFTS_PATH, {});
       const current = activeShifts[term] || {
         opening_float: parseFloat(body.opening_float) || 0,
         opened_at_local: formatLocalTime(),
         cashier_name: body.cashier_name || 'Cashier'
       };
 
-      const queue = fs.existsSync(QUEUE_PATH) ? JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8')) : [];
+      const queue = safeReadJson(QUEUE_PATH, []);
       // Filter sales for this terminal / cashier since opened_at
       const shiftStart = current.opened_at ? new Date(current.opened_at) : new Date(Date.now() - 24 * 3600 * 1000);
       const shiftSales = queue.filter(s => {
@@ -2062,7 +2072,7 @@ const server = http.createServer(async (req, res) => {
         created_at: new Date().toISOString()
       };
 
-      const history = fs.existsSync(SHIFTS_PATH) ? JSON.parse(fs.readFileSync(SHIFTS_PATH, 'utf8')) : [];
+      const history = safeReadJson(SHIFTS_PATH, []);
       history.push(zReport);
       fs.writeFileSync(SHIFTS_PATH, JSON.stringify(history, null, 2), 'utf8');
 
@@ -2081,7 +2091,7 @@ const server = http.createServer(async (req, res) => {
   // 10e. GET /api/shifts/history (List previous closed Z-reports)
   if (req.method === 'GET' && pathname === '/api/shifts/history') {
     try {
-      const history = fs.existsSync(SHIFTS_PATH) ? JSON.parse(fs.readFileSync(SHIFTS_PATH, 'utf8')) : [];
+      const history = safeReadJson(SHIFTS_PATH, []);
       res.writeHead(200);
       return res.end(JSON.stringify({ success: true, reports: history.reverse() }));
     } catch (err) {
