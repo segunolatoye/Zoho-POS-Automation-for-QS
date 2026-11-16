@@ -1203,6 +1203,92 @@ tr:last-child td { border-bottom: 0; }
   color: var(--ink);
 }
 
+/* DataTable Component Styles */
+.dt-th {
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s, color 0.15s;
+  position: relative;
+}
+.dt-th:hover {
+  background: var(--soft);
+  color: var(--brand);
+}
+.dt-th-active {
+  color: var(--brand) !important;
+  background: var(--soft);
+}
+.dt-sort-icon {
+  margin-left: 5px;
+  font-size: 11px;
+  opacity: 0.35;
+}
+.dt-sort-icon.active {
+  opacity: 1;
+  color: var(--brand);
+}
+.dt-page-btn {
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s;
+  min-width: 32px;
+  text-align: center;
+}
+.dt-page-btn:hover:not(:disabled) {
+  border-color: var(--brand);
+  color: var(--brand);
+  background: var(--soft);
+}
+.dt-page-btn.active {
+  background: var(--brand) !important;
+  color: #fff !important;
+  border-color: var(--brand) !important;
+}
+.dt-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.dt-select {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 500;
+  outline: none;
+}
+.dt-select:focus {
+  border-color: var(--brand);
+}
+.dt-filter-pill {
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--mute);
+  padding: 5px 11px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.dt-filter-pill:hover {
+  border-color: var(--brand);
+  color: var(--ink);
+}
+.dt-filter-pill.active {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+
 /* Modals */
 .ov {
   position: fixed;
@@ -1519,7 +1605,19 @@ let state = {
   cat: 'All',
   q: '',
   ordersSearch: '',
-  ordersFilter: 'all',
+  ordersSearchId: '',
+  ordersSearchText: '',
+  ordersFilterStatus: 'all',
+  ordersFilterDate: 'all',
+  ordersDateFrom: '',
+  ordersDateTo: '',
+  ordersFilterPayment: 'all',
+  ordersFilterCashier: 'all',
+  ordersFilterTerminal: 'all',
+  ordersSortCol: 'date',
+  ordersSortDir: 'desc',
+  ordersPage: 1,
+  ordersPageSize: 25,
   cart: {}, // id: { qty, unitIndex, customPrice }
   heldCarts: JSON.parse(localStorage.getItem('qs_held_carts') || '[]'),
   disc: 0,
@@ -3916,21 +4014,356 @@ function clearAllHeldCarts() {
   }
 }
 
-// Orders View
-function setOrdersSearch(val) {
-  state.ordersSearch = val;
+// Orders DataTable & Search Controller
+function matchesOrderId(s, query) {
+  if (!query) return true;
+  const cleanQ = query.trim().toLowerCase();
+  if (!cleanQ) return true;
+  const id = (s.order_id || s.receipt_number || '').toLowerCase();
+  const inv = (s.zoho_invoice_number || '').toLowerCase();
+  const clientTxn = (s.client_txn_id || '').toLowerCase();
+
+  // 1. Direct substring match on order_id, receipt_number, or Zoho invoice #
+  if (id.includes(cleanQ) || inv.includes(cleanQ) || clientTxn.includes(cleanQ)) return true;
+
+  // 2. Numerical suffix matching: e.g. typing "93" matches "QS-00093"
+  const qNums = cleanQ.match(/\d+/g);
+  if (qNums) {
+    const qNumInt = parseInt(qNums[qNums.length - 1], 10);
+    const idNums = id.match(/\d+/g);
+    if (idNums) {
+      const idNumInt = parseInt(idNums[idNums.length - 1], 10);
+      if (idNumInt === qNumInt) return true;
+    }
+  }
+
+  // 3. Alphanumeric normalization: typing "qs93" or "00093" matches "qs-00093"
+  const normQ = cleanQ.replace(/[^a-z0-9]/g, '');
+  const normId = id.replace(/[^a-z0-9]/g, '');
+  if (normQ && normId && (normId.includes(normQ) || normQ.includes(normId))) return true;
+
+  return false;
+}
+
+function matchesGeneralSearch(s, query) {
+  if (!query) return true;
+  const cleanQ = query.trim().toLowerCase();
+  if (!cleanQ) return true;
+
+  const haystack = [
+    s.order_id,
+    s.receipt_number,
+    s.zoho_invoice_number,
+    s.customer_name,
+    s.tilled_by,
+    s.salesperson,
+    s.terminal_id,
+    s.payment_mode,
+    s.date,
+    s.total ? String(s.total) : '',
+    ...(s.line_items || []).map(li => li.name || li.item_name || '')
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  return haystack.includes(cleanQ);
+}
+
+function getSaleDateString(s) {
+  if (s.date && /^\d{4}-\d{2}-\d{2}$/.test(s.date)) return s.date;
+  if (s.created_at) {
+    try {
+      const d = new Date(s.created_at);
+      const Y = d.getFullYear();
+      const M = String(d.getMonth() + 1).padStart(2, '0');
+      const D = String(d.getDate()).padStart(2, '0');
+      return `${Y}-${M}-${D}`;
+    } catch(e) {}
+  }
+  return s.date || '';
+}
+
+function getTodayDateString(offsetDays = 0) {
+  const d = new Date(Date.now() + offsetDays * 86400000);
+  const Y = d.getFullYear();
+  const M = String(d.getMonth() + 1).padStart(2, '0');
+  const D = String(d.getDate()).padStart(2, '0');
+  return `${Y}-${M}-${D}`;
+}
+
+function getFilteredSales() {
+  const statusFilter = state.ordersFilterStatus || 'all';
+  const dateFilter = state.ordersFilterDate || 'all';
+  const paymentFilter = state.ordersFilterPayment || 'all';
+  const cashierFilter = state.ordersFilterCashier || 'all';
+  const terminalFilter = state.ordersFilterTerminal || 'all';
+
+  const today = getTodayDateString(0);
+  const yesterday = getTodayDateString(-1);
+  const sevenDaysAgo = getTodayDateString(-7);
+
+  return (state.sales || []).filter(s => {
+    // 1. Dedicated Order ID Search
+    if (state.ordersSearchId && !matchesOrderId(s, state.ordersSearchId)) return false;
+
+    // 2. General Keyword Search
+    if (state.ordersSearchText && !matchesGeneralSearch(s, state.ordersSearchText)) return false;
+
+    // 3. Status Filter
+    const isSynced = s.status === 'SYNCED';
+    const hasSyncError = !isSynced && (s.last_sync_error || s.status === 'ERROR');
+    const isCredit = s.is_credit || (s.payment_mode || '').toLowerCase().includes('credit');
+
+    if (statusFilter === 'pending' && isSynced) return false;
+    if (statusFilter === 'synced' && !isSynced) return false;
+    if (statusFilter === 'error' && !hasSyncError) return false;
+    if (statusFilter === 'credit' && !isCredit) return false;
+
+    // 4. Date Filter
+    const sDate = getSaleDateString(s);
+    if (dateFilter === 'today' && sDate !== today) return false;
+    if (dateFilter === 'yesterday' && sDate !== yesterday) return false;
+    if (dateFilter === 'week' && sDate < sevenDaysAgo) return false;
+    if (dateFilter === 'custom') {
+      if (state.ordersDateFrom && sDate < state.ordersDateFrom) return false;
+      if (state.ordersDateTo && sDate > state.ordersDateTo) return false;
+    }
+
+    // 5. Payment Filter
+    if (paymentFilter !== 'all') {
+      const pm = (s.payment_mode || '').toLowerCase();
+      if (!pm.includes(paymentFilter.toLowerCase())) return false;
+    }
+
+    // 6. Cashier Filter
+    if (cashierFilter !== 'all') {
+      const c = s.tilled_by || s.salesperson || '';
+      if (c !== cashierFilter) return false;
+    }
+
+    // 7. Terminal Filter
+    if (terminalFilter !== 'all') {
+      if ((s.terminal_id || '') !== terminalFilter) return false;
+    }
+
+    return true;
+  });
+}
+
+function getSortedFilteredSales() {
+  const filtered = getFilteredSales();
+  const col = state.ordersSortCol || 'date';
+  const dir = state.ordersSortDir || 'desc';
+  const mult = dir === 'asc' ? 1 : -1;
+
+  return filtered.sort((a, b) => {
+    if (col === 'order_id') {
+      const matchA = (a.order_id || a.receipt_number || '').match(/(\d+)/g);
+      const matchB = (b.order_id || b.receipt_number || '').match(/(\d+)/g);
+      if (matchA && matchB) {
+        const numA = parseInt(matchA[matchA.length - 1], 10);
+        const numB = parseInt(matchB[matchB.length - 1], 10);
+        if (numA !== numB) return (numA - numB) * mult;
+      }
+      return (a.order_id || a.receipt_number || '').localeCompare(b.order_id || b.receipt_number || '') * mult;
+    }
+    if (col === 'date') {
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : (a.date ? new Date(a.date).getTime() : 0);
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : (b.date ? new Date(b.date).getTime() : 0);
+      return (timeA - timeB) * mult;
+    }
+    if (col === 'customer') {
+      return (a.customer_name || 'Walk in').localeCompare(b.customer_name || 'Walk in') * mult;
+    }
+    if (col === 'cashier') {
+      return (a.tilled_by || a.salesperson || '').localeCompare(b.tilled_by || b.salesperson || '') * mult;
+    }
+    if (col === 'terminal') {
+      return (a.terminal_id || '').localeCompare(b.terminal_id || '') * mult;
+    }
+    if (col === 'payment') {
+      return (a.payment_mode || '').localeCompare(b.payment_mode || '') * mult;
+    }
+    if (col === 'total') {
+      return ((a.total || 0) - (b.total || 0)) * mult;
+    }
+    if (col === 'status') {
+      const stA = a.status === 'SYNCED' ? 'SYNCED' : (a.last_sync_error ? 'ERROR' : 'PENDING');
+      const stB = b.status === 'SYNCED' ? 'SYNCED' : (b.last_sync_error ? 'ERROR' : 'PENDING');
+      return stA.localeCompare(stB) * mult;
+    }
+    if (col === 'invoice') {
+      return (a.zoho_invoice_number || '').localeCompare(b.zoho_invoice_number || '') * mult;
+    }
+    return 0;
+  });
+}
+
+function setOrdersSearchId(val) {
+  state.ordersSearchId = val;
+  state.ordersPage = 1;
   updateOrdersTableRows();
 }
 
-function setOrdersFilter(filt) {
-  state.ordersFilter = filt;
+function setOrdersSearchText(val) {
+  state.ordersSearchText = val;
+  state.ordersPage = 1;
+  updateOrdersTableRows();
+}
+
+function clearOrdersSearchId() {
+  state.ordersSearchId = '';
+  state.ordersPage = 1;
+  const input = document.getElementById('orders-search-id-input');
+  if (input) input.value = '';
+  updateOrdersTableRows();
+}
+
+function clearOrdersSearchText() {
+  state.ordersSearchText = '';
+  state.ordersPage = 1;
+  const input = document.getElementById('orders-search-text-input');
+  if (input) input.value = '';
+  updateOrdersTableRows();
+}
+
+function handleOrderIdEnterKey() {
+  const sorted = getSortedFilteredSales();
+  if (sorted.length === 1) {
+    viewOrderDetails(sorted[0].id);
+  }
+}
+
+function setOrdersFilterStatus(status) {
+  state.ordersFilterStatus = status;
+  state.ordersPage = 1;
   renderOrdersView();
 }
 
-function clearOrdersSearch() {
-  state.ordersSearch = '';
-  state.ordersFilter = 'all';
+function setOrdersFilterDate(dType) {
+  state.ordersFilterDate = dType;
+  state.ordersPage = 1;
   renderOrdersView();
+}
+
+function setOrdersDateRange(from, to) {
+  state.ordersDateFrom = from;
+  state.ordersDateTo = to;
+  state.ordersFilterDate = 'custom';
+  state.ordersPage = 1;
+  updateOrdersTableRows();
+}
+
+function setOrdersFilterPayment(p) {
+  state.ordersFilterPayment = p;
+  state.ordersPage = 1;
+  updateOrdersTableRows();
+}
+
+function setOrdersFilterCashier(c) {
+  state.ordersFilterCashier = c;
+  state.ordersPage = 1;
+  updateOrdersTableRows();
+}
+
+function setOrdersFilterTerminal(t) {
+  state.ordersFilterTerminal = t;
+  state.ordersPage = 1;
+  updateOrdersTableRows();
+}
+
+function setOrdersSort(col) {
+  if (state.ordersSortCol === col) {
+    state.ordersSortDir = state.ordersSortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    state.ordersSortCol = col;
+    state.ordersSortDir = (col === 'total' || col === 'date') ? 'desc' : 'asc';
+  }
+  updateOrdersTableRows();
+}
+
+function setOrdersPage(p) {
+  state.ordersPage = p;
+  updateOrdersTableRows();
+}
+
+function setOrdersPageSize(sz) {
+  state.ordersPageSize = parseInt(sz, 10);
+  state.ordersPage = 1;
+  updateOrdersTableRows();
+}
+
+function resetAllOrdersFilters() {
+  state.ordersSearchId = '';
+  state.ordersSearchText = '';
+  state.ordersFilterStatus = 'all';
+  state.ordersFilterDate = 'all';
+  state.ordersDateFrom = '';
+  state.ordersDateTo = '';
+  state.ordersFilterPayment = 'all';
+  state.ordersFilterCashier = 'all';
+  state.ordersFilterTerminal = 'all';
+  state.ordersSortCol = 'date';
+  state.ordersSortDir = 'desc';
+  state.ordersPage = 1;
+  renderOrdersView();
+}
+
+function exportOrdersToCSV() {
+  const sales = getSortedFilteredSales();
+  if (!sales.length) {
+    toast('No orders to export.');
+    return;
+  }
+  const headers = [
+    'Order ID',
+    'Zoho Invoice #',
+    'Date',
+    'Time',
+    'Customer',
+    'Tilled By',
+    'Terminal',
+    'Payment Method',
+    'Subtotal',
+    'Discount (%)',
+    'Total Amount (NGN)',
+    'Sync Status',
+    'Items Count',
+    'Sync Error'
+  ];
+
+  const rows = sales.map(s => {
+    const timeDisplay = s.created_at
+      ? new Date(s.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+      : (s.time || '');
+    return [
+      `"${(s.order_id || s.receipt_number || '').replace(/"/g, '""')}"`,
+      `"${(s.zoho_invoice_number || '').replace(/"/g, '""')}"`,
+      `"${s.date || ''}"`,
+      `"${timeDisplay}"`,
+      `"${(s.customer_name || 'Walk in Customer').replace(/"/g, '""')}"`,
+      `"${(s.tilled_by || s.salesperson || '').replace(/"/g, '""')}"`,
+      `"${(s.terminal_id || '').replace(/"/g, '""')}"`,
+      `"${(s.payment_mode || 'Cash').replace(/"/g, '""')}"`,
+      s.subtotal != null ? s.subtotal : s.total || 0,
+      s.discount || 0,
+      s.total || 0,
+      `"${s.status || 'PENDING'}"`,
+      (s.line_items || []).length,
+      `"${(s.last_sync_error || '').replace(/"/g, '""')}"`
+    ].join(',');
+  });
+
+  const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const dStr = new Date().toISOString().slice(0, 10);
+  a.download = `QualityPOS_Orders_${dStr}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast(`📥 Exported ${sales.length} orders to CSV!`);
 }
 
 async function syncSingleSale(saleId) {
@@ -3954,77 +4387,94 @@ async function syncSingleSale(saleId) {
     toast(`❌ Error syncing ${name}: ${e.message}`);
   }
   await loadQueueStatus();
-  renderOrdersView();
-}
-
-function getFilteredSales() {
-  const qStr = (state.ordersSearch || '').trim().toLowerCase();
-  const filter = state.ordersFilter || 'all';
-
-  return state.sales.filter(s => {
-    // Status filter
-    if (filter === 'pending' && s.status === 'SYNCED') return false;
-    if (filter === 'synced' && s.status !== 'SYNCED') return false;
-    if (filter === 'credit' && !s.is_credit && !(s.payment_mode || '').toLowerCase().includes('credit')) return false;
-
-    // Search query
-    if (qStr) {
-      const matchText = [
-        s.order_id,
-        s.receipt_number,
-        s.zoho_invoice_number,
-        s.customer_name,
-        s.tilled_by,
-        s.salesperson,
-        s.terminal_id,
-        s.payment_mode,
-        s.date,
-        s.total ? String(s.total) : '',
-        ...(s.line_items || []).map(li => li.name)
-      ].filter(Boolean).join(' ').toLowerCase();
-
-      return matchText.includes(qStr);
-    }
-    return true;
-  });
+  updateOrdersTableRows();
 }
 
 function updateOrdersTableRows() {
   const tbody = document.getElementById('orders-table-body');
-  const countEl = document.getElementById('orders-filtered-count');
+  const footer = document.getElementById('orders-datatable-footer');
+  const filterCountEl = document.getElementById('orders-filtered-count');
   if (!tbody) return;
 
-  const filtered = getFilteredSales();
-  if (countEl) {
-    countEl.innerText = `${filtered.length} of ${state.sales.length} order(s)`;
+  const allSorted = getSortedFilteredSales();
+  const totalCount = allSorted.length;
+  const filteredSum = allSorted.reduce((acc, s) => acc + (s.total || 0), 0);
+
+  if (filterCountEl) {
+    filterCountEl.innerHTML = `Showing <b>${totalCount}</b> of <b>${state.sales.length}</b> orders · <b>${NGN(filteredSum)}</b>`;
   }
 
-  if (!filtered.length) {
+  // Column Sort Indicators
+  const cols = ['order_id', 'date', 'cashier', 'terminal', 'customer', 'payment', 'total', 'status', 'invoice'];
+  cols.forEach(c => {
+    const icon = document.getElementById(`dt-sort-${c}`);
+    const th = document.getElementById(`dt-th-${c}`);
+    if (icon) {
+      if (state.ordersSortCol === c) {
+        icon.className = `fa-solid fa-sort-${state.ordersSortDir === 'asc' ? 'up' : 'down'} dt-sort-icon active`;
+        if (th) th.classList.add('dt-th-active');
+      } else {
+        icon.className = 'fa-solid fa-sort dt-sort-icon';
+        if (th) th.classList.remove('dt-th-active');
+      }
+    }
+  });
+
+  if (!totalCount) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="11" style="text-align:center;color:var(--mute);padding:36px">
-          <i class="fa-solid fa-magnifying-glass" style="font-size:24px;color:var(--line);margin-bottom:8px;display:block"></i>
-          No orders match "<b>${escapeHtml(state.ordersSearch || '')}</b>".
-          <div style="margin-top:10px">
-            <button class="btn" style="padding:4px 12px;font-size:12px" onclick="clearOrdersSearch()">Clear Search</button>
+        <td colspan="11" style="text-align:center;color:var(--mute);padding:44px 20px">
+          <i class="fa-solid fa-magnifying-glass" style="font-size:28px;color:var(--line);margin-bottom:10px;display:block"></i>
+          <b style="font-size:14px;color:var(--ink)">No matching orders found</b>
+          <div style="font-size:12px;color:var(--mute);margin-top:4px">
+            Try adjusting your Order ID, search keyword, date range, or filter options.
+          </div>
+          <div style="margin-top:14px">
+            <button class="btn p" style="padding:6px 16px;font-size:12px" onclick="resetAllOrdersFilters()">
+              <i class="fa-solid fa-rotate-left"></i> Reset All Filters
+            </button>
           </div>
         </td>
       </tr>
     `;
+    if (footer) footer.innerHTML = '';
     return;
   }
 
-  tbody.innerHTML = filtered.map(s => {
+  // Pagination calculation
+  const pageSize = state.ordersPageSize || 25;
+  const isAll = pageSize === -1;
+  const totalPages = isAll ? 1 : Math.ceil(totalCount / pageSize);
+  if (state.ordersPage > totalPages) state.ordersPage = totalPages;
+  if (state.ordersPage < 1) state.ordersPage = 1;
+
+  const startIdx = isAll ? 0 : (state.ordersPage - 1) * pageSize;
+  const endIdx = isAll ? totalCount : Math.min(startIdx + pageSize, totalCount);
+  const pagedSales = isAll ? allSorted : allSorted.slice(startIdx, endIdx);
+
+  tbody.innerHTML = pagedSales.map(s => {
     const timeDisplay = s.created_at
       ? new Date(s.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
       : (s.time || '–');
     const isSynced = s.status === 'SYNCED';
     const isCredit = s.is_credit || (s.payment_mode || '').toLowerCase().includes('credit');
-    const hasSyncError = !isSynced && s.last_sync_error;
+    const hasSyncError = !isSynced && (s.last_sync_error || s.status === 'ERROR');
+    const isEmg = (s.order_id || s.receipt_number || '').includes('EMG');
 
     return `
-      <tr style="cursor:pointer" onclick="viewOrderDetails('${s.id}')" title="Click to view full contents of this order">
-        <td><b style="color:var(--brand)">${s.order_id || s.receipt_number}</b></td>
+      <tr style="cursor:pointer" onclick="viewOrderDetails('${s.id}')" title="Click to view full line-item details">
+        <td>
+          <div style="display:flex;align-items:center;gap:6px">
+            <b style="color:var(--brand);font-size:13px">${s.order_id || s.receipt_number}</b>
+            ${isEmg ? '<span class="pill" style="font-size:9.5px;background:#fff3bf;color:#d9480f">Local EMG</span>' : ''}
+          </div>
+        </td>
+        <td>
+          <span style="white-space:nowrap;font-size:12px;font-weight:600">
+            <i class="fa-regular fa-calendar" style="color:var(--mute);font-size:11px;margin-right:4px"></i>${s.date || '–'}
+            <span style="color:var(--mute);margin-left:4px;font-size:11px">${timeDisplay}</span>
+          </span>
+        </td>
         <td>
           <span class="user-chip" style="font-weight:700;font-size:11.5px">
             <i class="fa-solid fa-circle-user" style="color:var(--brand)"></i>
@@ -4032,19 +4482,17 @@ function updateOrdersTableRows() {
           </span>
         </td>
         <td><kbd class="kk">${s.terminal_id || 'TERM-01'}</kbd></td>
-        <td>${s.date}</td>
-        <td><b style="font-size:12px;color:var(--ink);white-space:nowrap"><i class="fa-regular fa-clock" style="color:var(--mute);font-size:11px;margin-right:4px"></i>${timeDisplay}</b></td>
         <td><b>${s.customer_name || 'Walk in Customer'}</b></td>
         <td>
           ${s.payment_mode || 'Cash'}
           ${isCredit ? '<span class="pill" style="background:#f3f0ff;color:#7950f2;font-size:10px;margin-left:4px">Credit</span>' : ''}
         </td>
-        <td><b>${NGN(s.total)}</b></td>
+        <td><b style="font-size:13px">${NGN(s.total)}</b></td>
         <td>
           ${isSynced ? `
             <span class="st ok" style="white-space:nowrap"><i class="fa-solid fa-check"></i> Synced</span>
           ` : hasSyncError ? `
-            <span class="st" style="background:#ffe3e3;color:#c92a2a;border:1px solid #ffa8a8;white-space:nowrap" title="${escapeHtml(s.last_sync_error)}">
+            <span class="st" style="background:#ffe3e3;color:#c92a2a;border:1px solid #ffa8a8;white-space:nowrap" title="${escapeHtml(s.last_sync_error || 'Sync Error')}">
               <i class="fa-solid fa-triangle-exclamation"></i> Sync Error
             </span>
           ` : `
@@ -4056,7 +4504,7 @@ function updateOrdersTableRows() {
         <td>${s.zoho_invoice_number ? `<b style="color:var(--ink)">${s.zoho_invoice_number}</b>` : '<span style="color:var(--mute)">–</span>'}</td>
         <td onclick="event.stopPropagation()">
           <div style="display:flex;gap:4px">
-            <button class="rs" onclick="viewOrderDetails('${s.id}')" title="View order items breakdown"><i class="fa-solid fa-eye"></i> View</button>
+            <button class="rs" onclick="viewOrderDetails('${s.id}')" title="Inspect items & breakdown"><i class="fa-solid fa-eye"></i></button>
             <button class="rs" onclick="previewPrintReceipt('${s.id}')" title="Print receipt"><i class="fa-solid fa-print"></i></button>
             ${!isSynced ? `
               <button class="rs" onclick="syncSingleSale('${s.id}')" title="Push this order to Zoho now" style="color:#d9480f;border-color:#ffd43b">
@@ -4068,32 +4516,107 @@ function updateOrdersTableRows() {
       </tr>
     `;
   }).join('');
+
+  // Render DataTable Footer Pagination
+  if (footer) {
+    let pageButtonsHTML = '';
+    if (!isAll && totalPages > 1) {
+      const cur = state.ordersPage;
+      pageButtonsHTML += `
+        <button class="dt-page-btn" onclick="setOrdersPage(1)" ${cur === 1 ? 'disabled' : ''} title="First Page">«</button>
+        <button class="dt-page-btn" onclick="setOrdersPage(${cur - 1})" ${cur === 1 ? 'disabled' : ''} title="Previous Page">‹</button>
+      `;
+
+      let startP = Math.max(1, cur - 2);
+      let endP = Math.min(totalPages, startP + 4);
+      if (endP - startP < 4) startP = Math.max(1, endP - 4);
+
+      for (let p = startP; p <= endP; p++) {
+        pageButtonsHTML += `
+          <button class="dt-page-btn ${p === cur ? 'active' : ''}" onclick="setOrdersPage(${p})">${p}</button>
+        `;
+      }
+
+      pageButtonsHTML += `
+        <button class="dt-page-btn" onclick="setOrdersPage(${cur + 1})" ${cur === totalPages ? 'disabled' : ''} title="Next Page">›</button>
+        <button class="dt-page-btn" onclick="setOrdersPage(${totalPages})" ${cur === totalPages ? 'disabled' : ''} title="Last Page">»</button>
+      `;
+    }
+
+    footer.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--panel);border-top:1px solid var(--line);border-radius:0 0 12px 12px;flex-wrap:wrap;gap:12px">
+        <div style="font-size:12px;color:var(--mute)">
+          Showing <b>${startIdx + 1}</b> to <b>${endIdx}</b> of <b>${totalCount}</b> entries
+          ${totalCount !== state.sales.length ? `(filtered from <b>${state.sales.length}</b> total)` : ''}
+          · Filtered Total: <b style="color:var(--brand)">${NGN(filteredSum)}</b>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:14px">
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mute)">
+            <span>Rows:</span>
+            <select class="dt-select" style="padding:4px 8px;font-size:11.5px" onchange="setOrdersPageSize(this.value)">
+              <option value="15" ${pageSize === 15 ? 'selected' : ''}>15</option>
+              <option value="25" ${pageSize === 25 ? 'selected' : ''}>25</option>
+              <option value="50" ${pageSize === 50 ? 'selected' : ''}>50</option>
+              <option value="100" ${pageSize === 100 ? 'selected' : ''}>100</option>
+              <option value="-1" ${pageSize === -1 ? 'selected' : ''}>All</option>
+            </select>
+          </div>
+
+          <div style="display:flex;gap:4px;align-items:center">
+            ${pageButtonsHTML}
+          </div>
+        </div>
+      </div>
+    `;
+  }
 }
 
 function renderOrdersView() {
   const p = state.pendingCount;
   const tot = state.sales.reduce((a, s) => a + (s.total || 0), 0);
   const sy = state.sales.filter(s => s.status === 'SYNCED').length;
+  const errCount = state.sales.filter(s => s.status !== 'SYNCED' && (s.last_sync_error || s.status === 'ERROR')).length;
   const cr = state.sales.filter(s => s.is_credit || (s.payment_mode || '').toLowerCase().includes('credit')).length;
   const emgQueue = (typeof getEmergencySalesQueue === 'function' ? getEmergencySalesQueue() : []) || [];
-  const currentFilter = state.ordersFilter || 'all';
+
+  const currentStatus = state.ordersFilterStatus || 'all';
+  const currentDate = state.ordersFilterDate || 'all';
+  const currentPay = state.ordersFilterPayment || 'all';
+  const currentCashier = state.ordersFilterCashier || 'all';
+  const currentTerm = state.ordersFilterTerminal || 'all';
+
+  // Extract unique cashiers and terminals for dropdown filters
+  const uniqueCashiers = Array.from(new Set(state.sales.map(s => s.tilled_by || s.salesperson).filter(Boolean))).sort();
+  const uniqueTerminals = Array.from(new Set(state.sales.map(s => s.terminal_id).filter(Boolean))).sort();
 
   $('#main').innerHTML = `
     <div class="page">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h1 style="margin:0">Sales & Cloud Outbox</h1>
-        <button class="btn" onclick="loadQueueStatus().then(() => renderOrdersView())" title="Reload queue from server">
-          <i class="fa-solid fa-arrows-rotate"></i> Refresh Orders
-        </button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+        <div>
+          <h1 style="margin:0;font-size:20px;display:flex;align-items:center;gap:8px">
+            <i class="fa-solid fa-receipt" style="color:var(--brand)"></i>
+            Order History & Cloud Outbox
+          </h1>
+          <small style="color:var(--mute);font-size:12px">Search, filter, inspect receipt breakdown, and manage Zoho Books synchronization</small>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn" onclick="exportOrdersToCSV()" title="Export current filtered list to Excel/CSV">
+            <i class="fa-solid fa-file-csv" style="color:var(--brand)"></i> Export CSV
+          </button>
+          <button class="btn" onclick="loadQueueStatus().then(() => renderOrdersView())" title="Reload queue from server">
+            <i class="fa-solid fa-arrows-rotate"></i> Refresh Orders
+          </button>
+        </div>
       </div>
 
       ${emgQueue.length > 0 ? `
-        <div style="background:#fff9db;border:1px solid #fcc419;padding:12px 16px;border-radius:8px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
-          <div style="display:flex;align-items:center;gap:10px">
-            <i class="fa-solid fa-triangle-exclamation" style="color:#e67700;font-size:18px"></i>
+        <div style="background:#fff9db;border:1px solid #fcc419;padding:12px 16px;border-radius:10px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <i class="fa-solid fa-triangle-exclamation" style="color:#e67700;font-size:20px"></i>
             <div>
-              <b style="color:#e67700;font-size:13.5px">⚡ ${emgQueue.length} Standalone Offline Sale(s) on this Station</b>
-              <div style="font-size:12px;color:#854800">These sales were saved while offline from the Hub Server and are queued in your browser.</div>
+              <b style="color:#e67700;font-size:13.5px">⚡ ${emgQueue.length} Standalone Emergency Sale(s) Queued Locally</b>
+              <div style="font-size:12px;color:#854800">These sales were saved while offline from the Hub Server and are safe in browser memory.</div>
             </div>
           </div>
           <button class="btn p" style="background:#e67700;border-color:#e67700" onclick="flushEmergencySalesToHub()">
@@ -4102,82 +4625,200 @@ function renderOrdersView() {
         </div>
       ` : ''}
 
-      <div class="stats">
+      <div class="stats" style="grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;margin-bottom:14px">
         <div class="stat"><small>Waiting to Sync</small><div style="color:var(--warn)">${p}</div></div>
         <div class="stat"><small>Synced to Zoho</small><div style="color:var(--brand)">${sy}</div></div>
+        ${errCount > 0 ? `
+          <div class="stat" style="border-color:#ffa8a8;background:#fff5f5"><small style="color:#c92a2a">Sync Errors</small><div style="color:#c92a2a">${errCount}</div></div>
+        ` : ''}
         <div class="stat"><small>Total Queue Sales</small><div>${NGN(tot)}</div></div>
+        <div class="stat"><small>Credit / Account</small><div style="color:#7950f2">${cr}</div></div>
       </div>
 
-      <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center">
-        <button class="btn p" onclick="triggerSync()" ${state.syncing?'disabled':''}>
+      <!-- Sync Controls Header Bar -->
+      <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap">
+        <button class="btn p" onclick="triggerSync()" ${state.syncing ? 'disabled' : ''}>
           ${state.syncing ? '<span class="spin"></span>Pushing Sales to Zoho…' : '<i class="fa-solid fa-cloud-arrow-up"></i> Push Sales to Zoho'}
         </button>
-        <button class="btn" onclick="triggerPullSync()" ${state.pulling?'disabled':''}>
+        <button class="btn" onclick="triggerPullSync()" ${state.pulling ? 'disabled' : ''}>
           ${state.pulling ? '<span class="spin"></span>Pulling from Zoho…' : '<i class="fa-solid fa-cloud-arrow-down" style="color:var(--brand)"></i> Pull Customers & Inventory from Zoho'}
         </button>
         <div style="flex:1"></div>
         <small style="color:var(--mute)">Two-way sync keeps offline terminal fully in lockstep with Zoho Cloud</small>
       </div>
 
-      <!-- Orders Search & Filter Toolbar -->
-      <div style="background:var(--card);padding:12px;border:1px solid var(--line);border-radius:8px;margin-bottom:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-        <div style="position:relative;flex:1;min-width:260px">
-          <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--mute);font-size:13px"></i>
-          <input 
-            id="orders-search-input" 
-            type="search" 
-            placeholder="🔍 Search Order #, Customer, Cashier, Item, Zoho Invoice #, Amount..." 
-            style="padding-left:34px;width:100%;height:38px;font-size:13px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" 
-            value="${escapeHtml(state.ordersSearch || '')}" 
-            oninput="setOrdersSearch(this.value)"
-          >
-          ${state.ordersSearch ? `
-            <button onclick="clearOrdersSearch()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--mute);cursor:pointer;padding:4px 6px">✕</button>
-          ` : ''}
+      <!-- Comprehensive Orders Search & Filter Control Panel -->
+      <div style="background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow-card)">
+        
+        <!-- Row 1: Dual Search Boxes -->
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+          
+          <!-- Box 1: Dedicated Order ID Search (Prominent) -->
+          <div style="flex:1.2;min-width:280px">
+            <div style="font-size:11px;font-weight:700;color:var(--brand);text-transform:uppercase;margin-bottom:5px;display:flex;align-items:center;gap:6px">
+              <i class="fa-solid fa-hashtag"></i> Search Order by ID / Receipt #
+            </div>
+            <div style="position:relative">
+              <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--brand);font-size:13px"></i>
+              <input 
+                id="orders-search-id-input" 
+                type="search" 
+                placeholder="Type Order ID (e.g. 93, QS-00093, EMG, KI-...)" 
+                style="padding-left:34px;padding-right:32px;width:100%;height:40px;font-size:13.5px;font-weight:600;border-radius:8px;border:2px solid var(--brand);background:var(--bg);color:var(--ink)" 
+                value="${escapeHtml(state.ordersSearchId || '')}" 
+                oninput="setOrdersSearchId(this.value)"
+                onkeydown="if(event.key==='Enter') handleOrderIdEnterKey()"
+              >
+              ${state.ordersSearchId ? `
+                <button onclick="clearOrdersSearchId()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--mute);cursor:pointer;padding:4px 6px">✕</button>
+              ` : ''}
+            </div>
+          </div>
+
+          <!-- Box 2: General Filter / Customer / Cashier / Items -->
+          <div style="flex:1.6;min-width:280px">
+            <div style="font-size:11px;font-weight:700;color:var(--mute);text-transform:uppercase;margin-bottom:5px;display:flex;align-items:center;gap:6px">
+              <i class="fa-solid fa-filter"></i> General Search (Customer, Cashier, Item, Notes)
+            </div>
+            <div style="position:relative">
+              <i class="fa-solid fa-font" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--mute);font-size:13px"></i>
+              <input 
+                id="orders-search-text-input" 
+                type="search" 
+                placeholder="Search customer name, cashier, item name, amount..." 
+                style="padding-left:34px;padding-right:32px;width:100%;height:40px;font-size:13px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" 
+                value="${escapeHtml(state.ordersSearchText || '')}" 
+                oninput="setOrdersSearchText(this.value)"
+              >
+              ${state.ordersSearchText ? `
+                <button onclick="clearOrdersSearchText()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--mute);cursor:pointer;padding:4px 6px">✕</button>
+              ` : ''}
+            </div>
+          </div>
+
+          <!-- Reset Button -->
+          <div style="align-self:flex-end">
+            <button class="btn" onclick="resetAllOrdersFilters()" title="Reset all filters and searches">
+              <i class="fa-solid fa-rotate-left"></i> Reset
+            </button>
+          </div>
         </div>
 
-        <div style="display:flex;gap:6px;align-items:center">
-          <button class="btn ${currentFilter==='all'?'p':''}" style="font-size:12px;padding:6px 12px" onclick="setOrdersFilter('all')">
-            All (${state.sales.length})
-          </button>
-          <button class="btn ${currentFilter==='pending'?'p':''}" style="font-size:12px;padding:6px 12px;${p>0?'color:#d9480f;font-weight:700':''}" onclick="setOrdersFilter('pending')">
-            ⏳ Pending (${p})
-          </button>
-          <button class="btn ${currentFilter==='synced'?'p':''}" style="font-size:12px;padding:6px 12px" onclick="setOrdersFilter('synced')">
-            ✓ Synced (${sy})
-          </button>
-          <button class="btn ${currentFilter==='credit'?'p':''}" style="font-size:12px;padding:6px 12px" onclick="setOrdersFilter('credit')">
-            Credit (${cr})
-          </button>
-        </div>
+        <!-- Row 2: Filter Toolbar (Status, Date & Dropdowns) -->
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          
+          <!-- Status Tabs -->
+          <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+            <span style="font-size:11px;font-weight:700;color:var(--mute);text-transform:uppercase;margin-right:4px">Status:</span>
+            <button class="dt-filter-pill ${currentStatus === 'all' ? 'active' : ''}" onclick="setOrdersFilterStatus('all')">
+              All (${state.sales.length})
+            </button>
+            <button class="dt-filter-pill ${currentStatus === 'pending' ? 'active' : ''}" style="${p > 0 && currentStatus !== 'pending' ? 'color:#d9480f;border-color:#ffd43b' : ''}" onclick="setOrdersFilterStatus('pending')">
+              ⏳ Pending (${p})
+            </button>
+            <button class="dt-filter-pill ${currentStatus === 'synced' ? 'active' : ''}" onclick="setOrdersFilterStatus('synced')">
+              ✓ Synced (${sy})
+            </button>
+            ${errCount > 0 ? `
+              <button class="dt-filter-pill ${currentStatus === 'error' ? 'active' : ''}" style="color:#c92a2a;border-color:#ffa8a8" onclick="setOrdersFilterStatus('error')">
+                ⚠️ Errors (${errCount})
+              </button>
+            ` : ''}
+            <button class="dt-filter-pill ${currentStatus === 'credit' ? 'active' : ''}" onclick="setOrdersFilterStatus('credit')">
+              💳 Credit (${cr})
+            </button>
+          </div>
 
-        <div id="orders-filtered-count" style="font-size:12px;color:var(--mute);margin-left:auto">
-          ${state.sales.length} order(s)
+          <div style="height:20px;width:1px;background:var(--line);margin:0 4px"></div>
+
+          <!-- Date Filters -->
+          <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+            <span style="font-size:11px;font-weight:700;color:var(--mute);text-transform:uppercase;margin-right:4px">Date:</span>
+            <button class="dt-filter-pill ${currentDate === 'all' ? 'active' : ''}" onclick="setOrdersFilterDate('all')">All</button>
+            <button class="dt-filter-pill ${currentDate === 'today' ? 'active' : ''}" onclick="setOrdersFilterDate('today')">Today</button>
+            <button class="dt-filter-pill ${currentDate === 'yesterday' ? 'active' : ''}" onclick="setOrdersFilterDate('yesterday')">Yesterday</button>
+            <button class="dt-filter-pill ${currentDate === 'week' ? 'active' : ''}" onclick="setOrdersFilterDate('week')">7 Days</button>
+            <button class="dt-filter-pill ${currentDate === 'custom' ? 'active' : ''}" onclick="setOrdersFilterDate('custom')">Custom</button>
+            
+            ${currentDate === 'custom' ? `
+              <div style="display:inline-flex;align-items:center;gap:4px;margin-left:6px">
+                <input type="date" class="dt-select" value="${state.ordersDateFrom || ''}" onchange="setOrdersDateRange(this.value, state.ordersDateTo)">
+                <span style="font-size:11px;color:var(--mute)">to</span>
+                <input type="date" class="dt-select" value="${state.ordersDateTo || ''}" onchange="setOrdersDateRange(state.ordersDateFrom, this.value)">
+              </div>
+            ` : ''}
+          </div>
+
+          <div style="height:20px;width:1px;background:var(--line);margin:0 4px"></div>
+
+          <!-- Dropdown Select Filters -->
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select class="dt-select" onchange="setOrdersFilterCashier(this.value)" title="Filter by Cashier / Tilled By">
+              <option value="all" ${currentCashier === 'all' ? 'selected' : ''}>👤 All Cashiers</option>
+              ${uniqueCashiers.map(c => `<option value="${escapeHtml(c)}" ${currentCashier === c ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('')}
+            </select>
+
+            <select class="dt-select" onchange="setOrdersFilterTerminal(this.value)" title="Filter by Terminal">
+              <option value="all" ${currentTerm === 'all' ? 'selected' : ''}>💻 All Terminals</option>
+              ${uniqueTerminals.map(t => `<option value="${escapeHtml(t)}" ${currentTerm === t ? 'selected' : ''}>${escapeHtml(t)}</option>`).join('')}
+            </select>
+
+            <select class="dt-select" onchange="setOrdersFilterPayment(this.value)" title="Filter by Payment Mode">
+              <option value="all" ${currentPay === 'all' ? 'selected' : ''}>💵 All Payment Modes</option>
+              <option value="Cash" ${currentPay === 'Cash' ? 'selected' : ''}>Cash</option>
+              <option value="Transfer" ${currentPay === 'Transfer' ? 'selected' : ''}>Bank Transfer</option>
+              <option value="POS" ${currentPay === 'POS' ? 'selected' : ''}>POS Card</option>
+              <option value="Credit" ${currentPay === 'Credit' ? 'selected' : ''}>Credit / On Account</option>
+            </select>
+          </div>
+
+          <div id="orders-filtered-count" style="font-size:12px;color:var(--mute);margin-left:auto"></div>
         </div>
       </div>
 
-      <div class="tw">
+      <!-- DataTable Main Table -->
+      <div class="tw" style="margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0">
         <table>
           <thead>
             <tr>
-              <th>Order ID</th>
-              <th>Tilled By</th>
-              <th>Terminal</th>
-              <th>Date</th>
-              <th>Time</th>
-              <th>Customer</th>
-              <th>Payment</th>
-              <th>Total</th>
-              <th>Zoho Status</th>
-              <th>Zoho Invoice</th>
-              <th>Action</th>
+              <th id="dt-th-order_id" class="dt-th" onclick="setOrdersSort('order_id')" title="Click to sort by Order ID">
+                Order ID <i id="dt-sort-order_id" class="fa-solid fa-sort dt-sort-icon"></i>
+              </th>
+              <th id="dt-th-date" class="dt-th" onclick="setOrdersSort('date')" title="Click to sort by Date & Time">
+                Date & Time <i id="dt-sort-date" class="fa-solid fa-sort dt-sort-icon"></i>
+              </th>
+              <th id="dt-th-cashier" class="dt-th" onclick="setOrdersSort('cashier')" title="Click to sort by Cashier">
+                Tilled By <i id="dt-sort-cashier" class="fa-solid fa-sort dt-sort-icon"></i>
+              </th>
+              <th id="dt-th-terminal" class="dt-th" onclick="setOrdersSort('terminal')" title="Click to sort by Terminal">
+                Terminal <i id="dt-sort-terminal" class="fa-solid fa-sort dt-sort-icon"></i>
+              </th>
+              <th id="dt-th-customer" class="dt-th" onclick="setOrdersSort('customer')" title="Click to sort by Customer">
+                Customer <i id="dt-sort-customer" class="fa-solid fa-sort dt-sort-icon"></i>
+              </th>
+              <th id="dt-th-payment" class="dt-th" onclick="setOrdersSort('payment')" title="Click to sort by Payment">
+                Payment <i id="dt-sort-payment" class="fa-solid fa-sort dt-sort-icon"></i>
+              </th>
+              <th id="dt-th-total" class="dt-th" onclick="setOrdersSort('total')" title="Click to sort by Total Amount">
+                Total Amount <i id="dt-sort-total" class="fa-solid fa-sort dt-sort-icon"></i>
+              </th>
+              <th id="dt-th-status" class="dt-th" onclick="setOrdersSort('status')" title="Click to sort by Cloud Sync Status">
+                Zoho Status <i id="dt-sort-status" class="fa-solid fa-sort dt-sort-icon"></i>
+              </th>
+              <th id="dt-th-invoice" class="dt-th" onclick="setOrdersSort('invoice')" title="Click to sort by Zoho Invoice Number">
+                Zoho Invoice # <i id="dt-sort-invoice" class="fa-solid fa-sort dt-sort-icon"></i>
+              </th>
+              <th style="width:110px">Action</th>
             </tr>
           </thead>
           <tbody id="orders-table-body">
-            <!-- Rendered by updateOrdersTableRows() -->
+            <!-- Populated by updateOrdersTableRows() -->
           </tbody>
         </table>
       </div>
+
+      <!-- DataTable Pagination Footer -->
+      <div id="orders-datatable-footer"></div>
     </div>
   `;
 
@@ -4199,7 +4840,7 @@ function viewOrderDetails(saleId) {
 
   $('#ov').innerHTML = `
     <div class="ov">
-      <div class="modal" style="width:720px;max-height:88vh;display:flex;flex-direction:column">
+      <div class="modal" style="width:740px;max-height:88vh;display:flex;flex-direction:column">
         <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:14px">
           <div style="display:flex;align-items:center;gap:12px">
             <div style="width:42px;height:42px;border-radius:10px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--brand);font-size:20px;border:1px solid var(--line)">
@@ -4216,6 +4857,16 @@ function viewOrderDetails(saleId) {
           </div>
           <button class="rs" onclick="closeModal()" style="font-size:16px;padding:4px 10px">✕</button>
         </div>
+
+        ${s.last_sync_error && !isSynced ? `
+          <div style="background:#fff5f5;border:1px solid #ffa8a8;padding:10px 14px;border-radius:8px;color:#c92a2a;margin-bottom:14px;font-size:12px;display:flex;align-items:center;gap:10px">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size:16px;flex-shrink:0"></i>
+            <div>
+              <b>Zoho Cloud Sync Error:</b> ${escapeHtml(s.last_sync_error)}
+              <div style="font-size:11px;color:#a51d24;margin-top:2px">Click "Sync to Zoho Now" below to reprocess this sale.</div>
+            </div>
+          </div>
+        ` : ''}
 
         <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:10px;background:var(--soft);padding:12px;border-radius:8px;border:1px solid var(--line);margin-bottom:14px">
           <div>
@@ -4279,6 +4930,11 @@ function viewOrderDetails(saleId) {
 
         <div style="display:flex;gap:10px">
           <button class="btn" style="flex:1" onclick="closeModal()">Close</button>
+          ${!isSynced ? `
+            <button class="btn" style="flex:1.2;background:#fff3bf;color:#d9480f;border-color:#ffd43b" onclick="closeModal(); syncSingleSale('${s.id}')">
+              <i class="fa-solid fa-rotate"></i> Sync to Zoho Now
+            </button>
+          ` : ''}
           <button class="btn p" style="flex:1.4" onclick="closeModal(); previewPrintReceipt('${s.id}')">
             <i class="fa-solid fa-print"></i> Print / Reprint Receipt
           </button>
