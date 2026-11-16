@@ -4,8 +4,10 @@ const path = require('path');
 const os = require('os');
 const dns = require('dns');
 const { chromium } = require('playwright-core');
+const { spawn, execSync } = require('child_process');
 const hardwarePrinter = require('./modules/hardware_printer');
 const backupManager = require('./modules/backup_manager');
+const updateEngine = require('./scripts/update_pos');
 
 // Global crash resilience: ensure unexpected network/DNS drops never kill POS server
 process.on('uncaughtException', (err) => {
@@ -50,12 +52,76 @@ const SYNC_LOG_PATH = path.join(LOGS_DIR, 'zoho_sync.log');
 const UNIT_GROUPS_PATH = path.join(DATA_DIR, 'unit_groups_cache.json');
 const SHIFTS_PATH = path.join(DATA_DIR, 'shift_reports.json');
 const ACTIVE_SHIFTS_PATH = path.join(DATA_DIR, 'active_shifts.json');
+const ORDER_SEQUENCE_PATH = path.join(DATA_DIR, 'order_sequence.json');
+
+// Concurrency mutex lock: serializes checkout processing so simultaneous taps from multiple stations never race
+let saleProcessingLock = Promise.resolve();
+function withSaleLock(fn) {
+  const next = saleProcessingLock.then(() => fn(), () => fn());
+  saleProcessingLock = next.catch(() => {});
+  return next;
+}
+
+// Atomic monotonic sequence counter: guarantees strictly sequential, unique order IDs across all stations
+function getNextOrderId(terminalId = 'TERM-01') {
+  let currentMax = 0;
+  if (fs.existsSync(ORDER_SEQUENCE_PATH)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(ORDER_SEQUENCE_PATH, 'utf8'));
+      if (typeof data.last_order_num === 'number') currentMax = data.last_order_num;
+    } catch (e) {}
+  }
+  if (fs.existsSync(QUEUE_PATH)) {
+    try {
+      const q = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8'));
+      for (const s of q) {
+        const m = (s.order_id || s.receipt_number || '').match(/QS-(\d+)/i);
+        if (m) {
+          const num = parseInt(m[1], 10);
+          if (num > currentMax) currentMax = num;
+        }
+      }
+    } catch (e) {}
+  }
+  const nextNum = currentMax + 1;
+  fs.writeFileSync(ORDER_SEQUENCE_PATH, JSON.stringify({
+    last_order_num: nextNum,
+    updated_at: new Date().toISOString(),
+    last_terminal: terminalId
+  }, null, 2), 'utf8');
+
+  return `QS-${String(nextNum).padStart(5, '0')}`;
+}
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(LOGS_DIR)) fs.mkdirSync(LOGS_DIR, { recursive: true });
 if (!fs.existsSync(QUEUE_PATH)) fs.writeFileSync(QUEUE_PATH, JSON.stringify([], null, 2), 'utf8');
 if (!fs.existsSync(SHIFTS_PATH)) fs.writeFileSync(SHIFTS_PATH, JSON.stringify([], null, 2), 'utf8');
 if (!fs.existsSync(ACTIVE_SHIFTS_PATH)) fs.writeFileSync(ACTIVE_SHIFTS_PATH, JSON.stringify({}, null, 2), 'utf8');
+const USERS_INIT_PATH = path.join(DATA_DIR, 'pos_users.json');
+if (!fs.existsSync(USERS_INIT_PATH)) {
+  fs.writeFileSync(USERS_INIT_PATH, JSON.stringify([
+    { id: "u1", name: "Admin", pin: "1234", role: "admin" }
+  ], null, 2), 'utf8');
+}
+if (!fs.existsSync(CATALOG_PATH)) fs.writeFileSync(CATALOG_PATH, JSON.stringify([], null, 2), 'utf8');
+if (!fs.existsSync(CUSTOMERS_PATH)) fs.writeFileSync(CUSTOMERS_PATH, JSON.stringify([], null, 2), 'utf8');
+if (!fs.existsSync(ORDER_SEQUENCE_PATH)) {
+  let initialMax = 0;
+  if (fs.existsSync(QUEUE_PATH)) {
+    try {
+      const q = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8'));
+      for (const s of q) {
+        const m = (s.order_id || s.receipt_number || '').match(/QS-(\d+)/i);
+        if (m) {
+          const num = parseInt(m[1], 10);
+          if (num > initialMax) initialMax = num;
+        }
+      }
+    } catch (e) {}
+  }
+  fs.writeFileSync(ORDER_SEQUENCE_PATH, JSON.stringify({ last_order_num: initialMax, updated_at: new Date().toISOString() }, null, 2), 'utf8');
+}
 
 function formatLocalTime(d = new Date()) {
   const pad = n => String(n).padStart(2, '0');
@@ -130,46 +196,169 @@ function parseJsonBody(req) {
   });
 }
 
+// Concurrency mutex & session management for Zoho off-screen Playwright operations
+let isZohoSessionBusy = false;
+
+function cleanStaleProfileLocks(userDataDir) {
+  const locks = ['lockfile', 'SingletonLock', 'SingletonCookie', 'SingletonSocket'];
+  for (const f of locks) {
+    const p = path.join(userDataDir, f);
+    if (fs.existsSync(p)) {
+      try { fs.unlinkSync(p); } catch (e) {}
+    }
+  }
+}
+
+function getAvailableBrowserChannel() {
+  const chromePaths = [
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+    path.join(process.env.LOCALAPPDATA || '', 'Google\\Chrome\\Application\\chrome.exe')
+  ];
+  for (const p of chromePaths) {
+    if (fs.existsSync(p)) return 'chrome';
+  }
+  return 'msedge';
+}
+
+function killOrphanBrowserProfileProcesses() {
+  try {
+    const { execSync } = require('child_process');
+    execSync('powershell -NoProfile -Command "Get-Process -Name chrome,msedge -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue"', { stdio: 'ignore', timeout: 6000 });
+  } catch (e) {}
+}
+
 // Helper to launch Zoho Playwright session (Off-screen, zero cashier interruption)
 async function createZohoSession() {
+  if (isZohoSessionBusy) {
+    throw new Error('A Zoho cloud synchronization session is already actively in progress.');
+  }
+  isZohoSessionBusy = true;
+
   const userDataDir = path.join(__dirname, '.browser_profile');
-  const lockPath = path.join(userDataDir, 'lockfile');
-  if (fs.existsSync(lockPath)) {
-    try { fs.unlinkSync(lockPath); } catch (e) { }
+  cleanStaleProfileLocks(userDataDir);
+
+  const channel = getAvailableBrowserChannel();
+  let context;
+  try {
+    context = await chromium.launchPersistentContext(userDataDir, {
+      channel: channel,
+      headless: false,
+      args: [
+        '--window-position=-2400,-2400',
+        '--window-size=1280,800',
+        '--no-first-run',
+        '--disable-background-timer-throttling'
+      ]
+    });
+  } catch (launchErr) {
+    if (launchErr.message && launchErr.message.includes('Opening in existing browser session')) {
+      console.warn('⚠️ Stale Chromium profile lock detected. Auto-clearing orphan processes and retrying...');
+      killOrphanBrowserProfileProcesses();
+      cleanStaleProfileLocks(userDataDir);
+      await new Promise(r => setTimeout(r, 1200));
+      try {
+        context = await chromium.launchPersistentContext(userDataDir, {
+          channel: channel,
+          headless: false,
+          args: [
+            '--window-position=-2400,-2400',
+            '--window-size=1280,800',
+            '--no-first-run',
+            '--disable-background-timer-throttling'
+          ]
+        });
+      } catch (retryErr) {
+        isZohoSessionBusy = false;
+        throw retryErr;
+      }
+    } else {
+      isZohoSessionBusy = false;
+      throw launchErr;
+    }
   }
 
-  const context = await chromium.launchPersistentContext(userDataDir, {
-    channel: 'chrome',
-    headless: false,
-    args: [
-      '--window-position=-2400,-2400',
-      '--window-size=1280,800',
-      '--no-first-run',
-      '--disable-background-timer-throttling'
-    ]
-  });
-  const page = context.pages().length > 0 ? context.pages()[0] : await context.newPage();
-  const invOrgId = '943392252';
+  try {
+    const page = context.pages().length > 0 ? context.pages()[0] : await context.newPage();
+    const invOrgId = '943392252';
 
-  await page.goto(`https://pos.zoho.com/qualitysuperstores/index.do/zxapp/posapi/app/${invOrgId}?embeddingService=pos#/home/inventory-dashboard`, { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(3000);
+    try {
+      await page.goto(`https://pos.zoho.com/qualitysuperstores/index.do/zxapp/posapi/app/${invOrgId}?embeddingService=pos#/home/inventory-dashboard`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    } catch (navErr) {
+      console.warn('Zoho navigation timeout or notice:', navErr.message);
+    }
+    await page.waitForTimeout(3000);
 
-  const frameElement = await page.waitForSelector('iframe[name="serviceFrame"], iframe#serviceFrame', { state: 'attached', timeout: 30000 });
-  const frame = await frameElement.contentFrame();
+    const currentUrl = page.url();
+    if (currentUrl.includes('accounts.zoho.com') || currentUrl.includes('signin')) {
+      throw new Error('Zoho session unauthenticated on this computer. Please double-click "login_zoho.bat" to sign into Zoho once.');
+    }
 
-  const cookies = await context.cookies();
-  const zoscscook = cookies.find(c => c.name === 'zoscscook');
-  const token = zoscscook ? 'zoscsparam=' + zoscscook.value : '';
+    const frameElement = await page.waitForSelector('iframe[name="serviceFrame"], iframe#serviceFrame', { state: 'attached', timeout: 30000 });
+    const frame = await frameElement.contentFrame();
 
-  const headers = {
-    'Content-Type': 'application/json;charset=UTF-8',
-    'Accept': 'application/json',
-    'x-zcsrf-token': token,
-    'x-zb-source': 'zbclient',
-    'x-role-id': '1560234000000110197'
-  };
+    const cookies = await context.cookies();
+    const zoscscook = cookies.find(c => c.name === 'zoscscook');
+    const token = zoscscook ? 'zoscsparam=' + zoscscook.value : '';
 
-  return { context, page, frame, headers, invOrgId };
+    const headers = {
+      'Content-Type': 'application/json;charset=UTF-8',
+      'Accept': 'application/json',
+      'x-zcsrf-token': token,
+      'x-zb-source': 'zbclient',
+      'x-role-id': '1560234000000110197'
+    };
+
+    return { context, page, frame, headers, invOrgId };
+  } catch (err) {
+    await closeZohoSession({ context });
+    throw err;
+  }
+}
+
+async function closeZohoSession(session) {
+  try {
+    if (session && session.context) {
+      await session.context.close().catch(() => {});
+    }
+  } finally {
+    isZohoSessionBusy = false;
+  }
+}
+
+function getUnitSymbol(name) {
+  const n = (name || '').toLowerCase().trim();
+  if (n === 'piece' || n === 'pieces' || n === 'pcs') return 'pcs';
+  if (n === 'carton' || n === 'cartons' || n === 'ctn') return 'ctn';
+  if (n === 'pack' || n === 'packs') return 'pack';
+  if (n === 'bag' || n === 'bags') return 'bag';
+  if (n === 'roll' || n === 'rolls') return 'roll';
+  if (n === 'box' || n === 'boxes') return 'box';
+  if (n === 'jar' || n === 'jars') return 'jar';
+  if (n === 'dozen') return 'dzn';
+  if (n === 'unit' || n === 'units') return 'unit';
+  if (n === 'tin' || n === 'tins') return 'tin';
+  if (n === 'bottle' || n === 'bottles' || n === 'btl') return 'btl';
+  if (n === 'can' || n === 'cans') return 'can';
+  if (n === 'sachet' || n === 'sachets') return 'sachet';
+  return n || 'unit';
+}
+
+function parseUnitGroup(g) {
+  if (!g) return null;
+  let m = g.match(/^([A-Za-z\s]+)\s*\(([\d\.]+)\)\s*-\s*([A-Za-z\s]+)$/);
+  if (m) {
+    let ratio = parseFloat(m[2]);
+    if (ratio < 1 && ratio > 0) ratio = Math.round(1 / ratio);
+    return { base: m[1].trim(), bulk: m[3].trim(), ratio };
+  }
+  m = g.match(/^([A-Za-z\s]+)\s*-\s*([A-Za-z\s]+)\s*\(([\d\.]+)\)$/);
+  if (m) {
+    let ratio = parseFloat(m[3]);
+    if (ratio < 1 && ratio > 0) ratio = Math.round(1 / ratio);
+    return { bulk: m[1].trim(), base: m[2].trim(), ratio };
+  }
+  return null;
 }
 
 // Helper to construct a new catalog item from Zoho with conversions
@@ -199,52 +388,91 @@ function buildCatalogItemFromZoho(z, unitGroupsMap) {
     }
   }
 
+  const effectiveGroup = unitGroup || matchedGroup?.unit_group_name || '';
+  const parsed = parseUnitGroup(effectiveGroup);
+
   let units = [];
   let baseUnit = (z.unit || 'pcs').toLowerCase();
   let bulkUnit = 'carton';
   let cartonPrice = retailPrice;
   let cartonCostPrice = costPrice;
 
-  if (matchedGroup && Array.isArray(matchedGroup.unit_conversions) && matchedGroup.unit_conversions.length > 0) {
-    const conv = matchedGroup.unit_conversions[0];
-    const ratio = Number(conv.conversion_rate) || 1;
-    baseUnit = (matchedGroup.base_unit_name || z.unit || 'pcs').toLowerCase();
-    bulkUnit = (conv.target_unit_name || 'carton').toLowerCase();
+  if (parsed && parsed.ratio > 1) {
+    baseUnit = parsed.base.toLowerCase();
+    bulkUnit = parsed.bulk.toLowerCase();
+    const ratio = parsed.ratio;
+    const baseSym = getUnitSymbol(parsed.base);
+    const bulkSym = getUnitSymbol(parsed.bulk);
+    const convId = matchedGroup?.unit_conversions?.[0]?.unit_conversion_id || '';
+
     cartonPrice = Number(z.cf_carton_price || z.carton_price) || (retailPrice * ratio);
     cartonCostPrice = costPrice * ratio;
 
     units = [
       {
         name: baseUnit,
-        label: `${baseUnit.toUpperCase()} (Retail Single Unit)`,
+        label: `${baseSym.toUpperCase()} (Retail Single Unit)`,
         price: retailPrice,
         is_base: true,
         conversion_ratio: 1,
         unit_conversion_id: '',
-        unit_symbol: baseUnit,
+        unit_symbol: baseSym,
         cost: costPrice
       },
       {
         name: bulkUnit,
-        label: `${bulkUnit.toUpperCase()} (Full Bulk - ${ratio} ${baseUnit}s)`,
+        label: `${bulkSym.toUpperCase()} (Full Bulk - ${ratio} ${baseSym}s)`,
         price: cartonPrice,
         is_base: false,
         conversion_ratio: ratio,
-        unit_conversion_id: conv.unit_conversion_id || '',
-        unit_symbol: bulkUnit === 'carton' ? 'ctn' : bulkUnit,
+        unit_conversion_id: convId,
+        unit_symbol: bulkSym,
         cost: cartonCostPrice
       }
     ];
-  } else {
+  } else if (matchedGroup && Array.isArray(matchedGroup.unit_conversions) && matchedGroup.unit_conversions.length > 0) {
+    const conv = matchedGroup.unit_conversions[0];
+    const ratio = Number(conv.conversion_rate) || 1;
+    baseUnit = (matchedGroup.base_unit_name || z.unit || 'pcs').toLowerCase();
+    bulkUnit = (conv.target_unit_name || 'carton').toLowerCase();
+    const baseSym = getUnitSymbol(baseUnit);
+    const bulkSym = getUnitSymbol(bulkUnit);
+    cartonPrice = Number(z.cf_carton_price || z.carton_price) || (retailPrice * ratio);
+    cartonCostPrice = costPrice * ratio;
+
     units = [
       {
         name: baseUnit,
-        label: `${baseUnit.toUpperCase()} (Standard Unit)`,
+        label: `${baseSym.toUpperCase()} (Retail Single Unit)`,
         price: retailPrice,
         is_base: true,
         conversion_ratio: 1,
         unit_conversion_id: '',
-        unit_symbol: baseUnit,
+        unit_symbol: baseSym,
+        cost: costPrice
+      },
+      {
+        name: bulkUnit,
+        label: `${bulkSym.toUpperCase()} (Full Bulk - ${ratio} ${baseSym}s)`,
+        price: cartonPrice,
+        is_base: false,
+        conversion_ratio: ratio,
+        unit_conversion_id: conv.unit_conversion_id || '',
+        unit_symbol: bulkSym,
+        cost: cartonCostPrice
+      }
+    ];
+  } else {
+    const singleSym = getUnitSymbol(baseUnit);
+    units = [
+      {
+        name: baseUnit,
+        label: `${singleSym.toUpperCase()} (Standard Unit)`,
+        price: retailPrice,
+        is_base: true,
+        conversion_ratio: 1,
+        unit_conversion_id: '',
+        unit_symbol: singleSym,
         cost: costPrice
       }
     ];
@@ -273,9 +501,10 @@ async function pullCloudDataFromZoho() {
   const startTime = Date.now();
   writeSyncLog('INFO', 'Starting background pull from Zoho (Customers, Ledgers, New Items & Inventory)...');
 
-  const { context, frame, headers, invOrgId } = await createZohoSession();
-
+  let session = null;
   try {
+    session = await createZohoSession();
+    const { context, frame, headers, invOrgId } = session;
     // 1. Pull Customers & Debts
     const allContacts = [];
     let custPage = 1;
@@ -455,7 +684,7 @@ async function pullCloudDataFromZoho() {
       message: `Sync complete! Pulled ${formattedCustomers.length} customers and updated ${updatedStockCount} items (${newItemsAdded} new).`
     };
   } finally {
-    await context.close();
+    await closeZohoSession(session);
   }
 }
 
@@ -539,20 +768,23 @@ function startSyncScheduler() {
   }, 10 * 1000);
 }
 
-// Background sync function: Push offline sales to Zoho
-async function syncOfflineSalesToZoho() {
+// Background sync function: Push offline sales to Zoho (all pending or single targeted sale)
+async function syncOfflineSalesToZoho(targetSaleId = null) {
   const queue = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8'));
-  const pending = queue.filter(q => q.status === 'PENDING_SYNC');
+  const pending = targetSaleId
+    ? queue.filter(q => q.id === targetSaleId || q.order_id === targetSaleId || q.receipt_number === targetSaleId)
+    : queue.filter(q => q.status === 'PENDING_SYNC');
 
   if (pending.length === 0) {
-    return { count: 0, message: 'All offline sales are already synced with Zoho!' };
+    return { count: 0, message: targetSaleId ? 'Target sale not found or already synced.' : 'All offline sales are already synced with Zoho!' };
   }
 
   console.log(`Starting background sync for ${pending.length} pending sale(s)...`);
 
-  const { context, page, frame, headers, invOrgId } = await createZohoSession();
-
+  let session = null;
   try {
+    session = await createZohoSession();
+    const { context, page, frame, headers, invOrgId } = session;
     const paymentModeMap = {
       'Cash': { mode: 'Cash', accountId: '1560234000000000361' }, // Petty Cash
       'Moniepoint POS': { mode: 'POS', accountId: '1560234000000114266' }, // Moniepoint
@@ -621,6 +853,8 @@ async function syncOfflineSalesToZoho() {
           sale.customer_id = targetCustomerId;
         }
 
+        const catalog = fs.existsSync(CATALOG_PATH) ? JSON.parse(fs.readFileSync(CATALOG_PATH, 'utf8')) : [];
+
         const invPayload = {
           customer_id: targetCustomerId,
           date: sale.date,
@@ -631,17 +865,49 @@ async function syncOfflineSalesToZoho() {
             ? `Customer: ${sale.customer_name} | Tilled By: ${sale.tilled_by || sale.salesperson || ''}`
             : (sale.tilled_by ? `Tilled By: ${sale.tilled_by}` : ''),
           line_items: sale.line_items.map(l => {
+            const item = catalog.find(i => String(i.id) === String(l.item_id));
+            const billedQty = parseFloat(l.quantity) || 1;
+            const billedRate = parseFloat(l.rate) || 0;
+            const billedTotal = Math.round((billedQty * billedRate) * 100) / 100;
+
+            let chosenUnit = l.unit;
+            let chosenQty = billedQty;
+            let chosenRate = billedRate;
+            let chosenConversionId = l.unit_conversion_id;
+
+            if (item) {
+              const baseUnit = (item.units || []).find(u => u.is_base) || item.units?.[0];
+              const bulkUnit = (item.units || []).find(u => !u.is_base) || item.units?.[item.units.length - 1];
+              const bulkRatio = bulkUnit ? (bulkUnit.conversion_ratio > 1 ? bulkUnit.conversion_ratio : (bulkUnit.units_per_bulk || (bulkUnit.conversion_ratio > 0 && bulkUnit.conversion_ratio < 1 ? Math.round(1 / bulkUnit.conversion_ratio) : 1))) : 1;
+
+              const isFractional = billedQty % 1 !== 0;
+              const isBulkUnit = l.unit && bulkUnit && (l.unit.toLowerCase() === (bulkUnit.unit_symbol || '').toLowerCase() || l.unit.toLowerCase() === (bulkUnit.name || '').toLowerCase());
+              
+              // Handle fractional sales (e.g. 0.5 carton) or bulk sales without conversion ID:
+              // Convert directly to whole base units (e.g. 12 pcs) to guarantee Zoho Books never rejects with "Invalid unit conversion"
+              if (isFractional || (isBulkUnit && !chosenConversionId)) {
+                const mult = isBulkUnit ? bulkRatio : 1;
+                const convertedQty = Math.round(billedQty * mult);
+                if (convertedQty > 0 && baseUnit) {
+                  chosenUnit = baseUnit.unit_symbol || baseUnit.name;
+                  chosenQty = convertedQty;
+                  chosenRate = Math.round((billedTotal / convertedQty) * 100) / 100;
+                  chosenConversionId = undefined;
+                }
+              }
+            }
+
             const itemLine = {
               item_id: l.item_id,
               name: l.name,
-              quantity: l.quantity,
-              rate: l.rate
+              quantity: chosenQty,
+              rate: chosenRate
             };
-            if (l.unit_conversion_id) {
-              itemLine.unit_conversion_id = l.unit_conversion_id;
-              itemLine.unit = l.unit;
-            } else if (l.unit) {
-              itemLine.unit = l.unit;
+            if (chosenConversionId) {
+              itemLine.unit_conversion_id = chosenConversionId;
+            }
+            if (chosenUnit) {
+              itemLine.unit = chosenUnit;
             }
             return itemLine;
           })
@@ -685,42 +951,51 @@ async function syncOfflineSalesToZoho() {
         }
 
         // 3. Record Payment(s) (supports single or multi-account split payments)
-        const paymentList = (Array.isArray(sale.payments) && sale.payments.length > 0)
-          ? sale.payments
-          : [{ mode: sale.payment_mode || 'Cash', amount: inv.total }];
+        const isCreditSale = sale.is_credit || 
+                             (sale.payment_mode || '').toLowerCase().includes('credit') || 
+                             (sale.payment_mode || '').toLowerCase().includes('account') || 
+                             (sale.amount_paid === 0 && (!sale.payments || sale.payments.length === 0 || sale.payments[0]?.mode?.includes('Credit') || sale.payments[0]?.mode?.includes('Account')));
 
         const recordedPaymentIds = [];
 
-        for (let i = 0; i < paymentList.length; i++) {
-          const split = paymentList[i];
-          const splitAmt = Math.round(Number(split.amount));
-          if (!splitAmt || splitAmt <= 0) continue;
+        if (isCreditSale) {
+          console.log(`  📝 Credit Sale: Invoice ${inv.invoice_number} sent & left unpaid in Zoho (Customer owing balance officially increased by ₦${Number(inv.total).toLocaleString()}).`);
+        } else {
+          const paymentList = (Array.isArray(sale.payments) && sale.payments.length > 0)
+            ? sale.payments
+            : [{ mode: sale.payment_mode || 'Cash', amount: inv.total }];
 
-          const payCfg = paymentModeMap[split.mode] ||
-            (split.mode?.includes('POS') || split.mode?.includes('Moniepoint') ? paymentModeMap['Moniepoint POS'] :
-              split.mode?.includes('Transfer') || split.mode?.includes('First') ? paymentModeMap['First Bank Transfer'] :
-                paymentModeMap['Cash']);
+          for (let i = 0; i < paymentList.length; i++) {
+            const split = paymentList[i];
+            const splitAmt = Math.round(Number(split.amount));
+            if (!splitAmt || splitAmt <= 0) continue;
 
-          const payPayload = {
-            customer_id: inv.customer_id,
-            payment_mode: payCfg.mode,
-            amount: splitAmt,
-            date: sale.date,
-            account_id: payCfg.accountId,
-            reference_number: paymentList.length > 1 ? `${sale.receipt_number}-${i + 1}` : sale.receipt_number,
-            invoices: [{ invoice_id: inv.invoice_id, amount_applied: splitAmt }]
-          };
+            const payCfg = paymentModeMap[split.mode] ||
+              (split.mode?.includes('POS') || split.mode?.includes('Moniepoint') ? paymentModeMap['Moniepoint POS'] :
+                split.mode?.includes('Transfer') || split.mode?.includes('First') ? paymentModeMap['First Bank Transfer'] :
+                  paymentModeMap['Cash']);
 
-          const payRes = await frame.evaluate(async ({ url, h, b }) => {
-            const r = await fetch(url, { method: 'POST', headers: h, body: JSON.stringify(b) });
-            return await r.json();
-          }, { url: `/posapi/api/v1/customerpayments?organization_id=${invOrgId}`, h: headers, b: payPayload });
+            const payPayload = {
+              customer_id: inv.customer_id,
+              payment_mode: payCfg.mode,
+              amount: splitAmt,
+              date: sale.date,
+              account_id: payCfg.accountId,
+              reference_number: paymentList.length > 1 ? `${sale.receipt_number}-${i + 1}` : sale.receipt_number,
+              invoices: [{ invoice_id: inv.invoice_id, amount_applied: splitAmt }]
+            };
 
-          if (payRes.code === 0 && payRes.payment) {
-            recordedPaymentIds.push(payRes.payment.payment_id);
-            console.log(`    💳 Payment logged: ₦${splitAmt.toLocaleString()} -> ${payCfg.mode} (${payCfg.accountId})`);
-          } else {
-            console.log(`    ⚠️ Warning recording payment (${split.mode}):`, payRes.message);
+            const payRes = await frame.evaluate(async ({ url, h, b }) => {
+              const r = await fetch(url, { method: 'POST', headers: h, body: JSON.stringify(b) });
+              return await r.json();
+            }, { url: `/posapi/api/v1/customerpayments?organization_id=${invOrgId}`, h: headers, b: payPayload });
+
+            if (payRes.code === 0 && payRes.payment) {
+              recordedPaymentIds.push(payRes.payment.payment_id);
+              console.log(`    💳 Payment logged: ₦${splitAmt.toLocaleString()} -> ${payCfg.mode} (${payCfg.accountId})`);
+            } else {
+              console.log(`    ⚠️ Warning recording payment (${split.mode}):`, payRes.message);
+            }
           }
         }
 
@@ -743,9 +1018,7 @@ async function syncOfflineSalesToZoho() {
 
     return { count: syncedCount, message: `Successfully synced ${syncedCount} of ${pending.length} pending sale(s) to Zoho!` };
   } finally {
-    if (context) {
-      await context.close().catch(() => { });
-    }
+    await closeZohoSession(session);
   }
 }
 
@@ -866,6 +1139,72 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // 0e. GET /api/system/version (Check Current Version and GitHub Updates)
+  if (req.method === 'GET' && pathname === '/api/system/version') {
+    try {
+      const checkRemote = req.url.includes('check_remote=true');
+      const current = updateEngine.getCurrentVersion();
+      let remoteInfo = { updatesAvailable: false, behindCount: 0, commits: [] };
+      if (checkRemote) {
+        remoteInfo = updateEngine.checkRemoteUpdates('dev');
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({
+        success: true,
+        current,
+        ...remoteInfo
+      }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: false, error: err.message }));
+    }
+  }
+
+  // 0f. POST /api/system/update (Pull Latest Code from GitHub and Restart)
+  if (req.method === 'POST' && pathname === '/api/system/update') {
+    try {
+      console.log('[System Update] Remote update requested via API...');
+      const result = updateEngine.applyUpdate('dev');
+      if (result.success) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: true,
+          message: 'Update applied successfully! Restarting POS server...',
+          ...result
+        }));
+
+        // Restart server after response completes
+        setTimeout(() => {
+          try {
+            if (process.env.pm_id !== undefined || process.env.PM2_HOME) {
+              console.log('[System Update] Exiting process for PM2 auto-restart...');
+              process.exit(0);
+            } else {
+              console.log('[System Update] Relaunching POS server process...');
+              const child = spawn(process.argv[0], [path.join(__dirname, 'pos_server.js')], {
+                detached: true,
+                stdio: 'ignore',
+                cwd: __dirname
+              });
+              child.unref();
+              process.exit(0);
+            }
+          } catch (e) {
+            console.error('[System Update] Restart error:', e);
+            process.exit(0);
+          }
+        }, 1500);
+        return;
+      } else {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: false, error: result.error, log: result.log }));
+      }
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: false, error: err.message }));
+    }
+  }
+
   // 0. POST /api/terminal/init (Multi-Terminal Auto-Discovery)
   if (req.method === 'POST' && pathname === '/api/terminal/init') {
     try {
@@ -966,37 +1305,37 @@ const server = http.createServer(async (req, res) => {
       writeSyncLog('INFO', `Locally registered new customer "${name}" (Phone: ${phone || 'N/A'}).`);
 
       // Attempt immediate background sync to Zoho if online
-      if (syncState.isOnline && !syncState.isSyncing) {
+      if (syncState.isOnline && !syncState.isSyncing && !isZohoSessionBusy) {
         (async () => {
+          let session = null;
           try {
-            const { context, frame, headers, invOrgId } = await createZohoSession();
-            try {
-              const res = await frame.evaluate(async ({ url, h, b }) => {
-                const r = await fetch(url, { method: 'POST', headers: h, body: JSON.stringify(b) });
-                return await r.json();
-              }, {
-                url: `/posapi/api/v1/contacts?organization_id=${invOrgId}`,
-                h: headers,
-                b: {
-                  contact_name: name,
-                  company_name: company,
-                  contact_type: 'customer',
-                  phone: phone,
-                  email: email
-                }
-              });
-              if (res.code === 0 && res.contact) {
-                newCust.id = res.contact.contact_id;
-                newCust.zoho_contact_id = res.contact.contact_id;
-                delete newCust.is_local_created;
-                fs.writeFileSync(CUSTOMERS_PATH, JSON.stringify(custs, null, 2), 'utf8');
-                writeSyncLog('SUCCESS', `Synced customer "${name}" to Zoho Books (Contact ID: ${res.contact.contact_id}).`);
+            session = await createZohoSession();
+            const { frame, headers, invOrgId } = session;
+            const res = await frame.evaluate(async ({ url, h, b }) => {
+              const r = await fetch(url, { method: 'POST', headers: h, body: JSON.stringify(b) });
+              return await r.json();
+            }, {
+              url: `/posapi/api/v1/contacts?organization_id=${invOrgId}`,
+              h: headers,
+              b: {
+                contact_name: name,
+                company_name: company,
+                contact_type: 'customer',
+                phone: phone,
+                email: email
               }
-            } finally {
-              await context.close();
+            });
+            if (res.code === 0 && res.contact) {
+              newCust.id = res.contact.contact_id;
+              newCust.zoho_contact_id = res.contact.contact_id;
+              delete newCust.is_local_created;
+              fs.writeFileSync(CUSTOMERS_PATH, JSON.stringify(custs, null, 2), 'utf8');
+              writeSyncLog('SUCCESS', `Synced customer "${name}" to Zoho Books (Contact ID: ${res.contact.contact_id}).`);
             }
           } catch(e) {
             writeSyncLog('WARN', `Customer "${name}" will be synced to Zoho on next scheduled cycle: ${e.message}`);
+          } finally {
+            await closeZohoSession(session);
           }
         })();
       }
@@ -1009,208 +1348,337 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 3. POST /api/sales (Save to Offline Outbox with Server Stock Guard & Active Account Order ID)
+  // 3. POST /api/sales (Save to Offline Outbox with Server Stock Guard & Active Account Order ID - Mutex Protected)
   if (req.method === 'POST' && pathname === '/api/sales') {
-    try {
-      const saleData = await parseJsonBody(req);
-      const queue = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8'));
+    return withSaleLock(async () => {
+      try {
+        const saleData = await parseJsonBody(req);
+        const queue = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8'));
 
-      // 0. Enforce PIN Login Security: Reject unauthenticated sales postings
-      const usersPath = path.join(DATA_DIR, 'pos_users.json');
-      const users = fs.existsSync(usersPath)
-        ? JSON.parse(fs.readFileSync(usersPath, 'utf8'))
-        : [
-          { id: 'u1', name: 'Manager / Admin', pin: '9545', role: 'admin' },
-          { id: 'u5', name: 'Finance / Accounts', pin: '6935', role: 'finance' },
-          { id: 'u2', name: 'Cashier 1', pin: '5713', role: 'cashier', terminal_id: 'TERM-01' },
-          { id: 'u3', name: 'Cashier 2', pin: '5917', role: 'cashier', terminal_id: 'TERM-02' }
-        ];
+        // 0a. Check idempotency for client transaction UUID or emergency standalone re-flushes
+        const clientTxnId = saleData.client_txn_id || saleData.id;
+        const existing = queue.find(s => {
+          if (clientTxnId && (s.client_txn_id === clientTxnId || s.id === clientTxnId)) return true;
+          if (saleData.receipt_number && s.receipt_number === saleData.receipt_number) {
+            // True duplicate check: must also match customer, total, line item count, and time window
+            const sameCust = s.customer_id === saleData.customer_id || s.customer_name === saleData.customer_name;
+            const sameTotal = Math.abs((s.total || 0) - (saleData.total || 0)) < 0.01;
+            const sameLines = (s.line_items || []).length === (saleData.line_items || []).length;
+            return sameCust && sameTotal && sameLines;
+          }
+          return false;
+        });
 
-      const activeUser = users.find(u => (saleData.user_id && u.id === saleData.user_id) || 
-                                         (saleData.user_name && u.name.toLowerCase() === saleData.user_name.toLowerCase()) ||
-                                         (saleData.tilled_by && u.name.toLowerCase() === saleData.tilled_by.toLowerCase()) ||
-                                         (saleData.salesperson && u.name.toLowerCase() === saleData.salesperson.toLowerCase()));
-      if (!activeUser) {
-        res.writeHead(401);
-        return res.end(JSON.stringify({
-          success: false,
-          message: 'Unauthorized: You must login with a valid cashier PIN to post sales.'
-        }));
-      }
-      const tillerName = activeUser.name;
-
-      let catalog = [];
-      if (fs.existsSync(CATALOG_PATH)) {
-        catalog = JSON.parse(fs.readFileSync(CATALOG_PATH, 'utf8'));
-      }
-
-      // 0b. RBAC Enforcement: Cashiers cannot apply discounts without Manager or Finance PIN authorization
-      const isCashier = activeUser.role === 'cashier';
-      const hasDiscount = (saleData.discount && parseFloat(saleData.discount) > 0) ||
-                          (saleData.subtotal && saleData.total && parseFloat(saleData.total) < parseFloat(saleData.subtotal));
-
-      if (isCashier && hasDiscount) {
-        const isAuthorized = saleData.manager_override === true && saleData.manager_override_by;
-        if (!isAuthorized) {
-          res.writeHead(403);
+        if (existing) {
+          res.writeHead(200);
           return res.end(JSON.stringify({
-            success: false,
-            message: 'Sale rejected: Cashiers cannot apply discounts without Manager or Finance PIN authorization.'
+            success: true,
+            sale: existing,
+            duplicate_prevented: true,
+            message: 'Sale already recorded in queue.'
           }));
         }
-      }
 
-      // 0c. RBAC Enforcement: Cashiers cannot change price on order without Manager or Finance PIN authorization
-      if (isCashier) {
+        // 0b. Rapid double-tap debounce window (4 seconds)
+        const nowMs = Date.now();
+        const recentDuplicate = queue.slice(-20).find(s => {
+          if (!s.created_at) return false;
+          const sTime = new Date(s.created_at).getTime();
+          const diffMs = nowMs - sTime;
+          if (diffMs < 0 || diffMs > 4000) return false;
+          if (s.terminal_id !== saleData.terminal_id) return false;
+          if (s.user_id !== saleData.user_id && s.tilled_by !== saleData.tilled_by) return false;
+          if (s.customer_id !== saleData.customer_id) return false;
+          if (Math.abs(s.total - saleData.total) > 0.01) return false;
+          if ((s.line_items || []).length !== (saleData.line_items || []).length) return false;
+          const sIds = (s.line_items || []).map(l => `${l.item_id}_${l.quantity}`).sort().join('|');
+          const reqIds = (saleData.line_items || []).map(l => `${l.item_id}_${l.quantity}`).sort().join('|');
+          return sIds === reqIds;
+        });
+        if (recentDuplicate) {
+          console.warn(`[Debounce Guard] Blocked rapid duplicate sale within 4s from terminal ${saleData.terminal_id}`);
+          res.writeHead(200);
+          return res.end(JSON.stringify({
+            success: true,
+            sale: recentDuplicate,
+            duplicate_prevented: true,
+            message: 'Duplicate checkout tap prevented. Sale already recorded.'
+          }));
+        }
+
+        // 0. Enforce PIN Login Security: Reject unauthenticated sales postings
+        const usersPath = path.join(DATA_DIR, 'pos_users.json');
+        const users = fs.existsSync(usersPath)
+          ? JSON.parse(fs.readFileSync(usersPath, 'utf8'))
+          : [
+            { id: 'u1', name: 'Manager / Admin', pin: '9545', role: 'admin' },
+            { id: 'u5', name: 'Finance / Accounts', pin: '6935', role: 'finance' },
+            { id: 'u2', name: 'Cashier 1', pin: '5713', role: 'cashier', terminal_id: 'TERM-01' },
+            { id: 'u3', name: 'Cashier 2', pin: '5917', role: 'cashier', terminal_id: 'TERM-02' }
+          ];
+
+        const activeUser = users.find(u => (saleData.user_id && u.id === saleData.user_id) || 
+                                           (saleData.user_name && u.name.toLowerCase() === saleData.user_name.toLowerCase()) ||
+                                           (saleData.tilled_by && u.name.toLowerCase() === saleData.tilled_by.toLowerCase()) ||
+                                           (saleData.salesperson && u.name.toLowerCase() === saleData.salesperson.toLowerCase()));
+        if (!activeUser) {
+          res.writeHead(401);
+          return res.end(JSON.stringify({
+            success: false,
+            message: 'Unauthorized: You must login with a valid cashier PIN to post sales.'
+          }));
+        }
+        const tillerName = activeUser.name;
+
+        let catalog = [];
+        if (fs.existsSync(CATALOG_PATH)) {
+          catalog = JSON.parse(fs.readFileSync(CATALOG_PATH, 'utf8'));
+        }
+
+        // 0b. RBAC Enforcement: Cashiers cannot apply discounts without Manager or Finance PIN authorization
+        const isCashier = activeUser.role === 'cashier';
+        const hasDiscount = (saleData.discount && parseFloat(saleData.discount) > 0) ||
+                            (saleData.subtotal && saleData.total && parseFloat(saleData.total) < parseFloat(saleData.subtotal));
+
+        if (isCashier && hasDiscount) {
+          const isAuthorized = saleData.manager_override === true && saleData.manager_override_by;
+          if (!isAuthorized) {
+            res.writeHead(403);
+            return res.end(JSON.stringify({
+              success: false,
+              message: 'Sale rejected: Cashiers cannot apply discounts without Manager or Finance PIN authorization.'
+            }));
+          }
+        }
+
+        // 0c. RBAC Enforcement: Cashiers cannot change price on order without Manager or Finance PIN authorization
+        if (isCashier) {
+          for (const line of (saleData.line_items || [])) {
+            const item = catalog.find(i => String(i.id) === String(line.item_id));
+            if (item) {
+              let expectedPrice = item.retail_price || 0;
+              if (line.unit && item.units && item.units.length) {
+                const matchedUnit = item.units.find(u => u.unit_symbol === line.unit || u.name === line.unit);
+                if (matchedUnit && matchedUnit.price !== undefined) {
+                  expectedPrice = matchedUnit.price;
+                }
+              }
+              const soldRate = line.rate !== undefined ? line.rate : (line.unit_price !== undefined ? line.unit_price : null);
+              if (soldRate !== null && Math.round(parseFloat(soldRate)) !== Math.round(parseFloat(expectedPrice))) {
+                const isAuthorized = saleData.manager_override === true && saleData.manager_override_by;
+                if (!isAuthorized) {
+                  res.writeHead(403);
+                  return res.end(JSON.stringify({
+                    success: false,
+                    message: `Sale rejected: Cashiers cannot change price on order for "${item.name}". Expected ₦${expectedPrice.toLocaleString()}, got ₦${parseFloat(soldRate).toLocaleString()}. Requires Manager or Finance PIN.`
+                  }));
+                }
+              }
+            }
+          }
+        }
+
+        // 1. Strict Server Stock Verification: Block sales of out-of-stock items
         for (const line of (saleData.line_items || [])) {
           const item = catalog.find(i => String(i.id) === String(line.item_id));
           if (item) {
-            let expectedPrice = item.retail_price || 0;
-            if (line.unit && item.units && item.units.length) {
-              const matchedUnit = item.units.find(u => u.unit_symbol === line.unit || u.name === line.unit);
-              if (matchedUnit && matchedUnit.price !== undefined) {
-                expectedPrice = matchedUnit.price;
+            const bulkUnit = (item.units || []).find(u => !u.is_base) || item.units?.[item.units.length - 1];
+            const bulkRatio = bulkUnit ? (bulkUnit.conversion_ratio > 1 ? bulkUnit.conversion_ratio : (bulkUnit.units_per_bulk || (bulkUnit.conversion_ratio > 0 && bulkUnit.conversion_ratio < 1 ? Math.round(1 / bulkUnit.conversion_ratio) : 1))) : 1;
+            const currentStockBulk = parseFloat(item.stock) || 0;
+            const currentStockBase = Math.round((currentStockBulk * bulkRatio) * 100) / 100;
+
+            let sellRatio = 1;
+            if (line.unit) {
+              const soldUnit = (item.units || []).find(u => u.unit_symbol === line.unit || u.name === line.unit);
+              if (soldUnit) {
+                sellRatio = soldUnit.is_base ? 1 : (soldUnit.conversion_ratio > 1 ? soldUnit.conversion_ratio : (soldUnit.units_per_bulk || (soldUnit.conversion_ratio > 0 && soldUnit.conversion_ratio < 1 ? Math.round(1 / soldUnit.conversion_ratio) : 1)));
               }
             }
-            const soldRate = line.rate !== undefined ? line.rate : (line.unit_price !== undefined ? line.unit_price : null);
-            if (soldRate !== null && Math.round(parseFloat(soldRate)) !== Math.round(parseFloat(expectedPrice))) {
-              const isAuthorized = saleData.manager_override === true && saleData.manager_override_by;
-              if (!isAuthorized) {
-                res.writeHead(403);
-                return res.end(JSON.stringify({
-                  success: false,
-                  message: `Sale rejected: Cashiers cannot change price on order for "${item.name}". Expected ₦${expectedPrice.toLocaleString()}, got ₦${parseFloat(soldRate).toLocaleString()}. Requires Manager or Finance PIN.`
-                }));
-              }
+            const requestedBase = Math.round((line.quantity * sellRatio) * 100) / 100;
+
+            if (currentStockBase <= 0) {
+              res.writeHead(400);
+              return res.end(JSON.stringify({
+                success: false,
+                message: `Sale blocked: "${item.name}" is OUT OF STOCK.`
+              }));
+            }
+            if (requestedBase > currentStockBase) {
+              res.writeHead(400);
+              return res.end(JSON.stringify({
+                success: false,
+                message: `Sale blocked: Insufficient stock for "${item.name}". Requested ${requestedBase} base units, only ${currentStockBase} available.`
+              }));
             }
           }
         }
-      }
 
-      // 1. Strict Server Stock Verification: Block sales of out-of-stock items
-      for (const line of (saleData.line_items || [])) {
-        const item = catalog.find(i => String(i.id) === String(line.item_id));
-        if (item) {
-          const bulkUnit = (item.units || []).find(u => !u.is_base) || item.units?.[item.units.length - 1];
-          const bulkRatio = bulkUnit ? (bulkUnit.conversion_ratio > 1 ? bulkUnit.conversion_ratio : (bulkUnit.units_per_bulk || (bulkUnit.conversion_ratio > 0 && bulkUnit.conversion_ratio < 1 ? Math.round(1 / bulkUnit.conversion_ratio) : 1))) : 1;
-          const currentStockBulk = parseFloat(item.stock) || 0;
-          const currentStockBase = Math.round(currentStockBulk * bulkRatio);
-
-          let sellRatio = 1;
-          if (line.unit) {
-            const soldUnit = (item.units || []).find(u => u.unit_symbol === line.unit || u.name === line.unit);
-            if (soldUnit) {
-              sellRatio = soldUnit.is_base ? 1 : (soldUnit.conversion_ratio > 1 ? soldUnit.conversion_ratio : (soldUnit.units_per_bulk || (soldUnit.conversion_ratio > 0 && soldUnit.conversion_ratio < 1 ? Math.round(1 / soldUnit.conversion_ratio) : 1)));
+        // 2. Decrement stock atomically in server's pos_catalog.json
+        for (const line of (saleData.line_items || [])) {
+          const item = catalog.find(i => String(i.id) === String(line.item_id));
+          if (item) {
+            const bulkUnit = (item.units || []).find(u => !u.is_base) || item.units?.[item.units.length - 1];
+            const bulkRatio = bulkUnit ? (bulkUnit.conversion_ratio > 1 ? bulkUnit.conversion_ratio : (bulkUnit.units_per_bulk || (bulkUnit.conversion_ratio > 0 && bulkUnit.conversion_ratio < 1 ? Math.round(1 / bulkUnit.conversion_ratio) : 1))) : 1;
+            let sellRatio = 1;
+            if (line.unit) {
+              const soldUnit = (item.units || []).find(u => u.unit_symbol === line.unit || u.name === line.unit);
+              if (soldUnit) {
+                sellRatio = soldUnit.is_base ? 1 : (soldUnit.conversion_ratio > 1 ? soldUnit.conversion_ratio : (soldUnit.units_per_bulk || (soldUnit.conversion_ratio > 0 && soldUnit.conversion_ratio < 1 ? Math.round(1 / soldUnit.conversion_ratio) : 1)));
+              }
             }
+            const soldBulk = (line.quantity * sellRatio) / bulkRatio;
+            item.stock = Math.max(0, Math.round(((parseFloat(item.stock) || 0) - soldBulk) * 100) / 100);
           }
-          const requestedBase = line.quantity * sellRatio;
+        }
+        fs.writeFileSync(CATALOG_PATH, JSON.stringify(catalog, null, 2), 'utf8');
 
-          if (currentStockBase <= 0) {
+        // 3. Issue Sequential Retail Order ID & Explicit Till Tracking (Guaranteed monotonic collision-free)
+        const term = saleData.terminal_id || activeUser.terminal_id || 'TERM-01';
+        let orderId = (saleData.standalone_offline && saleData.receipt_number) ? saleData.receipt_number : null;
+        if (orderId) {
+          const isTaken = queue.some(s => s.order_id === orderId || s.receipt_number === orderId);
+          if (isTaken) {
+            const freshId = getNextOrderId(term);
+            console.warn(`[Collision Guard] Standalone offline receipt #${orderId} was already taken by another sale. Re-assigned to unique serial ${freshId}.`);
+            saleData.original_offline_id = orderId;
+            orderId = freshId;
+          }
+        } else {
+          orderId = getNextOrderId(term);
+        }
+
+        const isCreditSale = (saleData.payment_mode === 'Credit / On Account' || 
+                              saleData.is_credit === true || 
+                              (saleData.amount_paid === 0 && (!saleData.payments || saleData.payments.length === 0 || saleData.payments[0]?.mode === 'Credit / On Account')));
+
+        // Enforce valid customer for on-account / credit sales
+        if (isCreditSale) {
+          const isWalkIn = !saleData.customer_id || saleData.customer_id === '1560234000000095179' || /walk\s*[-]?\s*in/i.test(saleData.customer_name || '');
+          if (isWalkIn) {
             res.writeHead(400);
             return res.end(JSON.stringify({
               success: false,
-              message: `Sale blocked: "${item.name}" is OUT OF STOCK.`
-            }));
-          }
-          if (requestedBase > currentStockBase) {
-            res.writeHead(400);
-            return res.end(JSON.stringify({
-              success: false,
-              message: `Sale blocked: Insufficient stock for "${item.name}". Requested ${requestedBase} base units, only ${currentStockBase} available.`
+              message: 'Credit / On-Account sales require selecting a registered customer to track debt balance.'
             }));
           }
         }
-      }
 
-      // 2. Decrement stock atomically in server's pos_catalog.json
-      for (const line of (saleData.line_items || [])) {
-        const item = catalog.find(i => String(i.id) === String(line.item_id));
-        if (item) {
-          const bulkUnit = (item.units || []).find(u => !u.is_base) || item.units?.[item.units.length - 1];
-          const bulkRatio = bulkUnit ? (bulkUnit.conversion_ratio > 1 ? bulkUnit.conversion_ratio : (bulkUnit.units_per_bulk || (bulkUnit.conversion_ratio > 0 && bulkUnit.conversion_ratio < 1 ? Math.round(1 / bulkUnit.conversion_ratio) : 1))) : 1;
-          let sellRatio = 1;
-          if (line.unit) {
-            const soldUnit = (item.units || []).find(u => u.unit_symbol === line.unit || u.name === line.unit);
-            if (soldUnit) {
-              sellRatio = soldUnit.is_base ? 1 : (soldUnit.conversion_ratio > 1 ? soldUnit.conversion_ratio : (soldUnit.units_per_bulk || (soldUnit.conversion_ratio > 0 && soldUnit.conversion_ratio < 1 ? Math.round(1 / soldUnit.conversion_ratio) : 1)));
-            }
+        const newSale = {
+          id: `sale_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          client_txn_id: saleData.client_txn_id || null,
+          order_id: orderId,
+          receipt_number: orderId,
+          tilled_by: tillerName,
+          user_id: activeUser.id,
+          salesperson: tillerName,
+          cashier_role: activeUser.role,
+          terminal_id: term,
+          customer_id: saleData.customer_id,
+          customer_name: saleData.customer_name,
+          date: saleData.date,
+          payment_mode: isCreditSale ? 'Credit / On Account' : saleData.payment_mode,
+          payments: isCreditSale ? [{ mode: 'Credit / On Account', amount: 0 }] : (saleData.payments || []),
+          amount_paid: isCreditSale ? 0 : (saleData.amount_paid !== undefined ? saleData.amount_paid : saleData.total),
+          change: isCreditSale ? 0 : (saleData.change || 0),
+          subtotal: saleData.subtotal !== undefined ? saleData.subtotal : saleData.total,
+          discount: saleData.discount || 0,
+          manager_override: saleData.manager_override || false,
+          manager_override_by: saleData.manager_override_by || null,
+          total: saleData.total,
+          line_items: saleData.line_items,
+          is_credit: isCreditSale,
+          without_price: !!saleData.without_price,
+          status: 'PENDING_SYNC',
+          created_at: new Date().toISOString()
+        };
+
+        // Atomically update customer outstanding debt balance if credit invoice
+        let updatedCustomer = null;
+        if (isCreditSale) {
+          const custs = fs.existsSync(CUSTOMERS_PATH) ? JSON.parse(fs.readFileSync(CUSTOMERS_PATH, 'utf8')) : [];
+          const cust = custs.find(c => String(c.id) === String(newSale.customer_id) || (c.name && c.name.toLowerCase() === (newSale.customer_name || '').toLowerCase()));
+          if (cust) {
+            cust.outstanding = Math.round(((parseFloat(cust.outstanding) || 0) + parseFloat(newSale.total)) * 100) / 100;
+            fs.writeFileSync(CUSTOMERS_PATH, JSON.stringify(custs, null, 2), 'utf8');
+            updatedCustomer = cust;
+            writeSyncLog('INFO', `Invoice #${orderId} billed to ${cust.name} on account. Added ₦${newSale.total.toLocaleString()} to debt. New owing balance: ₦${cust.outstanding.toLocaleString()}.`);
           }
-          const soldBulk = (line.quantity * sellRatio) / bulkRatio;
-          item.stock = Math.max(0, Math.round(((parseFloat(item.stock) || 0) - soldBulk) * 100) / 100);
         }
+
+        queue.push(newSale);
+        fs.writeFileSync(QUEUE_PATH, JSON.stringify(queue, null, 2), 'utf8');
+
+        res.writeHead(200);
+        return res.end(JSON.stringify({ 
+          success: true, 
+          sale: newSale,
+          customer: updatedCustomer
+        }));
+      } catch (err) {
+        res.writeHead(500);
+        return res.end(JSON.stringify({ success: false, message: err.message }));
       }
-      fs.writeFileSync(CATALOG_PATH, JSON.stringify(catalog, null, 2), 'utf8');
+    });
+  }
 
-      // 3. Issue Sequential Retail Order ID & Explicit Till Tracking (Monotonic counter: prevents clash even after archives)
-      const term = saleData.terminal_id || activeUser.terminal_id || 'TERM-01';
-      let maxNum = 0;
-      for (const s of queue) {
-        const m = (s.order_id || s.receipt_number || '').match(/QS-(\d+)/i);
-        if (m) {
-          const num = parseInt(m[1], 10);
-          if (num > maxNum) maxNum = num;
-        }
+  // 3b. POST /api/sales/sync-single (Targeted Sync / Retry for a specific sale)
+  if (req.method === 'POST' && pathname === '/api/sales/sync-single') {
+    try {
+      const { id } = await parseJsonBody(req);
+      if (!id) {
+        res.writeHead(400);
+        return res.end(JSON.stringify({ success: false, message: 'Missing sale id' }));
       }
-      const nextNum = Math.max(maxNum + 1, queue.length + 1);
-      const orderId = `QS-${String(nextNum).padStart(5, '0')}`;
-
-      const newSale = {
-        id: `sale_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-        order_id: orderId,
-        receipt_number: orderId,
-        tilled_by: tillerName,
-        user_id: activeUser.id,
-        salesperson: tillerName,
-        cashier_role: activeUser.role,
-        terminal_id: term,
-        customer_id: saleData.customer_id,
-        customer_name: saleData.customer_name,
-        date: saleData.date,
-        payment_mode: saleData.payment_mode,
-        payments: saleData.payments || [],
-        amount_paid: saleData.amount_paid !== undefined ? saleData.amount_paid : saleData.total,
-        change: saleData.change || 0,
-        subtotal: saleData.subtotal !== undefined ? saleData.subtotal : saleData.total,
-        discount: saleData.discount || 0,
-        manager_override: saleData.manager_override || false,
-        manager_override_by: saleData.manager_override_by || null,
-        total: saleData.total,
-        line_items: saleData.line_items,
-        status: 'PENDING_SYNC',
-        created_at: new Date().toISOString()
-      };
-
-      queue.push(newSale);
-      fs.writeFileSync(QUEUE_PATH, JSON.stringify(queue, null, 2), 'utf8');
-
-      // 4. Auto-kick Cash Drawer (RJ11 Pulse) on Cash transactions
-      const isCashSale = (newSale.payment_mode === 'CASH' || (newSale.payments && newSale.payments.some(p => (p.mode || '').toLowerCase() === 'cash')));
-      if (isCashSale && saleData.auto_kick_drawer !== false) {
-        hardwarePrinter.kickCashDrawer(saleData.printer_name || '').catch(() => {});
-      }
-
+      const syncResult = await syncOfflineSalesToZoho(id);
       res.writeHead(200);
-      return res.end(JSON.stringify({ 
-        success: true, 
-        sale: newSale,
-        cash_drawer_kicked: isCashSale
-      }));
+      return res.end(JSON.stringify({ success: true, ...syncResult }));
     } catch (err) {
       res.writeHead(500);
       return res.end(JSON.stringify({ success: false, message: err.message }));
     }
   }
 
-  // 4. GET /api/queue
+  // 4. GET /api/queue (View Outbox with limit, search & status filter)
   if (req.method === 'GET' && pathname === '/api/queue') {
     const queue = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8'));
-    const pending = queue.filter(q => q.status === 'PENDING_SYNC').length;
+    const pending = queue.filter(q => q.status !== 'SYNCED').length;
+    const limit = parseInt(parsedUrl.searchParams.get('limit') || '1000', 10);
+    const search = (parsedUrl.searchParams.get('search') || '').trim().toLowerCase();
+    const filter = (parsedUrl.searchParams.get('status') || 'all').toLowerCase();
+
+    let filtered = queue;
+    if (filter === 'pending') {
+      filtered = filtered.filter(s => s.status !== 'SYNCED');
+    } else if (filter === 'synced') {
+      filtered = filtered.filter(s => s.status === 'SYNCED');
+    } else if (filter === 'credit') {
+      filtered = filtered.filter(s => s.is_credit || (s.payment_mode || '').toLowerCase().includes('credit'));
+    }
+
+    if (search) {
+      filtered = filtered.filter(s => {
+        const text = [
+          s.order_id,
+          s.receipt_number,
+          s.zoho_invoice_number,
+          s.customer_name,
+          s.tilled_by,
+          s.terminal_id,
+          s.payment_mode,
+          s.date,
+          String(s.total),
+          ...(s.line_items || []).map(li => li.name)
+        ].filter(Boolean).join(' ').toLowerCase();
+        return text.includes(search);
+      });
+    }
+
     res.writeHead(200);
     return res.end(JSON.stringify({
       total_sales: queue.length,
       pending_count: pending,
       synced_count: queue.length - pending,
-      sales: queue.slice(-20).reverse()
+      sales: filtered.slice(-limit).reverse()
     }));
   }
 
@@ -1327,12 +1795,15 @@ const server = http.createServer(async (req, res) => {
   // 7. GET /api/status
   if (req.method === 'GET' && pathname === '/api/status') {
     const localIp = getLocalIpAddress();
+    const hostName = os.hostname();
     res.writeHead(200);
     return res.end(JSON.stringify({
       status: 'OK',
       port: PORT,
       local_ip: localIp,
+      hostname: hostName,
       lan_url: `http://${localIp}:${PORT}`,
+      hostname_url: `http://${hostName}:${PORT}`,
       time: new Date().toISOString(),
       sync_info: {
         is_online: syncState.isOnline,
@@ -1377,12 +1848,11 @@ const server = http.createServer(async (req, res) => {
       const body = await parseJsonBody(req);
       const sale = body.sale || body;
       const printerName = body.printer_name || '';
-      const kickDrawer = body.open_drawer !== undefined
-        ? body.open_drawer
-        : (sale.payment_mode === 'CASH' || (sale.payments && sale.payments.some(p => (p.mode || '').toLowerCase() === 'cash')));
+      const kickDrawer = body.open_drawer === true;
 
       const buffer = hardwarePrinter.formatEscPosReceipt(sale, {
         paper: body.paper || '80',
+        copies: parseInt(body.copies, 10) || 2,
         kickDrawer: kickDrawer
       });
 
@@ -1623,7 +2093,10 @@ const server = http.createServer(async (req, res) => {
       const body = await parseJsonBody(req);
       const report = body.report || body;
       const printerName = body.printer_name || '';
-      const buffer = hardwarePrinter.formatEscPosZReport(report, { paper: body.paper || '80' });
+      const buffer = hardwarePrinter.formatEscPosZReport(report, {
+        paper: body.paper || '80',
+        copies: parseInt(body.copies, 10) || 2
+      });
       const result = await hardwarePrinter.printDirect(printerName, buffer);
       res.writeHead(result.success ? 200 : 500);
       return res.end(JSON.stringify(result));
@@ -1635,6 +2108,17 @@ const server = http.createServer(async (req, res) => {
 
   res.writeHead(404);
   res.end(JSON.stringify({ error: 'Endpoint Not Found' }));
+});
+
+// Global Process Watchdog: Guarantee POS Hub never crashes due to cloud sync or Playwright glitches
+process.on('uncaughtException', (err) => {
+  console.error('⚠️ [POS Server Watchdog] Uncaught exception safely handled:', err.message);
+  try { writeSyncLog('ERROR', `Watchdog caught uncaught exception: ${err.message}`); } catch (e) {}
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('⚠️ [POS Server Watchdog] Unhandled promise rejection safely handled:', reason?.message || reason);
+  try { writeSyncLog('WARN', `Watchdog caught unhandled rejection: ${reason?.message || reason}`); } catch (e) {}
 });
 
 function startServer() {

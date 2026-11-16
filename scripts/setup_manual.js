@@ -471,6 +471,17 @@ const HTML_CONTENT = `<!DOCTYPE html>
     <li><strong>Install Desktop App (PWA):</strong> Click the <strong>Install App</strong> icon in the Chrome URL bar (or Menu &rarr; <em>"Install Quality Superstores POS"</em>). The POS will install as a native desktop application with its own window, taskbar icon, and offline caching.</li>
   </ol>
 
+  <h3>6.4 Emergency Standalone Mode (If Server Hub PC Powers Off)</h3>
+  <div class="callout">
+    <strong>Zero-Downtime Standalone Resiliency:</strong> If the central Server Hub PC suddenly loses power, crashes, or Wi-Fi drops, connected cashier stations automatically switch to <strong>Standalone Mode</strong>:
+    <ul style="margin: 4px 0 0 16px; padding: 0;">
+      <li>Cashiers can continue entering PINs, scanning barcodes, collecting cash/POS, and issuing receipts without interruption.</li>
+      <li>Sales are saved into the station's browser storage with emergency standalone receipt numbers (e.g. <code>QS-EMG-KTR2-0001</code>).</li>
+      <li>Receipts print immediately to the cashier station's local printer.</li>
+      <li>When the host Server Hub PC turns back on, the terminal automatically flushes all local sales to the central server outbox.</li>
+    </ul>
+  </div>
+
   <!-- SECTION 7: THERMAL PRINTER & HARDWARE CASH DRAWER SETUP -->
   <h2><span class="step-num">7</span> Thermal Receipt Printer & Cash Drawer Setup</h2>
 

@@ -80,6 +80,9 @@ summarize_*.js
 sync_default_sales_units.js
 trigger_*.js
 update_*.js
+!scripts/update_pos.js
+!scripts/update_catalog_units.js
+!scripts/login_zoho.js
 upload_*.js
 verify_*.js
 audit_*.js
@@ -88,5 +91,7 @@ build_*.js
 apply_*.js
 analyze_*.js
 test_*.js
-!scripts/test_catalog.js
-data/active_shifts.json
+!scripts/test_*.js
+# POS Live Store Database & Runtime Files (Never commit or overwrite live sales/debtors)
+data/*.json
+!data/*.example.json

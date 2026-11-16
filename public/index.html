@@ -551,6 +551,7 @@ button { cursor: pointer; transition: all 0.15s ease; }
   min-height: 34px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   color: var(--ink);
@@ -778,6 +779,17 @@ button { cursor: pointer; transition: all 0.15s ease; }
 }
 .ln .us-cart:disabled { opacity: .6; cursor: default; }
 
+/* Remove browser number stepper spinners across POS */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
 .ln .qty {
   display: flex;
   align-items: center;
@@ -803,6 +815,23 @@ button { cursor: pointer; transition: all 0.15s ease; }
 }
 .qty button:hover {
   background: var(--soft);
+  color: var(--brand);
+}
+.qty .qty-inp {
+  width: 38px;
+  height: 28px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 800;
+  text-align: center;
+  padding: 0 1px;
+  outline: none;
+}
+.qty .qty-inp:focus {
+  background: var(--card);
   color: var(--brand);
 }
 .qty span {
@@ -1174,6 +1203,92 @@ tr:last-child td { border-bottom: 0; }
   color: var(--ink);
 }
 
+/* DataTable Component Styles */
+.dt-th {
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s, color 0.15s;
+  position: relative;
+}
+.dt-th:hover {
+  background: var(--soft);
+  color: var(--brand);
+}
+.dt-th-active {
+  color: var(--brand) !important;
+  background: var(--soft);
+}
+.dt-sort-icon {
+  margin-left: 5px;
+  font-size: 11px;
+  opacity: 0.35;
+}
+.dt-sort-icon.active {
+  opacity: 1;
+  color: var(--brand);
+}
+.dt-page-btn {
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s;
+  min-width: 32px;
+  text-align: center;
+}
+.dt-page-btn:hover:not(:disabled) {
+  border-color: var(--brand);
+  color: var(--brand);
+  background: var(--soft);
+}
+.dt-page-btn.active {
+  background: var(--brand) !important;
+  color: #fff !important;
+  border-color: var(--brand) !important;
+}
+.dt-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.dt-select {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 500;
+  outline: none;
+}
+.dt-select:focus {
+  border-color: var(--brand);
+}
+.dt-filter-pill {
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--mute);
+  padding: 5px 11px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.dt-filter-pill:hover {
+  border-color: var(--brand);
+  color: var(--ink);
+}
+.dt-filter-pill.active {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+
 /* Modals */
 .ov {
   position: fixed;
@@ -1204,57 +1319,102 @@ tr:last-child td { border-bottom: 0; }
 .modal h3 { margin: 0 0 8px; font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
 
 .modal.pd {
-  width: 780px;
-  max-width: 94vw;
+  width: 880px;
+  max-width: 95vw;
   display: grid;
-  grid-template-columns: 290px 1fr;
+  grid-template-columns: 380px 1fr;
   padding: 0;
   overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
 }
-.pdl { padding: 24px; display: grid; gap: 14px; align-content: start; }
-.pdl label { display: grid; gap: 5px; font-weight: 700; font-size: 12px; color: var(--mute); }
-.pdl label.ck { display: flex; gap: 8px; align-items: center; color: var(--ink); }
+.pdl {
+  padding: 24px 28px;
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  background: var(--card);
+}
+.pdl label {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--mute);
+}
+.pdl label.ck {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--ink);
+  font-size: 13px;
+}
 .pdl select, .pdl input {
-  border: 1px solid var(--line);
+  border: 1.5px solid var(--line);
   background: var(--bg);
-  border-radius: 8px;
-  padding: 8px 10px;
+  border-radius: 9px;
+  padding: 10px 12px;
   color: var(--ink);
   font-weight: 600;
+  font-size: 13px;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+.pdl select:focus, .pdl input:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
 }
 .pv {
-  background: var(--bg);
+  background: #2b3035;
   padding: 24px;
   overflow: auto;
-  max-height: 80vh;
+  max-height: 85vh;
   border-left: 1px solid var(--line);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
 }
 .paper {
   background: #fff;
   color: #000;
-  padding: 12px;
+  padding: 18px 22px;
   margin: 0 auto;
-  width: max-content;
+  width: 330px;
   max-width: 100%;
-  box-shadow: 0 4px 20px rgba(0,0,0,.25);
-  border-radius: 4px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.35);
+  border-radius: 6px;
 }
-.rc { font: 11px/1.25 'Courier New', ui-monospace, monospace; color: #000; background: #fff; margin: 0 auto; padding: 0; }
+.rc {
+  font: 13px/1.35 'Courier New', ui-monospace, monospace;
+  color: #000;
+  background: #fff;
+  margin: 0 auto;
+  padding: 0;
+}
 .rc .rc-c, .rc .c { text-align: center; }
-.rc .rc-r, .rc .r { display: flex; justify-content: space-between; gap: 4px; line-height: 1.2; }
-.rc hr, .rc .rc-hr { border: 0; border-top: 1px dashed #000; margin: 3px 0; }
+.rc .rc-r, .rc .r { display: flex; justify-content: space-between; gap: 8px; line-height: 1.35; }
+.rc hr, .rc .rc-hr { border: 0; border-top: 1.5px dashed #000; margin: 6px 0; }
 .rc .rc-b, .rc .b { font-weight: 700; }
-.rc.w80 { width: 72mm; } .rc.w58 { width: 48mm; } .rc.wA4 { width: 100mm; }
-.rc-tbl { width: 100%; border-collapse: collapse; font-size: 10px; margin: 2px 0; line-height: 1.2; }
-.rc-tbl th { border-bottom: 1px dashed #000; padding: 1px 0; font-weight: 700; font-size: 9.5px; text-transform: uppercase; }
-.rc-tbl td { padding: 1.5px 0; vertical-align: top; }
+.rc.w80 { width: 100%; font-size: 13.5px; }
+.rc.w58 { width: 100%; font-size: 12px; }
+.rc.wA4 { width: 100%; font-size: 14.5px; }
+.rc-tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 4px 0; line-height: 1.35; }
+.rc-tbl th { border-bottom: 1.5px dashed #000; padding: 3px 0; font-weight: 700; font-size: 12px; text-transform: uppercase; }
+.rc-tbl td { padding: 3px 0; vertical-align: top; }
 
 #prt { display: none; }
 @media print {
   body > *:not(#prt) { display: none !important; }
-  html, body { height: auto; background: #fff; overflow: visible; }
-  #prt { display: block; }
-  .rc { page-break-after: always; padding: 2mm 0; }
+  html, body { height: auto !important; margin: 0 !important; padding: 0 !important; background: #fff !important; overflow: visible !important; }
+  #prt { display: block !important; margin: 0 !important; padding: 0 !important; }
+  .rc { font: 14px/1.35 'Courier New', ui-monospace, monospace !important; color: #000 !important; background: #fff !important; }
+  .rc.w80 { width: 76mm !important; margin: 0 auto !important; padding: 0 0 2mm 0 !important; font-size: 14px !important; }
+  .rc.w58 { width: 52mm !important; margin: 0 auto !important; padding: 0 0 2mm 0 !important; font-size: 12px !important; }
+  .rc-tbl { font-size: 13px !important; }
+  .rc-tbl th { font-size: 12.5px !important; }
+  .rc { page-break-after: avoid !important; break-after: avoid !important; break-inside: avoid !important; }
 }
 
 #toast {
@@ -1438,12 +1598,26 @@ let state = {
   vw: 'list', // 'list' or 'grid'
   theme: 'auto',
   terminalId: localStorage.getItem('pos_terminal_id') || '',
-  user: JSON.parse(sessionStorage.getItem('pos_user') || 'null'),
-  isLocked: !sessionStorage.getItem('pos_user'),
+  user: null,
+  isLocked: true,
   pinInput: '',
   customer: { id: '1560234000000095179', name: 'Walk-in Customer' },
   cat: 'All',
   q: '',
+  ordersSearch: '',
+  ordersSearchId: '',
+  ordersSearchText: '',
+  ordersFilterStatus: 'all',
+  ordersFilterDate: 'all',
+  ordersDateFrom: '',
+  ordersDateTo: '',
+  ordersFilterPayment: 'all',
+  ordersFilterCashier: 'all',
+  ordersFilterTerminal: 'all',
+  ordersSortCol: 'date',
+  ordersSortDir: 'desc',
+  ordersPage: 1,
+  ordersPageSize: 25,
   cart: {}, // id: { qty, unitIndex, customPrice }
   heldCarts: JSON.parse(localStorage.getItem('qs_held_carts') || '[]'),
   disc: 0,
@@ -1460,13 +1634,12 @@ let state = {
   lanUrl: 'http://192.168.100.18:3001',
   installedPrinters: [],
   pp: {
-    destination: 'terminal', // 'terminal' (Print from this station) or 'server' (Central Server Hub)
+    destination: 'direct', // 'direct' (Silent thermal print without dialog) or 'browser' (Manual print dialog)
     autoPrint: true,
     printer: 'System default printer',
     printMode: 'direct',
-    autoKickDrawer: true, // Auto kick RJ11 drawer pulse on Cash sales
     paper: '80',
-    copies: 1,
+    copies: 2,
     hdr: true,
     vat: false,
     companyName: 'QUALITY SUPERSTORES',
@@ -1484,9 +1657,15 @@ try {
     state.theme = p.theme || 'auto';
     if (p.pp) {
       Object.assign(state.pp, p.pp);
-      if (!state.pp.destination) state.pp.destination = 'terminal';
+      // Migrate old 'terminal' or 'server' destination to 'direct' for silent zero-dialog printing
+      if (state.pp.destination === 'terminal' || state.pp.destination === 'server' || !state.pp.destination) {
+        state.pp.destination = 'direct';
+      }
       if (state.pp.address === 'Ketere Market Road, Saki, Oyo State' || !state.pp.address) {
         state.pp.address = '16, Ogo Oluwa St, Ketere Market, Sango, Ogun State';
+      }
+      if (!state.pp.copies || state.pp.copies < 2) {
+        state.pp.copies = 2;
       }
     }
   }
@@ -1610,39 +1789,84 @@ function calcTotals() {
   return { sub, n, disc, total };
 }
 
-// Load from server
+// Emergency Standalone Queue Accessors
+function getEmergencySalesQueue() {
+  try {
+    return JSON.parse(localStorage.getItem('qs_emergency_sales') || '[]');
+  } catch(e) {
+    return [];
+  }
+}
+
+// Load from server with persistent standalone offline fallback
 async function loadCatalog() {
   try {
     const r = await fetch('/api/catalog');
-    state.items = await r.json();
-    renderMain();
+    if (r.ok) {
+      state.items = await r.json();
+      try { localStorage.setItem('qs_cached_catalog', JSON.stringify(state.items)); } catch(e) {}
+      renderMain();
+      return;
+    }
   } catch(e) {
-    console.error('Failed to load catalog:', e);
+    console.warn('Host Hub offline. Loading catalog from standalone browser storage...', e);
   }
+  // Standalone offline fallback
+  const cached = localStorage.getItem('qs_cached_catalog');
+  if (cached) {
+    try {
+      state.items = JSON.parse(cached);
+      console.log('✓ Loaded catalog from local standalone cache (' + state.items.length + ' items)');
+    } catch(e) {}
+  }
+  renderMain();
 }
 
 async function loadCustomers() {
   try {
     const r = await fetch('/api/customers');
-    state.customers = await r.json();
-    if (state.customers.length && !state.customer.id) {
-      state.customer = { id: state.customers[0].id, name: state.customers[0].display_name || state.customers[0].name };
+    if (r.ok) {
+      state.customers = await r.json();
+      try { localStorage.setItem('qs_cached_customers', JSON.stringify(state.customers)); } catch(e) {}
+      if (state.customers.length && !state.customer.id) {
+        state.customer = { id: state.customers[0].id, name: state.customers[0].display_name || state.customers[0].name };
+      }
+      return;
     }
-  } catch(e) {}
+  } catch(e) {
+    console.warn('Host Hub offline. Loading customers from standalone browser storage...', e);
+  }
+  // Standalone offline fallback
+  const cached = localStorage.getItem('qs_cached_customers');
+  if (cached) {
+    try {
+      state.customers = JSON.parse(cached);
+      if (state.customers.length && !state.customer.id) {
+        state.customer = { id: state.customers[0].id, name: state.customers[0].display_name || state.customers[0].name };
+      }
+    } catch(e) {}
+  }
 }
 
 async function loadQueueStatus() {
   try {
     const [qRes, sRes] = await Promise.all([
-      fetch('/api/queue').then(r => r.json()).catch(() => null),
+      fetch('/api/queue?limit=1000').then(r => r.json()).catch(() => null),
       fetch('/api/status').then(r => r.json()).catch(() => null)
     ]);
+    if (qRes || sRes) {
+      state.hubOffline = false;
+      flushEmergencySalesToHub();
+    } else {
+      state.hubOffline = true;
+    }
     if (qRes) {
       state.pendingCount = qRes.pending_count || 0;
       state.sales = qRes.sales || [];
     }
     if (sRes && sRes.local_ip) {
       state.lanIp = sRes.local_ip;
+      state.hostname = sRes.hostname || 'DESKTOP-11DN7IC';
       state.lanUrl = sRes.lan_url || `http://${sRes.local_ip}:${sRes.port || 3001}`;
     }
     if (sRes && sRes.sync_info) {
@@ -1663,7 +1887,12 @@ async function loadQueueStatus() {
     renderNav();
     renderSb();
     if (state.view === 'orders') renderMain();
-  } catch(e) {}
+  } catch(e) {
+    state.hubOffline = true;
+    renderTop();
+    renderNav();
+    renderSb();
+  }
 }
 
 // Header Bar
@@ -1678,6 +1907,9 @@ function renderTop() {
       </div>
     </div>
     <div class="sp"></div>
+    <button class="btn ${state.view === 'orders' ? 'p' : ''}" onclick="goView('orders')" title="Search Orders & View History (F3)" style="font-weight:700">
+      <i class="fa-solid fa-receipt"></i> Order History ${p ? `<span class="badge" style="background:#e67700;color:#fff">${p}</span>` : ''}
+    </button>
     <span class="pill ${p>0?'off':''}"><i></i>${p>0 ? `${p} Offline Queued` : 'Online & Ready'}</span>
     <button class="btn p" onclick="triggerSync()" ${state.syncing?'disabled':''} title="Sync pending offline sales to Zoho">
       ${state.syncing ? '<span class="spin"></span>Syncing…' : `<i class="fa-solid fa-rotate"></i> Sync${p ? ' ('+p+')' : ''}`}
@@ -1838,6 +2070,7 @@ async function submitPin() {
       renderTop();
       renderNav();
       renderSb();
+      renderMain();
       toast(`✓ Unlocked! Welcome, ${res.user.name}`);
     } else {
       const card = $('#pin-card');
@@ -1851,9 +2084,52 @@ async function submitPin() {
       setTimeout(() => renderLockScreen(), 600);
     }
   } catch(e) {
+    // Standalone fallback: Authenticate against cached staff accounts
+    const cachedUsersStr = localStorage.getItem('qs_cached_users');
+    let fallbackUser = null;
+    if (cachedUsersStr) {
+      try {
+        const users = JSON.parse(cachedUsersStr);
+        fallbackUser = users.find(u => u.pin === pin);
+      } catch(err) {}
+    } else {
+      // Default built-in emergency fallback accounts
+      const emergencyUsers = [
+        { id: 'u1', name: 'Funmilayo', pin: '9545', role: 'admin', terminal_id: 'TERM-01' },
+        { id: 'u5', name: 'Oluwatobi', pin: '6935', role: 'finance', terminal_id: 'OFFICE-01' },
+        { id: 'u2', name: 'Oluwatosin', pin: '5713', role: 'cashier', terminal_id: 'KETERE 2' },
+        { id: 'u3', name: 'Cashier 2', pin: '5917', role: 'cashier', terminal_id: 'TERM-02' }
+      ];
+      fallbackUser = emergencyUsers.find(u => u.pin === pin);
+    }
+
+    if (fallbackUser) {
+      state.user = fallbackUser;
+      sessionStorage.setItem('pos_user', JSON.stringify(fallbackUser));
+      state.isLocked = false;
+      state.pinInput = '';
+      if (fallbackUser.terminal_id) {
+        state.terminalId = fallbackUser.terminal_id;
+        localStorage.setItem('pos_terminal_id', fallbackUser.terminal_id);
+      }
+      renderLockScreen();
+      renderTop();
+      renderNav();
+      renderSb();
+      renderMain();
+      toast(`⚡ Standalone Mode: Unlocked as ${fallbackUser.name} (Hub Server Offline)`);
+      return;
+    }
+
+    const card = $('#pin-card');
+    if (card) {
+      card.classList.add('shake');
+      setTimeout(() => card.classList.remove('shake'), 450);
+    }
     const errEl = $('#pin-err');
-    if (errEl) errEl.textContent = 'Server connection error';
+    if (errEl) errEl.textContent = 'Hub Offline: Enter valid staff PIN';
     state.pinInput = '';
+    setTimeout(() => renderLockScreen(), 600);
   }
 }
 
@@ -1890,9 +2166,9 @@ function renderNav() {
       <span>Sell Register</span>
       <kbd>F2</kbd>
     </button>
-    <button class="${state.view==='orders'?'on':''}" onclick="goView('orders')" title="View recent orders and reprint receipts (F3)">
+    <button class="${state.view==='orders'?'on':''}" onclick="goView('orders')" title="View recent orders, search by ID, and reprint receipts (F3)">
       <i class="fa-solid fa-receipt" style="font-size:13px;width:16px;text-align:center"></i>
-      <span>Orders</span>
+      <span>Order History</span>
       ${p ? `<span class="badge">${p}</span>` : ''}
       <kbd>F3</kbd>
     </button>
@@ -1947,10 +2223,16 @@ function renderNav() {
       <i class="fa-solid fa-file-waveform" style="font-size:13px;width:16px;text-align:center;color:#6366f1"></i>
       <span>Sync Logs</span>
     </button>
+    <button onclick="openSystemUpdateModal()" title="Check for remote code updates and update POS from GitHub">
+      <i class="fa-solid fa-cloud-arrow-down" style="font-size:13px;width:16px;text-align:center;color:#3b82f6"></i>
+      <span>System Updates</span>
+      <span id="update-badge" style="display:${state.updateAvailable ? 'inline-block' : 'none'};background:var(--brand);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700">New</span>
+    </button>
 
     <div class="nb" style="margin-top:auto">
       <small class="gl" style="padding:0 0 4px">Wi-Fi Terminal Hub</small>
-      <div class="row"><span>IP to Open</span><b style="color:var(--brand);font-family:monospace;font-size:11px">${state.lanIp || '192.168.100.18'}:3001</b></div>
+      <div class="row"><span>IP to Open</span><b style="color:var(--brand);font-family:monospace;font-size:11px">${state.lanIp || '172.20.10.2'}:3001</b></div>
+      <div class="row" title="Computer hostname (Permanent address that never changes with IP)"><span>Hostname</span><b style="color:var(--ink);font-family:monospace;font-size:10px">${state.hostname || 'DESKTOP-11DN7IC'}:3001</b></div>
       <div class="row"><span>Waiting Sync</span><b>${p}</b></div>
       <div class="row"><span>Hub Server</span><b style="color:var(--brand)">Active</b></div>
     </div>
@@ -1965,9 +2247,19 @@ function renderSb() {
   const isSyncing = sync?.is_syncing;
   const lastTime = sync?.last_sync_time ? sync.last_sync_time.split(' ')[1] : '';
   const isManagerOrFinance = state.user && (state.user.role === 'admin' || state.user.role === 'finance' || state.user.role === 'manager');
+  const emgQueue = getEmergencySalesQueue();
+  const emgCount = emgQueue.length;
+  const isHubDown = state.hubOffline;
 
   $('#sb').innerHTML = `
-    <span style="color:var(--brand);font-weight:700">● POS Hub Connected</span>
+    <span style="color:${isHubDown ? '#f59e0b' : 'var(--brand)'};font-weight:700">
+      ${isHubDown ? '⚡ Standalone Mode (Hub Offline)' : '● POS Hub Connected'}
+    </span>
+    ${emgCount > 0 ? `
+    <span style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-weight:700;color:#92400e;background:#fef3c7;padding:2px 8px;border-radius:4px;border:1px solid #f59e0b" onclick="flushEmergencySalesToHub()" title="Click to manually retry flushing standalone sales to Hub server">
+      <i class="fa-solid fa-bolt"></i> <b>${emgCount} Standalone Sale(s) on This PC</b> (Click to Sync)
+    </span>
+    ` : ''}
     <span style="display:inline-flex;align-items:center;gap:6px;font-weight:600;color:var(--ink);background:var(--bg);padding:2px 8px;border-radius:4px;border:1px solid var(--line)" title="Open this URL on other PCs, phones, or tablets on this Wi-Fi">
       <i class="fa-solid fa-wifi" style="color:var(--brand)"></i> LAN Hub: <b style="color:var(--brand);font-family:monospace;letter-spacing:0.5px">${lanUrl}</b>
     </span>
@@ -1986,7 +2278,7 @@ function renderSb() {
     <span>${p} offline receipt(s) waiting</span>
     <span class="sp"></span>
     <span style="cursor:pointer" onclick="openPrinterModal()" title="Click to configure station printer">
-      <i class="fa-solid fa-print" style="color:var(--brand)"></i> Printer: <b>${state.pp.destination === 'server' ? 'Server Hub' : 'This Station'} (${state.pp.paper}mm)</b>
+      <i class="fa-solid fa-print" style="color:var(--brand)"></i> Printer: <b>${escapeHtml(state.pp.printer || 'Xprinter XP-80')} (${state.pp.destination === 'browser' ? 'Dialog' : 'Direct'} • ${state.pp.copies || 2} Copies)</b>
     </span>
   `;
 }
@@ -2042,46 +2334,337 @@ async function openSyncLogModal() {
   }
 }
 
+// Remote System Updater Modal
+async function openSystemUpdateModal(forceCheckRemote = false) {
+  $('#ov').innerHTML = `
+    <div class="ov"><div class="modal" style="max-width:640px;width:95%">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3 style="margin:0;display:flex;align-items:center;gap:8px">
+          <i class="fa-solid fa-cloud-arrow-down" style="color:var(--brand)"></i> System Updates
+        </h3>
+        <button class="btn" onclick="closeModal()">✕</button>
+      </div>
+
+      <div id="update-content" style="display:grid;gap:12px">
+        <div style="padding:24px 16px;background:var(--soft);border:1px solid var(--line);border-radius:8px;text-align:center">
+          <i class="fa-solid fa-circle-notch fa-spin" style="font-size:24px;color:var(--brand);margin-bottom:10px"></i>
+          <p style="margin:0;font-size:13px;font-weight:600">Connecting to GitHub repository...</p>
+          <small style="color:var(--mute)">Checking branch: origin/dev</small>
+        </div>
+      </div>
+    </div></div>
+  `;
+
+  try {
+    const res = await fetch('/api/system/version?check_remote=true').then(r => r.json());
+    renderSystemUpdateView(res);
+  } catch (err) {
+    const el = $('#update-content');
+    if (el) {
+      el.innerHTML = `
+        <div style="padding:16px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b">
+          <b>Unable to check updates:</b> ${escapeHtml(err.message)}
+          <div style="margin-top:8px;font-size:12px">Ensure this computer is connected to the internet.</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn" style="flex:1" onclick="closeModal()">Close</button>
+          <button class="btn p" style="flex:1" onclick="openSystemUpdateModal()"><i class="fa-solid fa-rotate"></i> Retry</button>
+        </div>
+      `;
+    }
+  }
+}
+
+function renderSystemUpdateView(data) {
+  const el = $('#update-content');
+  if (!el) return;
+
+  const cur = data.current || {};
+  const isUpToDate = !data.updatesAvailable;
+
+  if (data.updatesAvailable) {
+    state.updateAvailable = true;
+    const badge = $('#update-badge');
+    if (badge) badge.style.display = 'inline-block';
+  } else {
+    state.updateAvailable = false;
+  }
+
+  let commitsHtml = '';
+  if (data.commits && data.commits.length) {
+    commitsHtml = `
+      <div style="margin-top:6px">
+        <span style="font-size:12px;font-weight:700;display:block;margin-bottom:6px">New Changes Ready to Install:</span>
+        <div style="max-height:160px;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px">
+          ${data.commits.map(c => `
+            <div style="padding:6px 0;border-bottom:1px solid var(--line);font-size:12px;display:flex;justify-content:space-between;gap:8px">
+              <div>
+                <b style="font-family:monospace;color:var(--brand)">${escapeHtml(c.hash)}</b>
+                <span style="margin-left:6px">${escapeHtml(c.subject)}</span>
+              </div>
+              <small style="color:var(--mute);white-space:nowrap">${escapeHtml(c.date)}</small>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  el.innerHTML = `
+    <!-- Current Version Box -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px">
+      <div style="padding:10px;background:var(--soft);border-radius:8px;border:1px solid var(--line)">
+        <span style="color:var(--mute);display:block;font-size:11px">CURRENT INSTALLED COMMIT</span>
+        <b style="font-family:monospace;font-size:13px;color:var(--ink)">${escapeHtml(cur.commit || 'Unknown')}</b>
+        <small style="color:var(--mute);display:block;margin-top:2px">${escapeHtml(cur.date || '')}</small>
+      </div>
+      <div style="padding:10px;background:var(--soft);border-radius:8px;border:1px solid var(--line)">
+        <span style="color:var(--mute);display:block;font-size:11px">STATUS</span>
+        <b style="font-size:13px;color:${isUpToDate ? 'var(--brand)' : '#f59e0b'}">
+          ${isUpToDate ? '✓ Up to Date' : '🚀 ' + (data.behindCount || 1) + ' Update(s) Available'}
+        </b>
+        <small style="color:var(--mute);display:block;margin-top:2px">Branch: origin/dev</small>
+      </div>
+    </div>
+
+    <!-- Active Commit Details -->
+    <div style="padding:8px 12px;background:var(--bg);border:1px solid var(--line);border-radius:6px;font-size:12px">
+      <span style="color:var(--mute)">Current Release: </span>
+      <b>${escapeHtml(cur.subject || '')}</b>
+    </div>
+
+    ${commitsHtml}
+
+    <!-- Notice -->
+    <div style="padding:10px 12px;background:rgba(16, 185, 129, 0.08);border:1px solid rgba(16, 185, 129, 0.2);border-radius:8px;font-size:12px;color:var(--ink)">
+      <i class="fa-solid fa-shield-halved" style="color:var(--brand);margin-right:6px"></i>
+      <b>Zero Data Loss Guarantee:</b> Live offline sales queues, customer balances, and staff PINs are automatically snapshotted before any update and restored safely.
+    </div>
+
+    <div id="update-action-area" style="display:flex;gap:10px;margin-top:10px">
+      <button class="btn" style="flex:1" onclick="closeModal()">Close</button>
+      <button class="btn" style="flex:1" onclick="openSystemUpdateModal()"><i class="fa-solid fa-rotate"></i> Re-check GitHub</button>
+      ${!isUpToDate ? `
+        <button class="btn p" style="flex:1.6" onclick="applyRemoteSystemUpdate()"><i class="fa-solid fa-cloud-arrow-down"></i> Apply Update Now</button>
+      ` : `
+        <button class="btn" style="flex:1" onclick="applyRemoteSystemUpdate(true)" title="Force re-sync and reload from GitHub"><i class="fa-solid fa-arrows-rotate"></i> Re-sync Code</button>
+      `}
+    </div>
+  `;
+}
+
+async function applyRemoteSystemUpdate(isForce = false) {
+  const area = $('#update-action-area');
+  const content = $('#update-content');
+  if (area) {
+    area.innerHTML = `
+      <div style="width:100%;text-align:center;padding:12px;font-weight:700;color:var(--brand);display:flex;align-items:center;justify-content:center;gap:10px">
+        <i class="fa-solid fa-circle-notch fa-spin" style="font-size:18px"></i>
+        <span>Applying update... Backing up store data and pulling latest code from GitHub...</span>
+      </div>
+    `;
+  }
+
+  try {
+    const res = await fetch('/api/system/update', { method: 'POST' }).then(r => r.json());
+    if (res.success) {
+      if (content) {
+        content.innerHTML = `
+          <div style="padding:20px;text-align:center;background:rgba(16, 185, 129, 0.1);border:1.5px solid var(--brand);border-radius:10px">
+            <i class="fa-solid fa-circle-check" style="font-size:36px;color:var(--brand);margin-bottom:10px"></i>
+            <h4 style="margin:0 0 8px;font-size:16px;color:var(--ink)">Update Applied Successfully!</h4>
+            <p style="margin:0 0 12px;font-size:13px;color:var(--mute)">POS Server is restarting now with the new code release (${escapeHtml(res.newCommit || 'latest')}).</p>
+            <div style="font-size:13px;font-weight:700;color:var(--brand)" id="reload-counter">Register will reload in 4 seconds...</div>
+          </div>
+        `;
+      }
+
+      let count = 4;
+      const interval = setInterval(() => {
+        count--;
+        const cntEl = $('#reload-counter');
+        if (cntEl) cntEl.textContent = 'Register will reload in ' + count + ' second' + (count === 1 ? '' : 's') + '...';
+        if (count <= 0) {
+          clearInterval(interval);
+          window.location.reload(true);
+        }
+      }, 1000);
+    } else {
+      if (content) {
+        content.innerHTML = `
+          <div style="padding:16px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b">
+            <b style="font-size:14px">Update Failed:</b>
+            <p style="margin:6px 0;font-size:12px">${escapeHtml(res.error || 'Unknown error occurred.')}</p>
+            ${res.log ? '<pre style="font-size:10.5px;max-height:120px;overflow:auto;background:#fff;padding:6px;border-radius:4px">' + escapeHtml(res.log.join('\n')) + '</pre>' : ''}
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn" style="flex:1" onclick="closeModal()">Close</button>
+            <button class="btn p" style="flex:1" onclick="applyRemoteSystemUpdate()"><i class="fa-solid fa-rotate"></i> Try Again</button>
+          </div>
+        `;
+      }
+    }
+  } catch (err) {
+    if (content) {
+      content.innerHTML = `
+        <div style="padding:16px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b">
+          <b>Update Connection Interrupted:</b> ${escapeHtml(err.message)}
+          <p style="margin:6px 0;font-size:12px">The server may already be restarting. Checking in 3 seconds...</p>
+        </div>
+      `;
+      setTimeout(() => window.location.reload(true), 3500);
+    }
+  }
+}
+
 function goView(v) {
   state.view = v;
   renderNav();
   renderMain();
 }
 
-// Main Workspace
+// Main Workspace (Crash-Proof Error Boundary)
 function renderMain() {
-  if (state.view === 'sell') {
-    $('#main').innerHTML = `
-      <div class="sell" style="flex:1">
-        <section class="left">
-          <div class="tools">
-            <div class="search-wrap">
-              <i class="fa-solid fa-magnifying-glass search-ico"></i>
-              <input class="search" id="q" placeholder="Search 440+ products by name, SKU or barcode... (Press F2)" value="${state.q}" oninput="handleSearch(this.value)" onkeydown="handleSearchKey(event)" autocomplete="off">
-              <span class="search-kbd"><kbd>F2</kbd></span>
-            </div>
-            <select class="cat-select" onchange="setCategory(this.value)" title="Filter by Category" aria-label="Category">
-              <option value="All" ${(state.cat||'All')==='All'?'selected':''}>All Categories</option>
-              <option value="BEVERAGES" ${(state.cat||'').toUpperCase()==='BEVERAGES'?'selected':''}>Beverages & Drinks</option>
-              <option value="FOODS" ${(state.cat||'').toUpperCase()==='FOODS'?'selected':''}>Foods & Seasoning</option>
-              <option value="TOILETRIES" ${(state.cat||'').toUpperCase()==='TOILETRIES'?'selected':''}>Toiletries</option>
-              <option value="BODY CARE" ${(state.cat||'').toUpperCase()==='BODY CARE'?'selected':''}>Body Care</option>
-              <option value="HOUSEHOLD" ${(state.cat||'').toUpperCase()==='HOUSEHOLD'?'selected':''}>Household</option>
-              <option value="GENERAL" ${(state.cat||'').toUpperCase()==='GENERAL'?'selected':''}>General</option>
-            </select>
-            <div class="seg">
-              <button class="${state.vw==='list'?'on':''}" onclick="setViewMode('list')" title="List View"><i class="fa-solid fa-list"></i> List</button>
-              <button class="${state.vw==='grid'?'on':''}" onclick="setViewMode('grid')" title="Grid View"><i class="fa-solid fa-table-cells-large"></i> Grid</button>
-            </div>
+  try {
+    if (state.view === 'sell') {
+      let catalogContent = '';
+      try {
+        catalogContent = renderCatalogHTML();
+      } catch (errCat) {
+        console.error('Catalog render failure:', errCat);
+        catalogContent = `
+          <div style="padding:24px;background:var(--soft);border:1px solid var(--line);border-radius:10px;margin:16px;text-align:center">
+            <h4 style="color:var(--ink);margin:0 0 8px"><i class="fa-solid fa-rotate" style="color:var(--brand)"></i> Catalog View Interruption</h4>
+            <p style="color:var(--mute);font-size:12px;margin:0 0 14px">${escapeHtml(errCat.message || 'Catalog data could not be rendered.')}</p>
+            <button class="btn p" onclick="forceCatalogReload()" style="font-size:12px;padding:6px 14px"><i class="fa-solid fa-rotate"></i> Reload Catalog Data</button>
           </div>
-          <div class="grid ${state.vw}" id="grid">${renderCatalogHTML()}</div>
-        </section>
-        <aside class="cart" id="cart">${renderCartHTML()}</aside>
-      </div>
-    `;
-  } else {
-    renderOrdersView();
+        `;
+      }
+
+      let cartContent = '';
+      try {
+        cartContent = renderCartHTML();
+      } catch (errCart) {
+        console.error('Cart render failure:', errCart);
+        cartContent = `
+          <div style="padding:16px;background:var(--soft);border:1px solid var(--line);border-radius:10px">
+            <h4 style="color:var(--ink);margin:0 0 6px">Cart Display Glitch</h4>
+            <p style="color:var(--mute);font-size:11.5px;margin:0 0 10px">${escapeHtml(errCart.message)}</p>
+            <button class="btn" onclick="clearCart(); renderMain();" style="font-size:11.5px">Reset Cart</button>
+          </div>
+        `;
+      }
+
+      $('#main').innerHTML = `
+        <div class="sell" style="flex:1">
+          <section class="left">
+            <div class="tools">
+              <div class="search-wrap">
+                <i class="fa-solid fa-magnifying-glass search-ico"></i>
+                <input class="search" id="q" placeholder="Search 440+ products by name, SKU or barcode... (Press F2)" value="${escapeHtml(state.q)}" oninput="handleSearch(this.value)" onkeydown="handleSearchKey(event)" autocomplete="off">
+                <span class="search-kbd"><kbd>F2</kbd></span>
+              </div>
+              <select class="cat-select" onchange="setCategory(this.value)" title="Filter by Category" aria-label="Category">
+                <option value="All" ${(state.cat||'All')==='All'?'selected':''}>All Categories</option>
+                <option value="BEVERAGES" ${(state.cat||'').toUpperCase()==='BEVERAGES'?'selected':''}>Beverages & Drinks</option>
+                <option value="FOODS" ${(state.cat||'').toUpperCase()==='FOODS'?'selected':''}>Foods & Seasoning</option>
+                <option value="TOILETRIES" ${(state.cat||'').toUpperCase()==='TOILETRIES'?'selected':''}>Toiletries</option>
+                <option value="BODY CARE" ${(state.cat||'').toUpperCase()==='BODY CARE'?'selected':''}>Body Care</option>
+                <option value="HOUSEHOLD" ${(state.cat||'').toUpperCase()==='HOUSEHOLD'?'selected':''}>Household</option>
+                <option value="GENERAL" ${(state.cat||'').toUpperCase()==='GENERAL'?'selected':''}>General</option>
+              </select>
+              <div class="seg">
+                <button class="${state.vw==='list'?'on':''}" onclick="setViewMode('list')" title="List View"><i class="fa-solid fa-list"></i> List</button>
+                <button class="${state.vw==='grid'?'on':''}" onclick="setViewMode('grid')" title="Grid View"><i class="fa-solid fa-table-cells-large"></i> Grid</button>
+              </div>
+            </div>
+            <div class="grid ${state.vw}" id="grid">${catalogContent}</div>
+          </section>
+          <aside class="cart" id="cart">${cartContent}</aside>
+        </div>
+      `;
+    } else {
+      renderOrdersView();
+    }
+  } catch (fatalErr) {
+    console.error('Fatal workspace render exception:', fatalErr);
+    renderCrashRecoveryUI(fatalErr);
   }
+}
+
+// Workspace Self-Healing Crash Recovery UI
+function renderCrashRecoveryUI(err) {
+  const main = $('#main');
+  if (!main) return;
+  main.innerHTML = `
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg)">
+      <div style="max-width:540px;width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:28px;box-shadow:0 8px 30px rgba(0,0,0,0.12)">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <div style="width:44px;height:44px;border-radius:50%;background:#ffe3e3;display:flex;align-items:center;justify-content:center;color:#c92a2a;font-size:22px">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div>
+            <h3 style="margin:0;font-size:17px;color:var(--ink)">Workspace Display Recovery</h3>
+            <small style="color:var(--mute)">The POS encountered a UI interruption and prevented a screen crash.</small>
+          </div>
+        </div>
+
+        <div style="background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:12px;font-family:monospace;font-size:12px;color:#c92a2a;margin-bottom:18px;max-height:120px;overflow:auto;word-break:break-all">
+          ${escapeHtml(err?.message || String(err) || 'Unknown render interruption')}
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <button class="btn p" style="padding:10px 14px;font-weight:700" onclick="forceCatalogReload()">
+            <i class="fa-solid fa-rotate"></i> 1. Reload Catalog & UI
+          </button>
+          <button class="btn" style="padding:10px 14px;font-weight:700;color:#c92a2a" onclick="hardResetAppCache()">
+            <i class="fa-solid fa-broom"></i> 2. Clear Stale Cache & PWA
+          </button>
+        </div>
+
+        <small style="display:block;text-align:center;color:var(--mute);font-size:11px">
+          No sales data is lost. All pending sales and queue items remain safely saved.
+        </small>
+      </div>
+    </div>
+  `;
+}
+
+async function forceCatalogReload() {
+  try {
+    toast('🔄 Refreshing catalog data...');
+    localStorage.removeItem('qs_cached_catalog');
+    await loadCatalog();
+    renderMain();
+    toast('✅ Catalog refreshed successfully!');
+  } catch(e) {
+    toast('Error reloading: ' + e.message);
+  }
+}
+
+async function hardResetAppCache() {
+  if (confirm('This will purge the browser service worker cache and reload fresh code from the server. Proceed?')) {
+    try {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const reg of registrations) {
+          await reg.unregister();
+        }
+      }
+      if ('caches' in window) {
+        const cacheKeys = await caches.keys();
+        for (const key of cacheKeys) {
+          await caches.delete(key);
+        }
+      }
+      localStorage.removeItem('qs_cached_catalog');
+    } catch(e) {}
+    window.location.reload(true);
+  }
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function setCategory(c) {
@@ -2143,11 +2726,11 @@ function getUnitRatio(u) {
 function getStockInfo(it, unitIdx) {
   const units = getItemUnits(it);
   const curIdx = unitIdx != null ? unitIdx : (itemPickUnit[it.id] || 0);
-  const selectedUnit = units[curIdx] || units[0];
+  const selectedUnit = units[curIdx] || units[0] || { name: 'pcs', unit_symbol: 'pcs', is_base: true };
 
-  const bulkUnit = units.find(u => !u.is_base) || units[units.length - 1];
-  const baseUnit = units.find(u => u.is_base) || units[0];
-  const ratio = getUnitRatio(bulkUnit);
+  const bulkUnit = units.find(u => u && !u.is_base) || units[units.length - 1] || selectedUnit;
+  const baseUnit = units.find(u => u && u.is_base) || units[0] || selectedUnit;
+  const ratio = getUnitRatio(bulkUnit) || 1;
 
   // Raw recorded stock in bulk units
   const rawBulk = parseFloat(it.stock) || 0;
@@ -2169,8 +2752,8 @@ function getStockInfo(it, unitIdx) {
     };
   }
 
-  if (selectedUnit.is_base || ratio === 1) {
-    const sym = (selectedUnit.unit_symbol || selectedUnit.name || 'pcs').toLowerCase();
+  if (!selectedUnit || selectedUnit.is_base || ratio === 1) {
+    const sym = (selectedUnit?.unit_symbol || selectedUnit?.name || 'pcs').toLowerCase();
     return {
       totalBase: totalBase,
       isOut: false,
@@ -2180,8 +2763,8 @@ function getStockInfo(it, unitIdx) {
   } else {
     const whole = Math.floor(totalBase / ratio);
     const rem = totalBase % ratio;
-    const bulkSym = (selectedUnit.unit_symbol || selectedUnit.name || 'ctn').toLowerCase();
-    const baseSym = (baseUnit.unit_symbol || baseUnit.name || 'pcs').toLowerCase();
+    const bulkSym = (selectedUnit?.unit_symbol || selectedUnit?.name || 'ctn').toLowerCase();
+    const baseSym = (baseUnit?.unit_symbol || baseUnit?.name || 'pcs').toLowerCase();
 
     let text = `${whole} ${bulkSym}`;
     if (rem > 0) {
@@ -2198,6 +2781,19 @@ function getStockInfo(it, unitIdx) {
 }
 
 function renderCatalogHTML() {
+  if (!state.items || !state.items.length) {
+    return `
+      <div class="empty" style="grid-column:1/-1;padding:60px 24px;text-align:center">
+        <div class="spin" style="margin:0 auto 16px;width:36px;height:36px;border:3px solid var(--line);border-top-color:var(--brand);border-radius:50%"></div>
+        <h3 style="margin:0 0 8px;color:var(--ink);font-size:16px">Connecting to POS Register...</h3>
+        <p style="margin:0 0 16px;color:var(--mute);font-size:12px">Loading products and pricing catalog from local terminal hub...</p>
+        <button class="btn p" onclick="forceCatalogReload()" style="font-size:12px;padding:8px 18px">
+          <i class="fa-solid fa-rotate"></i> Retry Connection
+        </button>
+      </div>
+    `;
+  }
+
   const q = state.q.toLowerCase().trim();
   const cat = (state.cat || 'All').toUpperCase();
   const filtered = state.items.filter(it => {
@@ -2212,6 +2808,20 @@ function renderCatalogHTML() {
   });
 
   if (!filtered.length) {
+    const matchingSale = q ? (state.sales || []).find(s => matchesOrderId(s, q)) : null;
+    if (matchingSale || /^qs[-0-9]/i.test(q) || /^rec/i.test(q) || /^emg/i.test(q)) {
+      const matchId = matchingSale ? (matchingSale.order_id || matchingSale.receipt_number) : q.toUpperCase();
+      return `
+        <div class="empty" style="grid-column:1/-1;padding:48px 20px;text-align:center">
+          <i class="fa-solid fa-receipt" style="font-size:36px;color:var(--brand);margin-bottom:12px;display:block"></i>
+          <h3 style="margin:0 0 6px;color:var(--ink);font-size:16px">Looking for Order #${matchId}?</h3>
+          <p style="margin:0 0 16px;color:var(--mute);font-size:12.5px">This search box is for items & products. Click below to view and inspect this receipt in Order History.</p>
+          <button class="btn p" onclick="goView('orders'); setOrdersSearchId('${escapeHtml(q)}')" style="padding:8px 18px;font-size:13px">
+            <i class="fa-solid fa-arrow-right"></i> Open in Order History
+          </button>
+        </div>
+      `;
+    }
     return `<div class="empty" style="grid-column:1/-1">No items match your search.</div>`;
   }
 
@@ -2231,57 +2841,64 @@ function renderCatalogHTML() {
             <th>Product Name</th>
             <th>Unit</th>
             <th style="text-align:right">Stock</th>
-            <th style="text-align:right">Unit Price</th>
-            <th style="text-align:right">Pack Price</th>
+            <th style="text-align:right">Single Price</th>
+            <th style="text-align:right">Bulk Price</th>
             <th class="col-act" style="text-align:right">Action</th>
           </tr>
         </thead>
         <tbody>
           ${filtered.map(it => {
-            const units = getItemUnits(it);
-            const curIdx = itemPickUnit[it.id] != null ? itemPickUnit[it.id] : 0;
-            const activeUnit = units[curIdx] || units[0];
-            const stockInfo = getStockInfo(it, curIdx);
+            try {
+              const units = getItemUnits(it);
+              const curIdx = (itemPickUnit[it.id] != null && units[itemPickUnit[it.id]]) ? itemPickUnit[it.id] : 0;
+              const activeUnit = units[curIdx] || units[0] || { name: 'PCS', unit_symbol: 'PCS', price: it.retail_price || 0 };
+              const stockInfo = getStockInfo(it, curIdx);
 
-            const baseUnit = units.find(u => u.is_base) || units[0];
-            const bulkUnit = units.find(u => !u.is_base);
-            const singlePrice = baseUnit ? baseUnit.price : (it.retail_price || 0);
-            const bulkPrice = bulkUnit ? bulkUnit.price : (it.carton_price || null);
+              const baseUnit = units.find(u => u && u.is_base) || units[0] || activeUnit;
+              const bulkUnit = units.find(u => u && !u.is_base);
+              const singlePrice = baseUnit ? (baseUnit.price != null ? baseUnit.price : (it.retail_price || 0)) : (it.retail_price || 0);
+              const bulkPrice = bulkUnit ? bulkUnit.price : null;
+              const itemName = it.name || 'Unnamed Product';
+              const bulkSymbol = bulkUnit ? (bulkUnit.unit_symbol || bulkUnit.name || 'Bulk').toUpperCase() : '';
 
-            return `
-              <tr class="pr ${stockInfo.isOut ? 'out' : ''}" onclick="${stockInfo.isOut ? '' : `addToCart('${it.id}')`}">
-                <td class="td-name">
-                  <div style="display:flex;align-items:center">
-                    <span class="av" style="--h:${getHue(it.category)}">${it.name[0]}</span>
-                    <div style="min-width:0;flex:1">
-                      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-                        <b style="font-size:12.5px;color:var(--ink)">${it.name}</b>
-                        <span class="cat-tag" style="--h:${getHue(it.category)}">${it.category || 'General'}</span>
+              return `
+                <tr class="pr ${stockInfo.isOut ? 'out' : ''}" onclick="${stockInfo.isOut ? '' : `addToCart('${it.id}')`}">
+                  <td class="td-name">
+                    <div style="display:flex;align-items:center">
+                      <span class="av" style="--h:${getHue(it.category)}">${(itemName[0] || 'P').toUpperCase()}</span>
+                      <div style="min-width:0;flex:1">
+                        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                          <b style="font-size:12.5px;color:var(--ink)">${itemName}</b>
+                          <span class="cat-tag" style="--h:${getHue(it.category)}">${it.category || 'General'}</span>
+                        </div>
+                        ${it.upc ? `<div style="color:var(--mute);font-size:10px;margin-top:1px"><i class="fa-solid fa-barcode"></i> ${it.upc}</div>` : ''}
                       </div>
-                      ${it.upc ? `<div style="color:var(--mute);font-size:10px;margin-top:1px"><i class="fa-solid fa-barcode"></i> ${it.upc}</div>` : ''}
                     </div>
-                  </div>
-                </td>
-                <td onclick="event.stopPropagation()">
-                  <select class="us" onchange="setItemUnit('${it.id}', this.value)" ${stockInfo.isOut ? 'disabled' : ''}>
-                    ${units.map((u, idx) => `<option value="${idx}" ${idx===curIdx?'selected':''}>${(u.unit_symbol || u.name).toUpperCase()}</option>`).join('')}
-                  </select>
-                </td>
-                <td style="text-align:right">
-                  <span class="stock-pill ${stockInfo.isOut ? 'out' : (stockInfo.isLow ? 'low' : 'in')}">
-                    ${stockInfo.text}
-                  </span>
-                </td>
-                <td style="text-align:right;font-weight:700;font-size:12px">${NGN(singlePrice)}</td>
-                <td style="text-align:right;font-weight:800;font-size:12px;color:var(--brand)">${bulkPrice ? NGN(bulkPrice) : '<span style="color:var(--mute)">–</span>'}</td>
-                <td class="col-act" style="text-align:right">
-                  ${stockInfo.isOut
-                    ? `<button class="btn" style="padding:4px 6px;font-size:10.5px;opacity:0.5;cursor:not-allowed" disabled>Out</button>`
-                    : `<button class="btn p" style="padding:4px 10px;font-size:11.5px;font-weight:700" onclick="event.stopPropagation(); addToCart('${it.id}')">+ Add</button>`
-                  }
-                </td>
-              </tr>
-            `;
+                  </td>
+                  <td onclick="event.stopPropagation()">
+                    <select class="us" onchange="setItemUnit('${it.id}', this.value)" ${stockInfo.isOut ? 'disabled' : ''}>
+                      ${units.map((u, idx) => `<option value="${idx}" ${idx===curIdx?'selected':''}>${(u?.unit_symbol || u?.name || 'Unit').toUpperCase()}</option>`).join('')}
+                    </select>
+                  </td>
+                  <td style="text-align:right">
+                    <span class="stock-pill ${stockInfo.isOut ? 'out' : (stockInfo.isLow ? 'low' : 'in')}">
+                      ${stockInfo.text}
+                    </span>
+                  </td>
+                  <td style="text-align:right;font-weight:700;font-size:12px">${NGN(singlePrice)}</td>
+                  <td style="text-align:right;font-weight:800;font-size:12px;color:var(--brand)">${bulkUnit && bulkPrice != null ? `${NGN(bulkPrice)} <small style="font-size:10px;font-weight:700;color:var(--mute)">/${bulkSymbol}</small>` : '<span style="color:var(--mute)">–</span>'}</td>
+                  <td class="col-act" style="text-align:right">
+                    ${stockInfo.isOut
+                      ? `<button class="btn" style="padding:4px 6px;font-size:10.5px;opacity:0.5;cursor:not-allowed" disabled>Out</button>`
+                      : `<button class="btn p" style="padding:4px 10px;font-size:11.5px;font-weight:700" onclick="event.stopPropagation(); addToCart('${it.id}')">+ Add</button>`
+                    }
+                  </td>
+                </tr>
+              `;
+            } catch(eRow) {
+              console.warn('Skipping unrenderable catalog row:', it?.id, eRow);
+              return '';
+            }
           }).join('')}
         </tbody>
       </table>
@@ -2289,37 +2906,44 @@ function renderCatalogHTML() {
   }
 
   return filtered.map(it => {
-    const units = getItemUnits(it);
-    const curIdx = itemPickUnit[it.id] != null ? itemPickUnit[it.id] : 0;
-    const activeUnit = units[curIdx] || units[0];
-    const stockInfo = getStockInfo(it, curIdx);
+    try {
+      const units = getItemUnits(it);
+      const curIdx = (itemPickUnit[it.id] != null && units[itemPickUnit[it.id]]) ? itemPickUnit[it.id] : 0;
+      const activeUnit = units[curIdx] || units[0] || { name: 'PCS', unit_symbol: 'PCS', price: it.retail_price || 0 };
+      const stockInfo = getStockInfo(it, curIdx);
 
-    const baseUnit = units.find(u => u.is_base) || units[0];
-    const bulkUnit = units.find(u => !u.is_base);
-    const singlePrice = baseUnit ? baseUnit.price : (it.retail_price || 0);
-    const bulkPrice = bulkUnit ? bulkUnit.price : (it.carton_price || null);
+      const baseUnit = units.find(u => u && u.is_base) || units[0] || activeUnit;
+      const bulkUnit = units.find(u => u && !u.is_base);
+      const singlePrice = baseUnit ? (baseUnit.price != null ? baseUnit.price : (it.retail_price || 0)) : (it.retail_price || 0);
+      const bulkPrice = bulkUnit ? bulkUnit.price : null;
+      const itemName = it.name || 'Unnamed Product';
+      const bulkSymbol = bulkUnit ? (bulkUnit.unit_symbol || bulkUnit.name || 'Bulk').toUpperCase() : '';
 
-    return `
-      <div class="tile ${stockInfo.isOut ? 'out' : ''}" onclick="${stockInfo.isOut ? '' : `addToCart('${it.id}')`}">
-        <div class="art" style="--h:${getHue(it.category)}">${it.name.slice(0, 2).toUpperCase()}</div>
-        <b>${it.name}</b>
-        <div class="m">
-          <div style="display:flex;gap:6px;align-items:baseline;overflow:hidden">
-            <span style="font-size:13px;font-weight:800;color:var(--ink)" title="Single Unit Price">${NGN(singlePrice)}</span>
-            ${bulkPrice ? `<span style="font-size:11px;font-weight:700;color:var(--brand);white-space:nowrap" title="Pack / Carton Price">Pack: ${NGN(bulkPrice)}</span>` : ''}
+      return `
+        <div class="tile ${stockInfo.isOut ? 'out' : ''}" onclick="${stockInfo.isOut ? '' : `addToCart('${it.id}')`}">
+          <div class="art" style="--h:${getHue(it.category)}">${itemName.slice(0, 2).toUpperCase()}</div>
+          <b>${itemName}</b>
+          <div class="m">
+            <div style="display:flex;gap:6px;align-items:baseline;overflow:hidden">
+              <span style="font-size:13px;font-weight:800;color:var(--ink)" title="Single Unit Price">${NGN(singlePrice)}</span>
+              ${bulkUnit && bulkPrice != null ? `<span style="font-size:11px;font-weight:700;color:var(--brand);white-space:nowrap" title="Bulk Price">${bulkSymbol}: ${NGN(bulkPrice)}</span>` : ''}
+            </div>
+            <span class="stock-pill ${stockInfo.isOut ? 'out' : (stockInfo.isLow ? 'low' : 'in')}">${stockInfo.text}</span>
           </div>
-          <span class="stock-pill ${stockInfo.isOut ? 'out' : (stockInfo.isLow ? 'low' : 'in')}">${stockInfo.text}</span>
+          <div style="display:flex;gap:6px;align-items:center;margin-top:auto" onclick="event.stopPropagation()">
+            <select class="us" style="flex:1" onchange="setItemUnit('${it.id}', this.value)" ${stockInfo.isOut ? 'disabled' : ''}>
+              ${units.map((u, idx) => `<option value="${idx}" ${idx===curIdx?'selected':''}>${(u?.unit_symbol || u?.name || 'Unit').toUpperCase()}</option>`).join('')}
+            </select>
+            <button class="btn p" style="padding:4px 8px;font-size:11px;font-weight:700;white-space:nowrap" onclick="addToCart('${it.id}')" ${stockInfo.isOut ? 'disabled' : ''}>
+              + Add
+            </button>
+          </div>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;margin-top:auto" onclick="event.stopPropagation()">
-          <select class="us" style="flex:1" onchange="setItemUnit('${it.id}', this.value)" ${stockInfo.isOut ? 'disabled' : ''}>
-            ${units.map((u, idx) => `<option value="${idx}" ${idx===curIdx?'selected':''}>${(u.unit_symbol || u.name).toUpperCase()}</option>`).join('')}
-          </select>
-          <button class="btn p" style="padding:4px 8px;font-size:11px;font-weight:700;white-space:nowrap" onclick="addToCart('${it.id}')" ${stockInfo.isOut ? 'disabled' : ''}>
-            + Add
-          </button>
-        </div>
-      </div>
-    `;
+      `;
+    } catch (eTile) {
+      console.warn('Skipping unrenderable catalog tile:', it?.id, eTile);
+      return '';
+    }
   }).join('');
 }
 
@@ -2343,7 +2967,7 @@ function addToCart(id) {
   const bulkUnit = units.find(u => !u.is_base) || units[units.length - 1];
   const bulkRatio = getUnitRatio(bulkUnit);
   const rawBulk = parseFloat(it.stock) || 0;
-  const maxAvailableBase = Math.round(rawBulk * bulkRatio);
+  const maxAvailableBase = Math.round((rawBulk * bulkRatio) * 100) / 100;
 
   if (maxAvailableBase <= 0) {
     playSound('error');
@@ -2352,13 +2976,17 @@ function addToCart(id) {
   }
 
   const curQty = state.cart[id] ? state.cart[id].qty : 0;
-  const newQty = curQty + 1;
-  const neededBase = newQty * unitRatio;
+  const isBulk = !selectedUnit.is_base;
+  let newQty = curQty + 1;
+  if (isBulk && curQty === 0.5) {
+    newQty = 1;
+  }
+  const neededBase = Math.round((newQty * unitRatio) * 100) / 100;
 
   if (neededBase > maxAvailableBase) {
     playSound('error');
     const unitName = (selectedUnit.name || selectedUnit.unit_symbol || 'units').toUpperCase();
-    const maxUnitsInSelected = Math.floor(maxAvailableBase / unitRatio);
+    const maxUnitsInSelected = isBulk ? (Math.floor(maxAvailableBase / unitRatio * 2) / 2) : Math.floor(maxAvailableBase / unitRatio);
     if (maxUnitsInSelected <= 0) {
       toast(`⚠️ Stock limit for "${it.name}": Only ${maxAvailableBase} base units left (cannot form 1 full ${unitName}).`);
     } else {
@@ -2381,8 +3009,88 @@ function addToCart(id) {
 function decCart(id) {
   if (state.cart[id]) {
     playSound('beep');
-    state.cart[id].qty--;
-    if (state.cart[id].qty <= 0) delete state.cart[id];
+    const it = getItem(id);
+    const units = it ? getItemUnits(it) : [];
+    const u = units[state.cart[id].unitIndex] || units[0];
+    const isBulk = u && !u.is_base;
+
+    if (isBulk) {
+      if (state.cart[id].qty > 1) {
+        state.cart[id].qty = (state.cart[id].qty % 1 !== 0) ? Math.floor(state.cart[id].qty) : (state.cart[id].qty - 1);
+      } else if (state.cart[id].qty === 1) {
+        state.cart[id].qty = 0.5;
+      } else {
+        delete state.cart[id];
+      }
+    } else {
+      state.cart[id].qty--;
+      if (state.cart[id].qty <= 0) delete state.cart[id];
+    }
+  }
+  $('#cart').innerHTML = renderCartHTML();
+  $('#grid').innerHTML = renderCatalogHTML();
+}
+
+function handleCartQtyInput(id, val) {
+  if (!state.cart[id]) return;
+  const it = getItem(id);
+  if (!it) return;
+  const units = getItemUnits(it);
+  const u = units[state.cart[id].unitIndex] || units[0];
+  const isBulk = !u.is_base;
+
+  const parsed = parseFloat(val);
+  if (isNaN(parsed) || parsed <= 0) {
+    return;
+  }
+
+  let validQty = parsed;
+  if (!isBulk) {
+    validQty = Math.max(1, Math.round(parsed));
+  } else {
+    validQty = Math.max(0.5, Math.round(parsed * 2) / 2);
+  }
+
+  const unitRatio = getUnitRatio(u);
+  const bulkUnit = units.find(unit => !unit.is_base) || units[units.length - 1];
+  const bulkRatio = getUnitRatio(bulkUnit);
+  const rawBulk = parseFloat(it.stock) || 0;
+  const maxAvailableBase = Math.round((rawBulk * bulkRatio) * 100) / 100;
+
+  const neededBase = Math.round((validQty * unitRatio) * 100) / 100;
+  if (neededBase > maxAvailableBase) {
+    const maxAllowed = isBulk ? Math.max(0.5, Math.floor(maxAvailableBase / unitRatio * 2) / 2) : Math.max(1, Math.floor(maxAvailableBase / unitRatio));
+    validQty = maxAllowed;
+    toast(`⚠️ Maximum available stock for "${it.name}" is ${maxAllowed} ${(u.name || '').toUpperCase()}`);
+    const inputEl = $(`#qty-${id}`);
+    if (inputEl) inputEl.value = validQty;
+  }
+
+  state.cart[id].qty = validQty;
+
+  const L = getCartLine(id);
+  const lineTotEl = $(`#line-tot-${id}`);
+  if (lineTotEl && L) {
+    lineTotEl.textContent = NGN(L.total);
+  }
+
+  const t = calcTotals();
+  const subCount = $('#cart-subtotal-count');
+  if (subCount) subCount.textContent = t.n;
+  const subVal = $('#cart-subtotal-val');
+  if (subVal) subVal.textContent = NGN(t.sub);
+  const totVal = $('#cart-total-val');
+  if (totVal) totVal.textContent = NGN(t.total);
+
+  updateTenderUI();
+  if (state.pay === 'Split') updateSplitUI();
+}
+
+function handleCartQtyCommit(id, val) {
+  if (!state.cart[id]) return;
+  const parsed = parseFloat(val);
+  if (isNaN(parsed) || parsed <= 0) {
+    state.cart[id].qty = 1;
   }
   $('#cart').innerHTML = renderCartHTML();
   $('#grid').innerHTML = renderCatalogHTML();
@@ -2398,9 +3106,14 @@ function setCartUnit(id, unitIdx) {
       const bulkUnit = units.find(u => !u.is_base) || units[units.length - 1];
       const bulkRatio = getUnitRatio(bulkUnit);
       const rawBulk = parseFloat(it.stock) || 0;
-      const maxAvailableBase = Math.round(rawBulk * bulkRatio);
+      const maxAvailableBase = Math.round((rawBulk * bulkRatio) * 100) / 100;
 
-      const neededBase = state.cart[id].qty * targetRatio;
+      // If switching to base unit, enforce whole integer
+      if (targetUnit.is_base && state.cart[id].qty % 1 !== 0) {
+        state.cart[id].qty = Math.max(1, Math.round(state.cart[id].qty));
+      }
+
+      const neededBase = Math.round((state.cart[id].qty * targetRatio) * 100) / 100;
       if (neededBase > maxAvailableBase) {
         toast(`⚠️ Insufficient stock to switch "${it.name}" to ${(targetUnit.name || '').toUpperCase()} (Needs ${neededBase} base units, only ${maxAvailableBase} available).`);
         $('#cart').innerHTML = renderCartHTML();
@@ -2538,10 +3251,19 @@ function updateTenderUI() {
   if (btn) {
     let chargeDisabled = !t.n;
     let chargeButtonLabel = 'Charge ' + NGN(t.total) + ' (F8)';
+    const isWalkIn = !state.customer || state.customer.id === '1560234000000095179' || /walk\s*[-]?\s*in/i.test(state.customer.name || '');
+
     if (state.pay === 'Cash') {
       if (short) {
         chargeDisabled = true;
         chargeButtonLabel = 'Cash received is too low';
+      }
+    } else if (state.pay === 'Credit / On Account') {
+      if (isWalkIn) {
+        chargeDisabled = true;
+        chargeButtonLabel = '⚠️ Select Registered Customer (F4)';
+      } else {
+        chargeButtonLabel = 'Create Invoice ' + NGN(t.total) + ' (On Account)';
       }
     }
     btn.disabled = chargeDisabled;
@@ -2603,6 +3325,7 @@ function renderCartHTML() {
   const ids = Object.keys(state.cart);
   const tend = parseFloat(state.tender) || 0;
   const short = state.pay === 'Cash' && state.tender !== '' && tend < t.total;
+  const isWalkIn = !state.customer || state.customer.id === '1560234000000095179' || /walk\s*[-]?\s*in/i.test(state.customer.name || '');
 
   const splitCash = parseFloat(state.split?.cash) || 0;
   const splitMoniepoint = parseFloat(state.split?.moniepoint) || 0;
@@ -2625,6 +3348,13 @@ function renderCartHTML() {
       chargeButtonLabel = splitDiff > 0 ? `Allocate remaining ₦${splitDiff.toLocaleString()}` : `Over-allocated by ₦${(-splitDiff).toLocaleString()}`;
     } else {
       chargeButtonLabel = `Charge ${NGN(t.total)} (Split Tender)`;
+    }
+  } else if (state.pay === 'Credit / On Account') {
+    if (isWalkIn) {
+      chargeDisabled = true;
+      chargeButtonLabel = '⚠️ Select Registered Customer (F4)';
+    } else {
+      chargeButtonLabel = `Create Invoice ${NGN(t.total)} (On Account)`;
     }
   }
 
@@ -2649,11 +3379,20 @@ function renderCartHTML() {
             ${units.map((u, idx) => `<option value="${idx}" ${idx===L.unitIndex?'selected':''}>${(u.unit_symbol || u.name).toUpperCase()}</option>`).join('')}
           </select>
           <div class="qty">
-            <button onclick="decCart('${id}')" aria-label="Minus">−</button>
-            <span>${L.qty}</span>
-            <button onclick="addToCart('${id}')" aria-label="Plus">+</button>
+            <button type="button" onclick="decCart('${id}')" aria-label="Minus">−</button>
+            <input class="qty-inp" id="qty-${id}" type="number" 
+                   step="${L.unit.is_base ? '1' : '0.5'}" 
+                   min="${L.unit.is_base ? '1' : '0.5'}" 
+                   value="${L.qty}" 
+                   inputmode="decimal"
+                   autocomplete="off"
+                   onfocus="this.select()"
+                   oninput="handleCartQtyInput('${id}', this.value)"
+                   onchange="handleCartQtyCommit('${id}', this.value)"
+                   aria-label="Quantity">
+            <button type="button" onclick="addToCart('${id}')" aria-label="Plus">+</button>
           </div>
-          <b class="tot ${ch ? 'ch' : ''}" onclick="editCartItemPrice('${id}')" title="${isCashier ? `₦${L.price.toLocaleString()} each (Locked - Requires Manager/Finance PIN to change)` : `₦${L.price.toLocaleString()} each (Click to edit rate)`}">${NGN(L.total)}</b>
+          <b class="tot ${ch ? 'ch' : ''}" id="line-tot-${id}" onclick="editCartItemPrice('${id}')" title="${isCashier ? `₦${L.price.toLocaleString()} each (Locked - Requires Manager/Finance PIN to change)` : `₦${L.price.toLocaleString()} each (Click to edit rate)`}">${NGN(L.total)}</b>
           <button class="del-btn" onclick="removeCartItem('${id}')" title="Remove item">×</button>
         </div>
       `;
@@ -2693,7 +3432,7 @@ function renderCartHTML() {
     <div class="lines">${lines}</div>
 
     <div class="sum">
-      <div class="row"><span>Subtotal (${t.n} items)</span><span>${NGN(t.sub)}</span></div>
+      <div class="row"><span>Subtotal (<span id="cart-subtotal-count">${t.n}</span> items)</span><span id="cart-subtotal-val">${NGN(t.sub)}</span></div>
       <div class="row">
         <span>Discount % ${state.managerApprovedBy ? `<small style="color:var(--brand);font-weight:700">(${state.managerApprovedBy})</small>` : ((!state.user || state.user.role === 'cashier') ? `<small style="color:var(--mute);font-size:10.5px;font-weight:600"><i class="fa-solid fa-lock" style="font-size:9px"></i> PIN req</small>` : '')}</span>
         <input id="disc" type="number" min="0" max="100" value="${state.disc}" onchange="handleDiscountChange(this.value)">
@@ -2711,22 +3450,47 @@ function renderCartHTML() {
           </div>
           <div class="row">
             <span>Cash Received</span>
-            <input id="tender" style="width:115px;font-weight:700;font-size:13px" type="number" min="0" placeholder="${Math.round(t.total)}" value="${state.tender}" oninput="handleTenderInput(this.value)">
+            <input id="tender" style="width:115px;font-weight:700;font-size:13px" type="number" min="0" inputmode="numeric" autocomplete="off" placeholder="${Math.round(t.total)}" value="${state.tender}" onfocus="this.select()" oninput="handleTenderInput(this.value)">
           </div>
         </div>
         <div class="row" id="change-due-row" style="padding:2px 0;display:${state.tender !== '' && !short ? 'flex' : 'none'}">
           <span>Change Due</span><b id="change-due-val" style="color:var(--brand);font-size:15px">${NGN(tend - t.total)}</b>
         </div>
       ` : ''}
-      <div class="row t"><span>Total</span><span>${NGN(t.total)}</span></div>
+      <div class="row t"><span>Total</span><span id="cart-total-val">${NGN(t.total)}</span></div>
     </div>
 
-    <div class="pay">
+    <div class="pay" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1.15fr;gap:4px">
       <button class="${state.pay==='Cash'?'on':''}" onclick="setPaymentMode('Cash')"><i class="fa-solid fa-money-bill-1"></i> Cash</button>
       <button class="${state.pay==='Moniepoint POS'?'on':''}" onclick="setPaymentMode('Moniepoint POS')"><i class="fa-solid fa-credit-card"></i> Moniepoint</button>
       <button class="${state.pay==='First Bank Transfer'?'on':''}" onclick="setPaymentMode('First Bank Transfer')"><i class="fa-solid fa-building-columns"></i> First Bank</button>
-      <button class="${state.pay==='Split'?'on':''}" onclick="setPaymentMode('Split')"><i class="fa-solid fa-layer-group"></i> Split Pay</button>
+      <button class="${state.pay==='Split'?'on':''}" onclick="setPaymentMode('Split')"><i class="fa-solid fa-layer-group"></i> Split</button>
+      <button class="${state.pay==='Credit / On Account'?'on':''}" style="${state.pay==='Credit / On Account'?'background:#7950f2;color:#fff;border-color:#7950f2':''}" onclick="setPaymentMode('Credit / On Account')"><i class="fa-solid fa-file-invoice-dollar"></i> On Account</button>
     </div>
+
+    ${state.pay === 'Credit / On Account' ? `
+      <div style="background:var(--soft);border:1px solid #7950f2;border-radius:8px;padding:8px 10px;margin:8px 0;font-size:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-weight:700;color:var(--ink)"><i class="fa-solid fa-file-invoice-dollar" style="color:#7950f2"></i> Invoice On Account (Credit / Pay Later)</span>
+          <span class="pill" style="background:#f3f0ff;color:#7950f2;font-size:10px;font-weight:700">Debt Billed</span>
+        </div>
+        ${isWalkIn ? `
+          <div style="color:#c92a2a;font-weight:700;font-size:11.5px;margin-top:4px">
+            <i class="fa-solid fa-triangle-exclamation"></i> Anonymous Walk-in customer cannot buy on credit.<br>
+            <button class="btn p" style="padding:4px 8px;font-size:11px;margin-top:6px" onclick="openCustomerModal()"><i class="fa-solid fa-users"></i> Press F4 to Select Customer Account</button>
+          </div>
+        ` : `
+          <div style="font-size:11.5px;color:var(--ink);margin-top:2px;display:grid;gap:2px">
+            <div>Customer: <b>${state.customer.name}</b></div>
+            <div>Previous Debt: <span style="color:#c92a2a;font-weight:700">₦${Number(state.customer.outstanding || 0).toLocaleString()}</span></div>
+            <div>Invoice Amount: <span style="color:#7950f2;font-weight:700">+ ₦${t.total.toLocaleString()}</span></div>
+            <div style="border-top:1px dashed var(--line);padding-top:3px;margin-top:2px;font-weight:800;font-size:12.5px;color:#c92a2a">
+              New Total Debt: ₦${(Number(state.customer.outstanding || 0) + t.total).toLocaleString()}
+            </div>
+          </div>
+        `}
+      </div>
+    ` : ''}
 
     ${state.pay === 'Split' ? `
       <div class="split-box">
@@ -2740,7 +3504,7 @@ function renderCartHTML() {
           <label><i class="fa-solid fa-money-bill-1" style="color:var(--brand)"></i> Cash</label>
           <div class="split-wrap">
             <span>₦</span>
-            <input id="split-cash" type="number" min="0" value="${state.split?.cash || ''}" placeholder="0" oninput="updateSplitAmount('cash', this.value)">
+            <input id="split-cash" type="number" min="0" inputmode="numeric" autocomplete="off" value="${state.split?.cash || ''}" placeholder="0" onfocus="this.select()" oninput="updateSplitAmount('cash', this.value)">
             <button type="button" class="split-fill" onclick="fillSplitRemaining('cash')">Fill</button>
           </div>
         </div>
@@ -2748,7 +3512,7 @@ function renderCartHTML() {
           <label><i class="fa-solid fa-credit-card" style="color:#2B6CB0"></i> Moniepoint</label>
           <div class="split-wrap">
             <span>₦</span>
-            <input id="split-moniepoint" type="number" min="0" value="${state.split?.moniepoint || ''}" placeholder="0" oninput="updateSplitAmount('moniepoint', this.value)">
+            <input id="split-moniepoint" type="number" min="0" inputmode="numeric" autocomplete="off" value="${state.split?.moniepoint || ''}" placeholder="0" onfocus="this.select()" oninput="updateSplitAmount('moniepoint', this.value)">
             <button type="button" class="split-fill" onclick="fillSplitRemaining('moniepoint')">Fill</button>
           </div>
         </div>
@@ -2756,142 +3520,321 @@ function renderCartHTML() {
           <label><i class="fa-solid fa-building-columns" style="color:#B8741A"></i> First Bank</label>
           <div class="split-wrap">
             <span>₦</span>
-            <input id="split-transfer" type="number" min="0" value="${state.split?.transfer || ''}" placeholder="0" oninput="updateSplitAmount('transfer', this.value)">
+            <input id="split-transfer" type="number" min="0" inputmode="numeric" autocomplete="off" value="${state.split?.transfer || ''}" placeholder="0" onfocus="this.select()" oninput="updateSplitAmount('transfer', this.value)">
             <button type="button" class="split-fill" onclick="fillSplitRemaining('transfer')">Fill</button>
           </div>
         </div>
       </div>
     ` : ''}
 
-    <button id="btn-charge" class="charge" onclick="chargeSale()" ${chargeDisabled ? 'disabled' : ''}>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 2px;margin:6px 0">
+      <label style="font-size:11.5px;font-weight:600;display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--mute)" title="Hide product rates and amounts on printed receipt (Waybill / Delivery Slip)">
+        <input type="checkbox" id="no-price-toggle" ${state.printWithoutPrice ? 'checked' : ''} onchange="state.printWithoutPrice = this.checked">
+        <span><i class="fa-solid fa-file-lines"></i> Print invoice without prices (Waybill / Delivery Slip)</span>
+      </label>
+    </div>
+
+    <button id="btn-charge" class="charge" style="${state.pay === 'Credit / On Account' ? 'background:#7950f2;border-color:#7950f2' : ''}" onclick="chargeSale()" ${chargeDisabled ? 'disabled' : ''}>
       ${chargeButtonLabel}
     </button>
   `;
 }
 
+// =============================================================================
+// EMERGENCY IN-BROWSER STANDALONE ENGINE (ACTIVE WHEN SERVER HUB IS OFF)
+// =============================================================================
+function saveEmergencyStandaloneSale(payload) {
+  const emgQueue = getEmergencySalesQueue();
+  const nowMs = Date.now();
+
+  // Rapid multi-tap debounce guard: block duplicate taps within 4 seconds in standalone mode
+  const lastSale = emgQueue[emgQueue.length - 1];
+  if (lastSale && lastSale.created_at) {
+    const diffMs = nowMs - new Date(lastSale.created_at).getTime();
+    if (diffMs >= 0 && diffMs < 4000) {
+      if (lastSale.total === payload.total && 
+          (lastSale.line_items || []).length === (payload.line_items || []).length &&
+          lastSale.customer_id === payload.customer_id) {
+        console.warn('⛔ [Standalone Guard] Rapid duplicate checkout tap ignored.');
+        return {
+          success: true,
+          sale: lastSale,
+          is_standalone: true,
+          duplicate_prevented: true,
+          message: `Standalone Mode: Sale already queued as ${lastSale.receipt_number}`
+        };
+      }
+    }
+  }
+
+  const term = state.terminalId || 'STATION';
+  const termClean = term.replace(/[^A-Za-z0-9]/g, '').slice(-6).toUpperCase();
+  const seqKey = `qs_emg_seq_${termClean}`;
+  let seq = parseInt(localStorage.getItem(seqKey) || '0', 10) + 1;
+  localStorage.setItem(seqKey, String(seq));
+
+  const timeStamp = Date.now().toString(36).slice(-4).toUpperCase();
+  const orderId = `QS-EMG-${termClean}-${timeStamp}-${String(seq).padStart(3, '0')}`;
+  const tiller = state.user?.name || 'Staff';
+
+  const emgSale = {
+    ...payload,
+    id: payload.client_txn_id || `emg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    client_txn_id: payload.client_txn_id || null,
+    order_id: orderId,
+    receipt_number: orderId,
+    tilled_by: tiller,
+    salesperson: tiller,
+    terminal_id: state.terminalId,
+    standalone_offline: true,
+    status: 'STANDALONE_LOCAL_QUEUE',
+    created_at: new Date().toISOString()
+  };
+
+  emgQueue.push(emgSale);
+  try { localStorage.setItem('qs_emergency_sales', JSON.stringify(emgQueue)); } catch(e) {}
+
+  return {
+    success: true,
+    sale: emgSale,
+    is_standalone: true,
+    message: `Standalone Mode: Sale queued locally as ${orderId}`
+  };
+}
+
+let isFlushingEmergency = false;
+async function flushEmergencySalesToHub() {
+  if (isFlushingEmergency) return;
+  const emgQueue = getEmergencySalesQueue();
+  if (!emgQueue || emgQueue.length === 0) return;
+
+  isFlushingEmergency = true;
+  try {
+    const ping = await fetch('/api/status').then(r => r.json()).catch(() => null);
+    if (!ping) {
+      isFlushingEmergency = false;
+      return;
+    }
+
+    let syncedCount = 0;
+    const remaining = [];
+
+    for (const emgSale of emgQueue) {
+      try {
+        const r = await fetch('/api/sales', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(emgSale)
+        });
+        const res = await r.json();
+        if (res && res.success) {
+          syncedCount++;
+        } else {
+          remaining.push(emgSale);
+        }
+      } catch (err) {
+        remaining.push(emgSale);
+      }
+    }
+
+    try { localStorage.setItem('qs_emergency_sales', JSON.stringify(remaining)); } catch(e) {}
+
+    if (syncedCount > 0) {
+      toast(`☁️ Hub Reconnected! Synced ${syncedCount} standalone offline sale(s) to server.`);
+      playSound('success');
+      await loadQueueStatus();
+      renderSb();
+    }
+  } catch(e) {
+    console.warn('Auto-flush error:', e);
+  } finally {
+    isFlushingEmergency = false;
+  }
+}
+
+// Background auto-flush timer & online listener
+setInterval(flushEmergencySalesToHub, 12000);
+window.addEventListener('online', flushEmergencySalesToHub);
+
+// Checkout mutex locking against rapid double/triple clicks
+let isProcessingCheckout = false;
+
 // Complete sale & save to offline outbox
 async function chargeSale() {
+  if (isProcessingCheckout) {
+    console.warn('⛔ Checkout already in progress. Ignoring duplicate trigger.');
+    return;
+  }
+
   const t = calcTotals();
   if (!t.n) {
     toast('Add items to the cart first.');
     return;
   }
 
-  // Strict stock validation: block checkout if any item is out of stock or exceeds stock
-  for (const id of Object.keys(state.cart)) {
-    const it = getItem(id);
-    if (!it) continue;
-    const units = getItemUnits(it);
-    const cartEntry = state.cart[id];
-    const unit = units[cartEntry.unitIndex] || units[0];
-    const unitRatio = getUnitRatio(unit);
-    const bulkUnit = units.find(u => !u.is_base) || units[units.length - 1];
-    const bulkRatio = getUnitRatio(bulkUnit);
-    const rawBulk = parseFloat(it.stock) || 0;
-    const maxAvailableBase = Math.round(rawBulk * bulkRatio);
-    const requestedBase = cartEntry.qty * unitRatio;
-
-    if (maxAvailableBase <= 0) {
-      toast(`⛔ Checkout blocked: "${it.name}" is OUT OF STOCK. Remove it to proceed.`);
-      return;
-    }
-    if (requestedBase > maxAvailableBase) {
-      const unitName = (unit.name || unit.unit_symbol || 'units').toUpperCase();
-      const maxUnitsInSelected = Math.floor(maxAvailableBase / unitRatio);
-      toast(`⛔ Checkout blocked: Insufficient stock for "${it.name}". Only ${maxUnitsInSelected} ${unitName} available.`);
-      return;
-    }
+  isProcessingCheckout = true;
+  const chargeBtn = document.getElementById('btn-charge');
+  if (chargeBtn) {
+    chargeBtn.disabled = true;
+    chargeBtn.style.opacity = '0.7';
+    chargeBtn.innerHTML = '<span class="spin" style="display:inline-block;width:13px;height:13px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;margin-right:8px;vertical-align:middle"></span> Processing Checkout...';
   }
-
-  let paymentModeDisplay = state.pay;
-  let paymentArray = [];
-
-  if (state.pay === 'Split') {
-    const sc = parseFloat(state.split?.cash) || 0;
-    const sm = parseFloat(state.split?.moniepoint) || 0;
-    const st = parseFloat(state.split?.transfer) || 0;
-    const totalAlloc = sc + sm + st;
-    if (Math.abs(totalAlloc - t.total) >= 1) {
-      toast(`Split amounts (₦${totalAlloc.toLocaleString()}) must match total (₦${t.total.toLocaleString()})`);
-      return;
-    }
-    if (sc > 0) paymentArray.push({ mode: 'Cash', amount: sc });
-    if (sm > 0) paymentArray.push({ mode: 'Moniepoint POS', amount: sm });
-    if (st > 0) paymentArray.push({ mode: 'First Bank Transfer', amount: st });
-
-    paymentModeDisplay = `Split (${paymentArray.map(p => `${p.mode.replace(' POS', '').replace(' Bank Transfer', '')}: ₦${p.amount.toLocaleString()}`).join(', ')})`;
-  } else {
-    paymentArray.push({ mode: state.pay, amount: t.total });
-  }
-
-  const lineItems = Object.keys(state.cart).map(id => {
-    const L = getCartLine(id);
-    return {
-      item_id: L.item.id,
-      name: L.item.name,
-      unit: L.unit.unit_symbol || L.unit.name,
-      unit_display: (L.unit.name || '').toUpperCase(),
-      unit_conversion_id: L.unit.unit_conversion_id || '',
-      quantity: L.qty,
-      rate: L.price,
-      list_price: L.listPrice,
-      is_custom_price: L.price !== L.listPrice,
-      total: L.total
-    };
-  });
-
-  const tenderVal = parseFloat(state.tender) || 0;
-  if (!state.user) {
-    state.isLocked = true;
-    renderLockScreen();
-    toast('🔒 Login required: Please enter your cashier PIN.');
-    return;
-  }
-
-  const amountPaid = tenderVal >= t.total ? tenderVal : t.total;
-  const changeDue = Math.max(0, amountPaid - t.total);
-
-  const salePayload = {
-    terminal_id: state.terminalId,
-    user_id: state.user.id,
-    user_name: state.user.name,
-    customer_id: state.customer.id,
-    customer_name: state.customer.name,
-    salesperson: state.user.name,
-    tilled_by: state.user.name,
-    date: new Date().toISOString().split('T')[0],
-    payment_mode: paymentModeDisplay,
-    payments: paymentArray,
-    amount_paid: amountPaid,
-    change: changeDue,
-    subtotal: t.sub,
-    discount: state.disc || 0,
-    manager_override: !!(state.managerDiscountApproved || state.managerPriceApproved),
-    manager_override_by: state.managerApprovedBy || state.managerPriceApprovedBy || null,
-    total: t.total,
-    line_items: lineItems
-  };
 
   try {
-    const r = await fetch('/api/sales', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(salePayload)
-    });
-    const res = await r.json();
+    // Strict stock validation: block checkout if any item is out of stock or exceeds stock
+    for (const id of Object.keys(state.cart)) {
+      const it = getItem(id);
+      if (!it) continue;
+      const units = getItemUnits(it);
+      const cartEntry = state.cart[id];
+      const unit = units[cartEntry.unitIndex] || units[0];
+      const unitRatio = getUnitRatio(unit);
+      const bulkUnit = units.find(u => !u.is_base) || units[units.length - 1];
+      const bulkRatio = getUnitRatio(bulkUnit);
+      const rawBulk = parseFloat(it.stock) || 0;
+      const maxAvailableBase = Math.round((rawBulk * bulkRatio) * 100) / 100;
+      const requestedBase = Math.round((cartEntry.qty * unitRatio) * 100) / 100;
 
-    if (res.success) {
-      lineItems.forEach(l => {
-        const it = getItem(l.item_id);
-        if (it) {
-          const u = (it.units || []).find(x => (x.unit_symbol === l.unit || x.name === l.unit)) || it.units?.[0];
-          const ratio = getUnitRatio(u);
-          const bulkUnit = (it.units || []).find(x => !x.is_base) || it.units?.[it.units.length - 1];
-          const bulkRatio = getUnitRatio(bulkUnit);
-          const soldBulk = (l.quantity * ratio) / bulkRatio;
-          it.stock = Math.max(0, (parseFloat(it.stock) || 0) - soldBulk);
-        }
+      if (maxAvailableBase <= 0) {
+        toast(`⛔ Checkout blocked: "${it.name}" is OUT OF STOCK. Remove it to proceed.`);
+        return;
+      }
+      if (requestedBase > maxAvailableBase) {
+        const unitName = (unit.name || unit.unit_symbol || 'units').toUpperCase();
+        const isBulk = !unit.is_base;
+        const maxUnitsInSelected = isBulk ? (Math.floor(maxAvailableBase / unitRatio * 2) / 2) : Math.floor(maxAvailableBase / unitRatio);
+        toast(`⛔ Checkout blocked: Insufficient stock for "${it.name}". Only ${maxUnitsInSelected} ${unitName} available.`);
+        return;
+      }
+    }
+
+    let paymentModeDisplay = state.pay;
+    let paymentArray = [];
+    const isCredit = state.pay === 'Credit / On Account';
+
+    if (isCredit) {
+      const isWalkIn = !state.customer || state.customer.id === '1560234000000095179' || /walk\s*[-]?\s*in/i.test(state.customer.name || '');
+      if (isWalkIn) {
+        toast('⚠️ Please select a registered customer account (F4) to create an invoice on credit.');
+        openCustomerModal();
+        return;
+      }
+      paymentModeDisplay = 'Credit / On Account';
+      paymentArray = [{ mode: 'Credit / On Account', amount: 0 }];
+    } else if (state.pay === 'Split') {
+      const sc = parseFloat(state.split?.cash) || 0;
+      const sm = parseFloat(state.split?.moniepoint) || 0;
+      const st = parseFloat(state.split?.transfer) || 0;
+      const totalAlloc = sc + sm + st;
+      if (Math.abs(totalAlloc - t.total) >= 1) {
+        toast(`Split amounts (₦${totalAlloc.toLocaleString()}) must match total (₦${t.total.toLocaleString()})`);
+        return;
+      }
+      if (sc > 0) paymentArray.push({ mode: 'Cash', amount: sc });
+      if (sm > 0) paymentArray.push({ mode: 'Moniepoint POS', amount: sm });
+      if (st > 0) paymentArray.push({ mode: 'First Bank Transfer', amount: st });
+
+      paymentModeDisplay = `Split (${paymentArray.map(p => `${p.mode.replace(' POS', '').replace(' Bank Transfer', '')}: ₦${p.amount.toLocaleString()}`).join(', ')})`;
+    } else {
+      paymentArray.push({ mode: state.pay, amount: t.total });
+    }
+
+    const lineItems = Object.keys(state.cart).map(id => {
+      const L = getCartLine(id);
+      return {
+        item_id: L.item.id,
+        name: L.item.name,
+        unit: L.unit.unit_symbol || L.unit.name,
+        unit_display: (L.unit.name || '').toUpperCase(),
+        unit_conversion_id: L.unit.unit_conversion_id || '',
+        quantity: L.qty,
+        rate: L.price,
+        list_price: L.listPrice,
+        is_custom_price: L.price !== L.listPrice,
+        total: L.total
+      };
+    });
+
+    const tenderVal = parseFloat(state.tender) || 0;
+    if (!state.user) {
+      state.isLocked = true;
+      renderLockScreen();
+      toast('🔒 Login required: Please enter your cashier PIN.');
+      return;
+    }
+
+    const amountPaid = isCredit ? 0 : (tenderVal >= t.total ? tenderVal : t.total);
+    const changeDue = isCredit ? 0 : Math.max(0, amountPaid - t.total);
+    const clientTxnId = 'qs_txn_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+
+    const salePayload = {
+      client_txn_id: clientTxnId,
+      terminal_id: state.terminalId,
+      user_id: state.user.id,
+      user_name: state.user.name,
+      customer_id: state.customer.id,
+      customer_name: state.customer.name,
+      salesperson: state.user.name,
+      tilled_by: state.user.name,
+      date: new Date().toISOString().split('T')[0],
+      payment_mode: paymentModeDisplay,
+      payments: paymentArray,
+      amount_paid: amountPaid,
+      change: changeDue,
+      subtotal: t.sub,
+      discount: state.disc || 0,
+      manager_override: !!(state.managerDiscountApproved || state.managerPriceApproved),
+      manager_override_by: state.managerApprovedBy || state.managerPriceApprovedBy || null,
+      total: t.total,
+      line_items: lineItems,
+      is_credit: isCredit,
+      without_price: !!state.printWithoutPrice
+    };
+
+    let res = null;
+    let isStandaloneOffline = false;
+
+    try {
+      const r = await fetch('/api/sales', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(salePayload)
       });
+      res = await r.json();
+    } catch(e) {
+      console.warn('Host Hub Server unreachable. Saving sale in Standalone Emergency Outbox...', e);
+      isStandaloneOffline = true;
+      res = saveEmergencyStandaloneSale(salePayload);
+    }
+
+    if (res && res.success) {
+      if (!res.duplicate_prevented) {
+        lineItems.forEach(l => {
+          const it = getItem(l.item_id);
+          if (it) {
+            const u = (it.units || []).find(x => (x.unit_symbol === l.unit || x.name === l.unit)) || it.units?.[0];
+            const ratio = getUnitRatio(u);
+            const bulkUnit = (it.units || []).find(x => !x.is_base) || it.units?.[it.units.length - 1];
+            const bulkRatio = getUnitRatio(bulkUnit);
+            const soldBulk = (l.quantity * ratio) / bulkRatio;
+            it.stock = Math.max(0, (parseFloat(it.stock) || 0) - soldBulk);
+          }
+        });
+        try { localStorage.setItem('qs_cached_catalog', JSON.stringify(state.items)); } catch(err) {}
+
+        // If credit sale, update customer's owing debt balance locally and in memory
+        if (isCredit && state.customer) {
+          const prevDebt = parseFloat(state.customer.outstanding) || 0;
+          const newDebt = Math.round((prevDebt + t.total) * 100) / 100;
+          state.customer.outstanding = newDebt;
+          const cIdx = state.customers.findIndex(c => String(c.id) === String(state.customer.id));
+          if (cIdx >= 0) {
+            state.customers[cIdx].outstanding = newDebt;
+          }
+          try { localStorage.setItem('qs_cached_customers', JSON.stringify(state.customers)); } catch(e) {}
+        }
+      }
+
       state.cart = {};
       state.disc = 0;
       state.managerDiscountApproved = false;
@@ -2904,22 +3847,38 @@ async function chargeSale() {
       renderMain();
       playSound('success');
 
-      // Printing & Cash Drawer Kick (Terminal local print by default, or Server Hub if configured)
+      // Printing & Cash Drawer Kick (Silent direct thermal printing without dialog)
       if (state.pp.autoPrint !== false) {
-        if (state.pp.destination === 'server') {
-          doDirectPrint(res.sale);
-        } else {
+        if (state.pp.destination === 'browser') {
           printTerminalReceipt(res.sale);
+        } else {
+          doDirectPrint(res.sale);
         }
       } else {
         showReceiptModal(res.sale);
       }
-      toast(`Receipt ${res.sale.receipt_number} saved & settled.`);
+
+      if (res.duplicate_prevented) {
+        toast(`ℹ️ Duplicate prevented: Order #${res.sale.receipt_number || res.sale.order_id} already recorded.`);
+      } else if (isCredit) {
+        toast(`✅ Invoice #${res.sale.receipt_number || res.sale.order_id} created on account! ${state.customer.name} owes ₦${Number(state.customer.outstanding).toLocaleString()}`);
+      } else if (isStandaloneOffline) {
+        toast(`⚡ Standalone Mode: Receipt ${res.sale.receipt_number} saved locally (Hub Server Offline)`);
+      } else {
+        toast(`Receipt ${res.sale.receipt_number} saved & settled.`);
+      }
     } else {
-      toast('❌ Error: ' + res.message);
+      toast('❌ Error: ' + (res?.message || 'Transaction could not be completed'));
     }
-  } catch(e) {
-    toast('❌ Server communication error: ' + e.message);
+  } finally {
+    setTimeout(() => {
+      isProcessingCheckout = false;
+      const btn = document.getElementById('btn-charge');
+      if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      }
+    }, 1200);
   }
 }
 
@@ -3072,70 +4031,931 @@ function clearAllHeldCarts() {
   }
 }
 
-// Orders View
+// Orders DataTable & Search Controller
+function matchesOrderId(s, query) {
+  if (!query) return true;
+  const cleanQ = query.trim().toLowerCase();
+  if (!cleanQ) return true;
+  const id = (s.order_id || s.receipt_number || '').toLowerCase();
+  const inv = (s.zoho_invoice_number || '').toLowerCase();
+  const clientTxn = (s.client_txn_id || '').toLowerCase();
+
+  // 1. Direct substring match on order_id, receipt_number, or Zoho invoice #
+  if (id.includes(cleanQ) || inv.includes(cleanQ) || clientTxn.includes(cleanQ)) return true;
+
+  // 2. Numerical suffix matching: e.g. typing "93" matches "QS-00093"
+  const qNums = cleanQ.match(/\d+/g);
+  if (qNums) {
+    const qNumInt = parseInt(qNums[qNums.length - 1], 10);
+    const idNums = id.match(/\d+/g);
+    if (idNums) {
+      const idNumInt = parseInt(idNums[idNums.length - 1], 10);
+      if (idNumInt === qNumInt) return true;
+    }
+  }
+
+  // 3. Alphanumeric normalization: typing "qs93" or "00093" matches "qs-00093"
+  const normQ = cleanQ.replace(/[^a-z0-9]/g, '');
+  const normId = id.replace(/[^a-z0-9]/g, '');
+  if (normQ && normId && (normId.includes(normQ) || normQ.includes(normId))) return true;
+
+  return false;
+}
+
+function matchesGeneralSearch(s, query) {
+  if (!query) return true;
+  const cleanQ = query.trim().toLowerCase();
+  if (!cleanQ) return true;
+
+  const haystack = [
+    s.order_id,
+    s.receipt_number,
+    s.zoho_invoice_number,
+    s.customer_name,
+    s.tilled_by,
+    s.salesperson,
+    s.terminal_id,
+    s.payment_mode,
+    s.date,
+    s.total ? String(s.total) : '',
+    ...(s.line_items || []).map(li => li.name || li.item_name || '')
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  return haystack.includes(cleanQ);
+}
+
+function getSaleDateString(s) {
+  if (s.date && /^\d{4}-\d{2}-\d{2}$/.test(s.date)) return s.date;
+  if (s.created_at) {
+    try {
+      const d = new Date(s.created_at);
+      const Y = d.getFullYear();
+      const M = String(d.getMonth() + 1).padStart(2, '0');
+      const D = String(d.getDate()).padStart(2, '0');
+      return `${Y}-${M}-${D}`;
+    } catch(e) {}
+  }
+  return s.date || '';
+}
+
+function getTodayDateString(offsetDays = 0) {
+  const d = new Date(Date.now() + offsetDays * 86400000);
+  const Y = d.getFullYear();
+  const M = String(d.getMonth() + 1).padStart(2, '0');
+  const D = String(d.getDate()).padStart(2, '0');
+  return `${Y}-${M}-${D}`;
+}
+
+function getFilteredSales() {
+  const statusFilter = state.ordersFilterStatus || 'all';
+  const dateFilter = state.ordersFilterDate || 'all';
+  const paymentFilter = state.ordersFilterPayment || 'all';
+  const cashierFilter = state.ordersFilterCashier || 'all';
+  const terminalFilter = state.ordersFilterTerminal || 'all';
+
+  const today = getTodayDateString(0);
+  const yesterday = getTodayDateString(-1);
+  const sevenDaysAgo = getTodayDateString(-7);
+
+  return (state.sales || []).filter(s => {
+    // 1. Dedicated Order ID Search
+    if (state.ordersSearchId && !matchesOrderId(s, state.ordersSearchId)) return false;
+
+    // 2. General Keyword Search
+    if (state.ordersSearchText && !matchesGeneralSearch(s, state.ordersSearchText)) return false;
+
+    // 3. Status Filter
+    const isSynced = s.status === 'SYNCED';
+    const hasSyncError = !isSynced && (s.last_sync_error || s.status === 'ERROR');
+    const isCredit = s.is_credit || (s.payment_mode || '').toLowerCase().includes('credit');
+
+    if (statusFilter === 'pending' && isSynced) return false;
+    if (statusFilter === 'synced' && !isSynced) return false;
+    if (statusFilter === 'error' && !hasSyncError) return false;
+    if (statusFilter === 'credit' && !isCredit) return false;
+
+    // 4. Date Filter
+    const sDate = getSaleDateString(s);
+    if (dateFilter === 'today' && sDate !== today) return false;
+    if (dateFilter === 'yesterday' && sDate !== yesterday) return false;
+    if (dateFilter === 'week' && sDate < sevenDaysAgo) return false;
+    if (dateFilter === 'custom') {
+      if (state.ordersDateFrom && sDate < state.ordersDateFrom) return false;
+      if (state.ordersDateTo && sDate > state.ordersDateTo) return false;
+    }
+
+    // 5. Payment Filter
+    if (paymentFilter !== 'all') {
+      const pm = (s.payment_mode || '').toLowerCase();
+      if (!pm.includes(paymentFilter.toLowerCase())) return false;
+    }
+
+    // 6. Cashier Filter
+    if (cashierFilter !== 'all') {
+      const c = s.tilled_by || s.salesperson || '';
+      if (c !== cashierFilter) return false;
+    }
+
+    // 7. Terminal Filter
+    if (terminalFilter !== 'all') {
+      if ((s.terminal_id || '') !== terminalFilter) return false;
+    }
+
+    return true;
+  });
+}
+
+function getSortedFilteredSales() {
+  const filtered = getFilteredSales();
+  const col = state.ordersSortCol || 'date';
+  const dir = state.ordersSortDir || 'desc';
+  const mult = dir === 'asc' ? 1 : -1;
+
+  return filtered.sort((a, b) => {
+    if (col === 'order_id') {
+      const matchA = (a.order_id || a.receipt_number || '').match(/(\d+)/g);
+      const matchB = (b.order_id || b.receipt_number || '').match(/(\d+)/g);
+      if (matchA && matchB) {
+        const numA = parseInt(matchA[matchA.length - 1], 10);
+        const numB = parseInt(matchB[matchB.length - 1], 10);
+        if (numA !== numB) return (numA - numB) * mult;
+      }
+      return (a.order_id || a.receipt_number || '').localeCompare(b.order_id || b.receipt_number || '') * mult;
+    }
+    if (col === 'date') {
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : (a.date ? new Date(a.date).getTime() : 0);
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : (b.date ? new Date(b.date).getTime() : 0);
+      return (timeA - timeB) * mult;
+    }
+    if (col === 'customer') {
+      return (a.customer_name || 'Walk in').localeCompare(b.customer_name || 'Walk in') * mult;
+    }
+    if (col === 'cashier') {
+      return (a.tilled_by || a.salesperson || '').localeCompare(b.tilled_by || b.salesperson || '') * mult;
+    }
+    if (col === 'terminal') {
+      return (a.terminal_id || '').localeCompare(b.terminal_id || '') * mult;
+    }
+    if (col === 'payment') {
+      return (a.payment_mode || '').localeCompare(b.payment_mode || '') * mult;
+    }
+    if (col === 'total') {
+      return ((a.total || 0) - (b.total || 0)) * mult;
+    }
+    if (col === 'status') {
+      const stA = a.status === 'SYNCED' ? 'SYNCED' : (a.last_sync_error ? 'ERROR' : 'PENDING');
+      const stB = b.status === 'SYNCED' ? 'SYNCED' : (b.last_sync_error ? 'ERROR' : 'PENDING');
+      return stA.localeCompare(stB) * mult;
+    }
+    if (col === 'invoice') {
+      return (a.zoho_invoice_number || '').localeCompare(b.zoho_invoice_number || '') * mult;
+    }
+    return 0;
+  });
+}
+
+function setOrdersSearchId(val) {
+  state.ordersSearchId = val;
+  state.ordersPage = 1;
+  updateOrdersTableRows();
+}
+
+function setOrdersSearchText(val) {
+  state.ordersSearchText = val;
+  state.ordersPage = 1;
+  updateOrdersTableRows();
+}
+
+function clearOrdersSearchId() {
+  state.ordersSearchId = '';
+  state.ordersPage = 1;
+  const input = document.getElementById('orders-search-id-input');
+  if (input) input.value = '';
+  updateOrdersTableRows();
+}
+
+function clearOrdersSearchText() {
+  state.ordersSearchText = '';
+  state.ordersPage = 1;
+  const input = document.getElementById('orders-search-text-input');
+  if (input) input.value = '';
+  updateOrdersTableRows();
+}
+
+function handleOrderIdEnterKey() {
+  const sorted = getSortedFilteredSales();
+  if (sorted.length === 1) {
+    viewOrderDetails(sorted[0].id);
+  }
+}
+
+function setOrdersFilterStatus(status) {
+  state.ordersFilterStatus = status;
+  state.ordersPage = 1;
+  renderOrdersView();
+}
+
+function setOrdersFilterDate(dType) {
+  state.ordersFilterDate = dType;
+  state.ordersPage = 1;
+  renderOrdersView();
+}
+
+function setOrdersDateRange(from, to) {
+  state.ordersDateFrom = from;
+  state.ordersDateTo = to;
+  state.ordersFilterDate = 'custom';
+  state.ordersPage = 1;
+  updateOrdersTableRows();
+}
+
+function setOrdersFilterPayment(p) {
+  state.ordersFilterPayment = p;
+  state.ordersPage = 1;
+  updateOrdersTableRows();
+}
+
+function setOrdersFilterCashier(c) {
+  state.ordersFilterCashier = c;
+  state.ordersPage = 1;
+  updateOrdersTableRows();
+}
+
+function setOrdersFilterTerminal(t) {
+  state.ordersFilterTerminal = t;
+  state.ordersPage = 1;
+  updateOrdersTableRows();
+}
+
+function setOrdersSort(col) {
+  if (state.ordersSortCol === col) {
+    state.ordersSortDir = state.ordersSortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    state.ordersSortCol = col;
+    state.ordersSortDir = (col === 'total' || col === 'date') ? 'desc' : 'asc';
+  }
+  updateOrdersTableRows();
+}
+
+function setOrdersPage(p) {
+  state.ordersPage = p;
+  updateOrdersTableRows();
+}
+
+function setOrdersPageSize(sz) {
+  state.ordersPageSize = parseInt(sz, 10);
+  state.ordersPage = 1;
+  updateOrdersTableRows();
+}
+
+function resetAllOrdersFilters() {
+  state.ordersSearchId = '';
+  state.ordersSearchText = '';
+  state.ordersFilterStatus = 'all';
+  state.ordersFilterDate = 'all';
+  state.ordersDateFrom = '';
+  state.ordersDateTo = '';
+  state.ordersFilterPayment = 'all';
+  state.ordersFilterCashier = 'all';
+  state.ordersFilterTerminal = 'all';
+  state.ordersSortCol = 'date';
+  state.ordersSortDir = 'desc';
+  state.ordersPage = 1;
+  renderOrdersView();
+}
+
+function exportOrdersToCSV() {
+  const sales = getSortedFilteredSales();
+  if (!sales.length) {
+    toast('No orders to export.');
+    return;
+  }
+  const headers = [
+    'Order ID',
+    'Zoho Invoice #',
+    'Date',
+    'Time',
+    'Customer',
+    'Tilled By',
+    'Terminal',
+    'Payment Method',
+    'Subtotal',
+    'Discount (%)',
+    'Total Amount (NGN)',
+    'Sync Status',
+    'Items Count',
+    'Sync Error'
+  ];
+
+  const rows = sales.map(s => {
+    const timeDisplay = s.created_at
+      ? new Date(s.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+      : (s.time || '');
+    return [
+      `"${(s.order_id || s.receipt_number || '').replace(/"/g, '""')}"`,
+      `"${(s.zoho_invoice_number || '').replace(/"/g, '""')}"`,
+      `"${s.date || ''}"`,
+      `"${timeDisplay}"`,
+      `"${(s.customer_name || 'Walk in Customer').replace(/"/g, '""')}"`,
+      `"${(s.tilled_by || s.salesperson || '').replace(/"/g, '""')}"`,
+      `"${(s.terminal_id || '').replace(/"/g, '""')}"`,
+      `"${(s.payment_mode || 'Cash').replace(/"/g, '""')}"`,
+      s.subtotal != null ? s.subtotal : s.total || 0,
+      s.discount || 0,
+      s.total || 0,
+      `"${s.status || 'PENDING'}"`,
+      (s.line_items || []).length,
+      `"${(s.last_sync_error || '').replace(/"/g, '""')}"`
+    ].join(',');
+  });
+
+  const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const dStr = new Date().toISOString().slice(0, 10);
+  a.download = `QualityPOS_Orders_${dStr}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast(`📥 Exported ${sales.length} orders to CSV!`);
+}
+
+async function syncSingleSale(saleId) {
+  const s = state.sales.find(x => x.id === saleId);
+  const name = s ? (s.order_id || s.receipt_number) : saleId;
+  toast(`🔄 Syncing order ${name} to Zoho Cloud...`);
+  try {
+    const res = await fetch('/api/sales/sync-single', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: saleId })
+    }).then(r => r.json());
+
+    if (res && res.success) {
+      toast(`✅ Order ${name} synced! ${res.message || ''}`);
+      playSound('success');
+    } else {
+      toast(`❌ Sync failed for ${name}: ${res?.message || 'Unable to sync'}`);
+    }
+  } catch(e) {
+    toast(`❌ Error syncing ${name}: ${e.message}`);
+  }
+  await loadQueueStatus();
+  updateOrdersTableRows();
+}
+
+function updateOrdersTableRows() {
+  const tbody = document.getElementById('orders-table-body');
+  const footer = document.getElementById('orders-datatable-footer');
+  const filterCountEl = document.getElementById('orders-filtered-count');
+  if (!tbody) return;
+
+  const allSorted = getSortedFilteredSales();
+  const totalCount = allSorted.length;
+  const filteredSum = allSorted.reduce((acc, s) => acc + (s.total || 0), 0);
+
+  if (filterCountEl) {
+    filterCountEl.innerHTML = `Showing <b>${totalCount}</b> of <b>${state.sales.length}</b> orders · <b>${NGN(filteredSum)}</b>`;
+  }
+
+  // Column Sort Indicators
+  const cols = ['order_id', 'date', 'cashier', 'terminal', 'customer', 'payment', 'total', 'status', 'invoice'];
+  cols.forEach(c => {
+    const icon = document.getElementById(`dt-sort-${c}`);
+    const th = document.getElementById(`dt-th-${c}`);
+    if (icon) {
+      if (state.ordersSortCol === c) {
+        icon.className = `fa-solid fa-sort-${state.ordersSortDir === 'asc' ? 'up' : 'down'} dt-sort-icon active`;
+        if (th) th.classList.add('dt-th-active');
+      } else {
+        icon.className = 'fa-solid fa-sort dt-sort-icon';
+        if (th) th.classList.remove('dt-th-active');
+      }
+    }
+  });
+
+  if (!totalCount) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="11" style="text-align:center;color:var(--mute);padding:44px 20px">
+          <i class="fa-solid fa-magnifying-glass" style="font-size:28px;color:var(--line);margin-bottom:10px;display:block"></i>
+          <b style="font-size:14px;color:var(--ink)">No matching orders found</b>
+          <div style="font-size:12px;color:var(--mute);margin-top:4px">
+            Try adjusting your Order ID, search keyword, date range, or filter options.
+          </div>
+          <div style="margin-top:14px">
+            <button class="btn p" style="padding:6px 16px;font-size:12px" onclick="resetAllOrdersFilters()">
+              <i class="fa-solid fa-rotate-left"></i> Reset All Filters
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+    if (footer) footer.innerHTML = '';
+    return;
+  }
+
+  // Pagination calculation
+  const pageSize = state.ordersPageSize || 25;
+  const isAll = pageSize === -1;
+  const totalPages = isAll ? 1 : Math.ceil(totalCount / pageSize);
+  if (state.ordersPage > totalPages) state.ordersPage = totalPages;
+  if (state.ordersPage < 1) state.ordersPage = 1;
+
+  const startIdx = isAll ? 0 : (state.ordersPage - 1) * pageSize;
+  const endIdx = isAll ? totalCount : Math.min(startIdx + pageSize, totalCount);
+  const pagedSales = isAll ? allSorted : allSorted.slice(startIdx, endIdx);
+
+  tbody.innerHTML = pagedSales.map(s => {
+    const timeDisplay = s.created_at
+      ? new Date(s.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+      : (s.time || '–');
+    const isSynced = s.status === 'SYNCED';
+    const isCredit = s.is_credit || (s.payment_mode || '').toLowerCase().includes('credit');
+    const hasSyncError = !isSynced && (s.last_sync_error || s.status === 'ERROR');
+    const isEmg = (s.order_id || s.receipt_number || '').includes('EMG');
+
+    return `
+      <tr style="cursor:pointer" onclick="viewOrderDetails('${s.id}')" title="Click to view full line-item details">
+        <td>
+          <div style="display:flex;align-items:center;gap:6px">
+            <b style="color:var(--brand);font-size:13px">${s.order_id || s.receipt_number}</b>
+            ${isEmg ? '<span class="pill" style="font-size:9.5px;background:#fff3bf;color:#d9480f">Local EMG</span>' : ''}
+          </div>
+        </td>
+        <td>
+          <span style="white-space:nowrap;font-size:12px;font-weight:600">
+            <i class="fa-regular fa-calendar" style="color:var(--mute);font-size:11px;margin-right:4px"></i>${s.date || '–'}
+            <span style="color:var(--mute);margin-left:4px;font-size:11px">${timeDisplay}</span>
+          </span>
+        </td>
+        <td>
+          <span class="user-chip" style="font-weight:700;font-size:11.5px">
+            <i class="fa-solid fa-circle-user" style="color:var(--brand)"></i>
+            ${s.tilled_by || s.salesperson || 'Staff'}
+          </span>
+        </td>
+        <td><kbd class="kk">${s.terminal_id || 'TERM-01'}</kbd></td>
+        <td><b>${s.customer_name || 'Walk in Customer'}</b></td>
+        <td>
+          ${s.payment_mode || 'Cash'}
+          ${isCredit ? '<span class="pill" style="background:#f3f0ff;color:#7950f2;font-size:10px;margin-left:4px">Credit</span>' : ''}
+        </td>
+        <td><b style="font-size:13px">${NGN(s.total)}</b></td>
+        <td>
+          ${isSynced ? `
+            <span class="st ok" style="white-space:nowrap"><i class="fa-solid fa-check"></i> Synced</span>
+          ` : hasSyncError ? `
+            <span class="st" style="background:#ffe3e3;color:#c92a2a;border:1px solid #ffa8a8;white-space:nowrap" title="${escapeHtml(s.last_sync_error || 'Sync Error')}">
+              <i class="fa-solid fa-triangle-exclamation"></i> Sync Error
+            </span>
+          ` : `
+            <span class="st" style="background:#fff3bf;color:#d9480f;border:1px solid #ffd43b;white-space:nowrap">
+              <i class="fa-regular fa-clock"></i> Pending Sync
+            </span>
+          `}
+        </td>
+        <td>${s.zoho_invoice_number ? `<b style="color:var(--ink)">${s.zoho_invoice_number}</b>` : '<span style="color:var(--mute)">–</span>'}</td>
+        <td onclick="event.stopPropagation()">
+          <div style="display:flex;gap:4px">
+            <button class="rs" onclick="viewOrderDetails('${s.id}')" title="Inspect items & breakdown"><i class="fa-solid fa-eye"></i></button>
+            <button class="rs" onclick="previewPrintReceipt('${s.id}')" title="Print receipt"><i class="fa-solid fa-print"></i></button>
+            ${!isSynced ? `
+              <button class="rs" onclick="syncSingleSale('${s.id}')" title="Push this order to Zoho now" style="color:#d9480f;border-color:#ffd43b">
+                <i class="fa-solid fa-rotate"></i> Sync
+              </button>
+            ` : ''}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  // Render DataTable Footer Pagination
+  if (footer) {
+    let pageButtonsHTML = '';
+    if (!isAll && totalPages > 1) {
+      const cur = state.ordersPage;
+      pageButtonsHTML += `
+        <button class="dt-page-btn" onclick="setOrdersPage(1)" ${cur === 1 ? 'disabled' : ''} title="First Page">«</button>
+        <button class="dt-page-btn" onclick="setOrdersPage(${cur - 1})" ${cur === 1 ? 'disabled' : ''} title="Previous Page">‹</button>
+      `;
+
+      let startP = Math.max(1, cur - 2);
+      let endP = Math.min(totalPages, startP + 4);
+      if (endP - startP < 4) startP = Math.max(1, endP - 4);
+
+      for (let p = startP; p <= endP; p++) {
+        pageButtonsHTML += `
+          <button class="dt-page-btn ${p === cur ? 'active' : ''}" onclick="setOrdersPage(${p})">${p}</button>
+        `;
+      }
+
+      pageButtonsHTML += `
+        <button class="dt-page-btn" onclick="setOrdersPage(${cur + 1})" ${cur === totalPages ? 'disabled' : ''} title="Next Page">›</button>
+        <button class="dt-page-btn" onclick="setOrdersPage(${totalPages})" ${cur === totalPages ? 'disabled' : ''} title="Last Page">»</button>
+      `;
+    }
+
+    footer.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--panel);border-top:1px solid var(--line);border-radius:0 0 12px 12px;flex-wrap:wrap;gap:12px">
+        <div style="font-size:12px;color:var(--mute)">
+          Showing <b>${startIdx + 1}</b> to <b>${endIdx}</b> of <b>${totalCount}</b> entries
+          ${totalCount !== state.sales.length ? `(filtered from <b>${state.sales.length}</b> total)` : ''}
+          · Filtered Total: <b style="color:var(--brand)">${NGN(filteredSum)}</b>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:14px">
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mute)">
+            <span>Rows:</span>
+            <select class="dt-select" style="padding:4px 8px;font-size:11.5px" onchange="setOrdersPageSize(this.value)">
+              <option value="15" ${pageSize === 15 ? 'selected' : ''}>15</option>
+              <option value="25" ${pageSize === 25 ? 'selected' : ''}>25</option>
+              <option value="50" ${pageSize === 50 ? 'selected' : ''}>50</option>
+              <option value="100" ${pageSize === 100 ? 'selected' : ''}>100</option>
+              <option value="-1" ${pageSize === -1 ? 'selected' : ''}>All</option>
+            </select>
+          </div>
+
+          <div style="display:flex;gap:4px;align-items:center">
+            ${pageButtonsHTML}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
 function renderOrdersView() {
   const p = state.pendingCount;
   const tot = state.sales.reduce((a, s) => a + (s.total || 0), 0);
   const sy = state.sales.filter(s => s.status === 'SYNCED').length;
+  const errCount = state.sales.filter(s => s.status !== 'SYNCED' && (s.last_sync_error || s.status === 'ERROR')).length;
+  const cr = state.sales.filter(s => s.is_credit || (s.payment_mode || '').toLowerCase().includes('credit')).length;
+  const emgQueue = (typeof getEmergencySalesQueue === 'function' ? getEmergencySalesQueue() : []) || [];
+
+  const currentStatus = state.ordersFilterStatus || 'all';
+  const currentDate = state.ordersFilterDate || 'all';
+  const currentPay = state.ordersFilterPayment || 'all';
+  const currentCashier = state.ordersFilterCashier || 'all';
+  const currentTerm = state.ordersFilterTerminal || 'all';
+
+  // Extract unique cashiers and terminals for dropdown filters
+  const uniqueCashiers = Array.from(new Set(state.sales.map(s => s.tilled_by || s.salesperson).filter(Boolean))).sort();
+  const uniqueTerminals = Array.from(new Set(state.sales.map(s => s.terminal_id).filter(Boolean))).sort();
 
   $('#main').innerHTML = `
     <div class="page">
-      <h1>Sales & Cloud Outbox</h1>
-      <div class="stats">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+        <div>
+          <h1 style="margin:0;font-size:20px;display:flex;align-items:center;gap:8px">
+            <i class="fa-solid fa-receipt" style="color:var(--brand)"></i>
+            Order History & Cloud Outbox
+          </h1>
+          <small style="color:var(--mute);font-size:12px">Search, filter, inspect receipt breakdown, and manage Zoho Books synchronization</small>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn" onclick="exportOrdersToCSV()" title="Export current filtered list to Excel/CSV">
+            <i class="fa-solid fa-file-csv" style="color:var(--brand)"></i> Export CSV
+          </button>
+          <button class="btn" onclick="loadQueueStatus().then(() => renderOrdersView())" title="Reload queue from server">
+            <i class="fa-solid fa-arrows-rotate"></i> Refresh Orders
+          </button>
+        </div>
+      </div>
+
+      ${emgQueue.length > 0 ? `
+        <div style="background:#fff9db;border:1px solid #fcc419;padding:12px 16px;border-radius:10px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <i class="fa-solid fa-triangle-exclamation" style="color:#e67700;font-size:20px"></i>
+            <div>
+              <b style="color:#e67700;font-size:13.5px">⚡ ${emgQueue.length} Standalone Emergency Sale(s) Queued Locally</b>
+              <div style="font-size:12px;color:#854800">These sales were saved while offline from the Hub Server and are safe in browser memory.</div>
+            </div>
+          </div>
+          <button class="btn p" style="background:#e67700;border-color:#e67700" onclick="flushEmergencySalesToHub()">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Upload to Hub Now
+          </button>
+        </div>
+      ` : ''}
+
+      <div class="stats" style="grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;margin-bottom:14px">
         <div class="stat"><small>Waiting to Sync</small><div style="color:var(--warn)">${p}</div></div>
         <div class="stat"><small>Synced to Zoho</small><div style="color:var(--brand)">${sy}</div></div>
+        ${errCount > 0 ? `
+          <div class="stat" style="border-color:#ffa8a8;background:#fff5f5"><small style="color:#c92a2a">Sync Errors</small><div style="color:#c92a2a">${errCount}</div></div>
+        ` : ''}
         <div class="stat"><small>Total Queue Sales</small><div>${NGN(tot)}</div></div>
+        <div class="stat"><small>Credit / Account</small><div style="color:#7950f2">${cr}</div></div>
       </div>
-      <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center">
-        <button class="btn p" onclick="triggerSync()" ${state.syncing?'disabled':''}>
+
+      <!-- Sync Controls Header Bar -->
+      <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap">
+        <button class="btn p" onclick="triggerSync()" ${state.syncing ? 'disabled' : ''}>
           ${state.syncing ? '<span class="spin"></span>Pushing Sales to Zoho…' : '<i class="fa-solid fa-cloud-arrow-up"></i> Push Sales to Zoho'}
         </button>
-        <button class="btn" onclick="triggerPullSync()" ${state.pulling?'disabled':''}>
+        <button class="btn" onclick="triggerPullSync()" ${state.pulling ? 'disabled' : ''}>
           ${state.pulling ? '<span class="spin"></span>Pulling from Zoho…' : '<i class="fa-solid fa-cloud-arrow-down" style="color:var(--brand)"></i> Pull Customers & Inventory from Zoho'}
         </button>
         <div style="flex:1"></div>
         <small style="color:var(--mute)">Two-way sync keeps offline terminal fully in lockstep with Zoho Cloud</small>
       </div>
-      <div class="tw">
+
+      <!-- Comprehensive Orders Search & Filter Control Panel -->
+      <div style="background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow-card)">
+        
+        <!-- Row 1: Dual Search Boxes -->
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+          
+          <!-- Box 1: Dedicated Order ID Search (Prominent) -->
+          <div style="flex:1.2;min-width:280px">
+            <div style="font-size:11px;font-weight:700;color:var(--brand);text-transform:uppercase;margin-bottom:5px;display:flex;align-items:center;gap:6px">
+              <i class="fa-solid fa-hashtag"></i> Search Order by ID / Receipt #
+            </div>
+            <div style="position:relative">
+              <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--brand);font-size:13px"></i>
+              <input 
+                id="orders-search-id-input" 
+                type="search" 
+                placeholder="Type Order ID (e.g. 93, QS-00093, EMG, KI-...)" 
+                style="padding-left:34px;padding-right:32px;width:100%;height:40px;font-size:13.5px;font-weight:600;border-radius:8px;border:2px solid var(--brand);background:var(--bg);color:var(--ink)" 
+                value="${escapeHtml(state.ordersSearchId || '')}" 
+                oninput="setOrdersSearchId(this.value)"
+                onkeydown="if(event.key==='Enter') handleOrderIdEnterKey()"
+              >
+              ${state.ordersSearchId ? `
+                <button onclick="clearOrdersSearchId()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--mute);cursor:pointer;padding:4px 6px">✕</button>
+              ` : ''}
+            </div>
+          </div>
+
+          <!-- Box 2: General Filter / Customer / Cashier / Items -->
+          <div style="flex:1.6;min-width:280px">
+            <div style="font-size:11px;font-weight:700;color:var(--mute);text-transform:uppercase;margin-bottom:5px;display:flex;align-items:center;gap:6px">
+              <i class="fa-solid fa-filter"></i> General Search (Customer, Cashier, Item, Notes)
+            </div>
+            <div style="position:relative">
+              <i class="fa-solid fa-font" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--mute);font-size:13px"></i>
+              <input 
+                id="orders-search-text-input" 
+                type="search" 
+                placeholder="Search customer name, cashier, item name, amount..." 
+                style="padding-left:34px;padding-right:32px;width:100%;height:40px;font-size:13px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" 
+                value="${escapeHtml(state.ordersSearchText || '')}" 
+                oninput="setOrdersSearchText(this.value)"
+              >
+              ${state.ordersSearchText ? `
+                <button onclick="clearOrdersSearchText()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--mute);cursor:pointer;padding:4px 6px">✕</button>
+              ` : ''}
+            </div>
+          </div>
+
+          <!-- Reset Button -->
+          <div style="align-self:flex-end">
+            <button class="btn" onclick="resetAllOrdersFilters()" title="Reset all filters and searches">
+              <i class="fa-solid fa-rotate-left"></i> Reset
+            </button>
+          </div>
+        </div>
+
+        <!-- Row 2: Filter Toolbar (Status, Date & Dropdowns) -->
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          
+          <!-- Status Tabs -->
+          <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+            <span style="font-size:11px;font-weight:700;color:var(--mute);text-transform:uppercase;margin-right:4px">Status:</span>
+            <button class="dt-filter-pill ${currentStatus === 'all' ? 'active' : ''}" onclick="setOrdersFilterStatus('all')">
+              All (${state.sales.length})
+            </button>
+            <button class="dt-filter-pill ${currentStatus === 'pending' ? 'active' : ''}" style="${p > 0 && currentStatus !== 'pending' ? 'color:#d9480f;border-color:#ffd43b' : ''}" onclick="setOrdersFilterStatus('pending')">
+              ⏳ Pending (${p})
+            </button>
+            <button class="dt-filter-pill ${currentStatus === 'synced' ? 'active' : ''}" onclick="setOrdersFilterStatus('synced')">
+              ✓ Synced (${sy})
+            </button>
+            ${errCount > 0 ? `
+              <button class="dt-filter-pill ${currentStatus === 'error' ? 'active' : ''}" style="color:#c92a2a;border-color:#ffa8a8" onclick="setOrdersFilterStatus('error')">
+                ⚠️ Errors (${errCount})
+              </button>
+            ` : ''}
+            <button class="dt-filter-pill ${currentStatus === 'credit' ? 'active' : ''}" onclick="setOrdersFilterStatus('credit')">
+              💳 Credit (${cr})
+            </button>
+          </div>
+
+          <div style="height:20px;width:1px;background:var(--line);margin:0 4px"></div>
+
+          <!-- Date Filters -->
+          <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+            <span style="font-size:11px;font-weight:700;color:var(--mute);text-transform:uppercase;margin-right:4px">Date:</span>
+            <button class="dt-filter-pill ${currentDate === 'all' ? 'active' : ''}" onclick="setOrdersFilterDate('all')">All</button>
+            <button class="dt-filter-pill ${currentDate === 'today' ? 'active' : ''}" onclick="setOrdersFilterDate('today')">Today</button>
+            <button class="dt-filter-pill ${currentDate === 'yesterday' ? 'active' : ''}" onclick="setOrdersFilterDate('yesterday')">Yesterday</button>
+            <button class="dt-filter-pill ${currentDate === 'week' ? 'active' : ''}" onclick="setOrdersFilterDate('week')">7 Days</button>
+            <button class="dt-filter-pill ${currentDate === 'custom' ? 'active' : ''}" onclick="setOrdersFilterDate('custom')">Custom</button>
+            
+            ${currentDate === 'custom' ? `
+              <div style="display:inline-flex;align-items:center;gap:4px;margin-left:6px">
+                <input type="date" class="dt-select" value="${state.ordersDateFrom || ''}" onchange="setOrdersDateRange(this.value, state.ordersDateTo)">
+                <span style="font-size:11px;color:var(--mute)">to</span>
+                <input type="date" class="dt-select" value="${state.ordersDateTo || ''}" onchange="setOrdersDateRange(state.ordersDateFrom, this.value)">
+              </div>
+            ` : ''}
+          </div>
+
+          <div style="height:20px;width:1px;background:var(--line);margin:0 4px"></div>
+
+          <!-- Dropdown Select Filters -->
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select class="dt-select" onchange="setOrdersFilterCashier(this.value)" title="Filter by Cashier / Tilled By">
+              <option value="all" ${currentCashier === 'all' ? 'selected' : ''}>👤 All Cashiers</option>
+              ${uniqueCashiers.map(c => `<option value="${escapeHtml(c)}" ${currentCashier === c ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('')}
+            </select>
+
+            <select class="dt-select" onchange="setOrdersFilterTerminal(this.value)" title="Filter by Terminal">
+              <option value="all" ${currentTerm === 'all' ? 'selected' : ''}>💻 All Terminals</option>
+              ${uniqueTerminals.map(t => `<option value="${escapeHtml(t)}" ${currentTerm === t ? 'selected' : ''}>${escapeHtml(t)}</option>`).join('')}
+            </select>
+
+            <select class="dt-select" onchange="setOrdersFilterPayment(this.value)" title="Filter by Payment Mode">
+              <option value="all" ${currentPay === 'all' ? 'selected' : ''}>💵 All Payment Modes</option>
+              <option value="Cash" ${currentPay === 'Cash' ? 'selected' : ''}>Cash</option>
+              <option value="Transfer" ${currentPay === 'Transfer' ? 'selected' : ''}>Bank Transfer</option>
+              <option value="POS" ${currentPay === 'POS' ? 'selected' : ''}>POS Card</option>
+              <option value="Credit" ${currentPay === 'Credit' ? 'selected' : ''}>Credit / On Account</option>
+            </select>
+          </div>
+
+          <div id="orders-filtered-count" style="font-size:12px;color:var(--mute);margin-left:auto"></div>
+        </div>
+      </div>
+
+      <!-- DataTable Main Table -->
+      <div class="tw" style="margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0">
         <table>
           <thead>
             <tr>
-              <th>Order ID</th>
-              <th>Tilled By</th>
-              <th>Terminal</th>
-              <th>Date</th>
-              <th>Customer</th>
-              <th>Payment</th>
-              <th>Total</th>
-              <th>Zoho Status</th>
-              <th>Zoho Invoice</th>
-              <th>Action</th>
+              <th id="dt-th-order_id" class="dt-th" onclick="setOrdersSort('order_id')" title="Click to sort by Order ID">
+                Order ID <i id="dt-sort-order_id" class="fa-solid fa-sort dt-sort-icon"></i>
+              </th>
+              <th id="dt-th-date" class="dt-th" onclick="setOrdersSort('date')" title="Click to sort by Date & Time">
+                Date & Time <i id="dt-sort-date" class="fa-solid fa-sort dt-sort-icon"></i>
+              </th>
+              <th id="dt-th-cashier" class="dt-th" onclick="setOrdersSort('cashier')" title="Click to sort by Cashier">
+                Tilled By <i id="dt-sort-cashier" class="fa-solid fa-sort dt-sort-icon"></i>
+              </th>
+              <th id="dt-th-terminal" class="dt-th" onclick="setOrdersSort('terminal')" title="Click to sort by Terminal">
+                Terminal <i id="dt-sort-terminal" class="fa-solid fa-sort dt-sort-icon"></i>
+              </th>
+              <th id="dt-th-customer" class="dt-th" onclick="setOrdersSort('customer')" title="Click to sort by Customer">
+                Customer <i id="dt-sort-customer" class="fa-solid fa-sort dt-sort-icon"></i>
+              </th>
+              <th id="dt-th-payment" class="dt-th" onclick="setOrdersSort('payment')" title="Click to sort by Payment">
+                Payment <i id="dt-sort-payment" class="fa-solid fa-sort dt-sort-icon"></i>
+              </th>
+              <th id="dt-th-total" class="dt-th" onclick="setOrdersSort('total')" title="Click to sort by Total Amount">
+                Total Amount <i id="dt-sort-total" class="fa-solid fa-sort dt-sort-icon"></i>
+              </th>
+              <th id="dt-th-status" class="dt-th" onclick="setOrdersSort('status')" title="Click to sort by Cloud Sync Status">
+                Zoho Status <i id="dt-sort-status" class="fa-solid fa-sort dt-sort-icon"></i>
+              </th>
+              <th id="dt-th-invoice" class="dt-th" onclick="setOrdersSort('invoice')" title="Click to sort by Zoho Invoice Number">
+                Zoho Invoice # <i id="dt-sort-invoice" class="fa-solid fa-sort dt-sort-icon"></i>
+              </th>
+              <th style="width:110px">Action</th>
             </tr>
           </thead>
-          <tbody>
-            ${state.sales.length ? state.sales.map(s => `
-              <tr>
-                <td><b>${s.order_id || s.receipt_number}</b></td>
-                <td>
-                  <span class="user-chip" style="font-weight:700;font-size:11.5px">
-                    <i class="fa-solid fa-circle-user" style="color:var(--brand)"></i>
-                    ${s.tilled_by || s.salesperson || 'Staff'}
-                  </span>
-                </td>
-                <td><kbd class="kk">${s.terminal_id || 'TERM-01'}</kbd></td>
-                <td>${s.date}</td>
-                <td>${s.customer_name || 'Walk in'}</td>
-                <td>${s.payment_mode}</td>
-                <td><b>${NGN(s.total)}</b></td>
-                <td><span class="st ${s.status==='SYNCED'?'ok':''}">${s.status==='SYNCED'?'Synced':'Pending Sync'}</span></td>
-                <td>${s.zoho_invoice_number || '–'}</td>
-                <td><button class="rs" onclick="previewPrintReceipt('${s.id}')">Print Receipt</button></td>
-              </tr>
-            `).join('') : `
-              <tr><td colspan="10" style="text-align:center;color:var(--mute);padding:30px">No sales recorded yet.</td></tr>
-            `}
+          <tbody id="orders-table-body">
+            <!-- Populated by updateOrdersTableRows() -->
           </tbody>
         </table>
+      </div>
+
+      <!-- DataTable Pagination Footer -->
+      <div id="orders-datatable-footer"></div>
+    </div>
+  `;
+
+  updateOrdersTableRows();
+}
+
+// Order History Item Inspector Modal
+function viewOrderDetails(saleId) {
+  const s = state.sales.find(x => x.id === saleId);
+  if (!s) {
+    toast('Order details not found.');
+    return;
+  }
+
+  const isCredit = (s.payment_mode || '').toLowerCase().includes('credit') || (s.payment_mode || '').toLowerCase().includes('account') || s.is_credit;
+  const isSynced = s.status === 'SYNCED';
+  const lines = s.line_items || [];
+  const totalUnits = lines.reduce((acc, x) => acc + (parseFloat(x.quantity) || 0), 0);
+
+  $('#ov').innerHTML = `
+    <div class="ov">
+      <div class="modal" style="width:740px;max-height:88vh;display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:42px;height:42px;border-radius:10px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--brand);font-size:20px;border:1px solid var(--line)">
+              <i class="fa-solid fa-receipt"></i>
+            </div>
+            <div>
+              <h3 style="margin:0;font-size:16px;display:flex;align-items:center;gap:8px">
+                Order #${s.order_id || s.receipt_number}
+                <span class="st ${isSynced ? 'ok' : ''}" style="font-size:11px">${isSynced ? '✓ Synced to Zoho' : '⏳ Pending Cloud Sync'}</span>
+                ${isCredit ? '<span class="pill" style="background:#f3f0ff;color:#7950f2;font-size:10.5px">Credit / On Account</span>' : ''}
+              </h3>
+              <small style="color:var(--mute);font-size:12px">Recorded on <b>${s.date || 'N/A'}</b> ${s.created_at ? 'at <b style="color:var(--ink)">' + new Date(s.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) + '</b>' : ''} · Station: <b>${s.terminal_id || 'TERM-01'}</b></small>
+            </div>
+          </div>
+          <button class="rs" onclick="closeModal()" style="font-size:16px;padding:4px 10px">✕</button>
+        </div>
+
+        ${s.last_sync_error && !isSynced ? `
+          <div style="background:#fff5f5;border:1px solid #ffa8a8;padding:10px 14px;border-radius:8px;color:#c92a2a;margin-bottom:14px;font-size:12px;display:flex;align-items:center;gap:10px">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size:16px;flex-shrink:0"></i>
+            <div>
+              <b>Zoho Cloud Sync Error:</b> ${escapeHtml(s.last_sync_error)}
+              <div style="font-size:11px;color:#a51d24;margin-top:2px">Click "Sync to Zoho Now" below to reprocess this sale.</div>
+            </div>
+          </div>
+        ` : ''}
+
+        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:10px;background:var(--soft);padding:12px;border-radius:8px;border:1px solid var(--line);margin-bottom:14px">
+          <div>
+            <span style="font-size:10px;color:var(--mute);text-transform:uppercase;font-weight:700;display:block">Customer</span>
+            <b style="font-size:12.5px;color:var(--ink)">${s.customer_name || 'Walk in Customer'}</b>
+          </div>
+          <div>
+            <span style="font-size:10px;color:var(--mute);text-transform:uppercase;font-weight:700;display:block">Cashier</span>
+            <b style="font-size:12.5px;color:var(--ink)">${s.tilled_by || s.salesperson || 'Staff'}</b>
+          </div>
+          <div>
+            <span style="font-size:10px;color:var(--mute);text-transform:uppercase;font-weight:700;display:block">Payment Method</span>
+            <b style="font-size:12.5px;color:var(--ink)">${s.payment_mode || 'Cash'}</b>
+          </div>
+          <div>
+            <span style="font-size:10px;color:var(--mute);text-transform:uppercase;font-weight:700;display:block">Zoho Invoice #</span>
+            <b style="font-size:12.5px;color:var(--ink)">${s.zoho_invoice_number || 'Pending Sync'}</b>
+          </div>
+        </div>
+
+        <div style="flex:1;overflow-y:auto;border:1px solid var(--line);border-radius:8px;margin-bottom:14px">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead style="background:var(--card);position:sticky;top:0;border-bottom:1px solid var(--line)">
+              <tr>
+                <th style="text-align:left;padding:8px 10px;width:36px">#</th>
+                <th style="text-align:left;padding:8px 10px">Item Name</th>
+                <th style="text-align:center;padding:8px 10px;width:80px">Unit</th>
+                <th style="text-align:center;padding:8px 10px;width:80px">Qty</th>
+                <th style="text-align:right;padding:8px 10px;width:110px">Rate</th>
+                <th style="text-align:right;padding:8px 10px;width:120px">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${lines.length ? lines.map((l, i) => `
+                <tr style="border-bottom:1px solid var(--line)">
+                  <td style="padding:8px 10px;color:var(--mute)">${i + 1}</td>
+                  <td style="padding:8px 10px;font-weight:700;color:var(--ink)">${l.name || l.item_name || 'Item'}</td>
+                  <td style="text-align:center;padding:8px 10px"><span class="pill" style="font-size:10px">${(l.unit_display || l.unit || 'PCS').toUpperCase()}</span></td>
+                  <td style="text-align:center;padding:8px 10px;font-weight:700">${l.quantity}</td>
+                  <td style="text-align:right;padding:8px 10px">${NGN(l.rate != null ? l.rate : l.unit_price || 0)}</td>
+                  <td style="text-align:right;padding:8px 10px;font-weight:700;color:var(--ink)">${NGN(l.total != null ? l.total : (l.quantity * (l.rate || l.unit_price || 0)))}</td>
+                </tr>
+              `).join('') : `
+                <tr><td colspan="6" style="text-align:center;padding:20px;color:var(--mute)">No items recorded in this order</td></tr>
+              `}
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--soft);border-radius:8px;border:1px solid var(--line);margin-bottom:12px">
+          <div style="font-size:12px;color:var(--mute)">
+            <span>Distinct Items: <b style="color:var(--ink)">${lines.length}</b></span> · 
+            <span>Total Units: <b style="color:var(--ink)">${totalUnits}</b></span>
+            ${s.discount > 0 ? ` · <span style="color:var(--warn)">Discount: <b>${s.discount}%</b></span>` : ''}
+          </div>
+          <div style="text-align:right">
+            <span style="font-size:12px;color:var(--mute);margin-right:8px">Order Total:</span>
+            <b style="font-size:19px;color:var(--brand)">${NGN(s.total)}</b>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px">
+          <button class="btn" style="flex:1" onclick="closeModal()">Close</button>
+          ${!isSynced ? `
+            <button class="btn" style="flex:1.2;background:#fff3bf;color:#d9480f;border-color:#ffd43b" onclick="closeModal(); syncSingleSale('${s.id}')">
+              <i class="fa-solid fa-rotate"></i> Sync to Zoho Now
+            </button>
+          ` : ''}
+          <button class="btn p" style="flex:1.4" onclick="closeModal(); previewPrintReceipt('${s.id}')">
+            <i class="fa-solid fa-print"></i> Print / Reprint Receipt
+          </button>
+        </div>
       </div>
     </div>
   `;
@@ -3192,7 +5012,7 @@ async function triggerPullSync() {
 }
 
 // Thermal Receipt Modal & Printing
-function tickHTML(s, p) {
+function tickHTML(s, p, copyLabel = '') {
   const dt = s.created_at ? new Date(s.created_at).toLocaleString('en-NG', { dateStyle: 'short', timeStyle: 'short' }) : (s.date || '');
   const comp = p.companyName || 'QUALITY SUPERSTORES';
   const addr = p.address || '16, Ogo Oluwa St, Ketere Market, Sango, Ogun State';
@@ -3205,9 +5025,13 @@ function tickHTML(s, p) {
     (s.payments && s.payments.length > 0) ? s.payments.reduce((sum, py) => sum + Number(py.amount || 0), 0) : Number(s.total || 0)
   );
   const change = s.change !== undefined ? Number(s.change) : Math.max(0, paid - Number(s.total || 0));
+  const isCredit = (s.payment_mode || '').toLowerCase().includes('credit') || (s.payment_mode || '').toLowerCase().includes('account') || s.is_credit;
+  const isNoPrice = !!s.without_price;
 
   let methodsStr = '';
-  if (s.payments && s.payments.length > 1) {
+  if (isCredit) {
+    methodsStr = 'Credit / On Account';
+  } else if (s.payments && s.payments.length > 1) {
     methodsStr = s.payments.map(py => `${py.mode}: ${NGN(py.amount)}`).join(', ');
   } else if (s.payments && s.payments.length === 1) {
     methodsStr = s.payments[0].mode;
@@ -3217,42 +5041,59 @@ function tickHTML(s, p) {
 
   return `
     <div class="rc w${p.paper}">
-      <div class="rc-c rc-b" style="font-size:12.5px;letter-spacing:0.5px">${comp}</div>
-      <div class="rc-c" style="font-size:9.5px">${addr}</div>
-      <div class="rc-c" style="font-size:9.5px">Tel: ${phones}</div>
+      <div class="rc-c rc-b" style="font-size:16px;letter-spacing:0.8px;margin-bottom:2px">${comp}</div>
+      <div class="rc-c" style="font-size:12px;line-height:1.25">${addr}</div>
+      <div class="rc-c" style="font-size:12px">Tel: ${phones}</div>
+      ${copyLabel ? `<div class="rc-c rc-b" style="font-size:12.5px;margin:3px 0;letter-spacing:1px">*** ${copyLabel} ***</div>` : ''}
+      ${isNoPrice ? `<div class="rc-c rc-b" style="font-size:13px;margin:4px 0;letter-spacing:0.5px">*** DELIVERY NOTE / WAYBILL ***</div>` : ''}
       <hr class="rc-hr">
-      <div class="rc-r" style="font-size:10px"><span>Order No:</span><span class="rc-b">${s.order_id || s.receipt_number}</span></div>
-      <div class="rc-r" style="font-size:10px"><span>Date:</span><span>${dt}</span></div>
-      <div class="rc-r" style="font-size:10px"><span>Tilled By:</span><span class="rc-b">${s.tilled_by || s.salesperson || cashier}</span></div>
-      <div class="rc-r" style="font-size:10px"><span>Customer:</span><span>${cust}</span></div>
+      <div class="rc-r" style="font-size:12.5px"><span>Order No:</span><span class="rc-b">${s.order_id || s.receipt_number}</span></div>
+      <div class="rc-r" style="font-size:12.5px"><span>Date:</span><span>${dt}</span></div>
+      <div class="rc-r" style="font-size:12.5px"><span>Tilled By:</span><span class="rc-b">${s.tilled_by || s.salesperson || cashier}</span></div>
+      <div class="rc-r" style="font-size:12.5px"><span>Customer:</span><span class="rc-b">${cust}</span></div>
       <hr class="rc-hr">
       <table class="rc-tbl">
         <thead>
           <tr>
-            <th style="text-align:left;width:44%">Item</th>
-            <th style="text-align:center;width:14%">Qty</th>
-            <th style="text-align:right;width:20%">Rate</th>
-            <th style="text-align:right;width:22%">Amount</th>
+            <th style="text-align:left;width:${isNoPrice ? '70%' : '44%'}">Item</th>
+            <th style="text-align:center;width:${isNoPrice ? '30%' : '14%'}">Qty</th>
+            ${isNoPrice ? '' : `
+              <th style="text-align:right;width:20%">Rate</th>
+              <th style="text-align:right;width:22%">Amount</th>
+            `}
           </tr>
         </thead>
         <tbody>
           ${(s.line_items || []).map(l => `
             <tr>
-              <td style="text-align:left;word-break:break-word">${l.name}${l.unit_display ? ` <span style="font-size:8.5px">(${l.unit_display})</span>` : ''}</td>
-              <td style="text-align:center">${l.quantity}</td>
-              <td style="text-align:right">${Math.round(l.rate).toLocaleString()}</td>
-              <td style="text-align:right">${Math.round(l.total).toLocaleString()}</td>
+              <td style="text-align:left;word-break:break-word;font-weight:600">${l.name}${l.unit_display ? ` <span style="font-size:10.5px;font-weight:normal">(${l.unit_display})</span>` : ''}</td>
+              <td style="text-align:center;font-weight:700">${l.quantity}</td>
+              ${isNoPrice ? '' : `
+                <td style="text-align:right">${Math.round(l.rate).toLocaleString()}</td>
+                <td style="text-align:right;font-weight:700">${Math.round(l.total).toLocaleString()}</td>
+              `}
             </tr>
           `).join('')}
         </tbody>
       </table>
       <hr class="rc-hr">
-      <div class="rc-r rc-b" style="font-size:12px"><span>TOTAL:</span><span>${NGN(s.total)}</span></div>
-      <div class="rc-r" style="font-size:10px"><span>Payment Made:</span><span>${NGN(paid)}</span></div>
-      ${change > 0 ? `<div class="rc-r" style="font-size:10px"><span>Change:</span><span>${NGN(change)}</span></div>` : ''}
-      <div class="rc-r" style="font-size:10px"><span>Payment Methods:</span><span>[${methodsStr}]</span></div>
+      ${isNoPrice ? `
+        <div class="rc-r rc-b" style="font-size:13px"><span>Total Items Delivered:</span><span>${(s.line_items || []).length} items</span></div>
+        ${isCredit ? `<div class="rc-r rc-b" style="font-size:12px;color:#c92a2a"><span>Billing:</span><span>BILLED ON ACCOUNT</span></div>` : ''}
+      ` : `
+        <div class="rc-r rc-b" style="font-size:16px;padding:3px 0"><span>TOTAL:</span><span>${NGN(s.total)}</span></div>
+        ${isCredit ? `
+          <div class="rc-r rc-b" style="font-size:12px;color:#c92a2a"><span>STATUS:</span><span>UNPAID / ON ACCOUNT</span></div>
+          <div class="rc-r" style="font-size:12px"><span>Amount Paid:</span><span>₦0.00</span></div>
+          <div class="rc-r rc-b" style="font-size:13px;color:#c92a2a"><span>Billed to Account:</span><span>${NGN(s.total)}</span></div>
+        ` : `
+          <div class="rc-r" style="font-size:12px"><span>Payment Made:</span><span>${NGN(paid)}</span></div>
+          ${change > 0 ? `<div class="rc-r" style="font-size:12px"><span>Change:</span><span>${NGN(change)}</span></div>` : ''}
+        `}
+        <div class="rc-r" style="font-size:12px"><span>Payment Method:</span><span>[${methodsStr}]</span></div>
+      `}
       <hr class="rc-hr">
-      <div class="rc-c rc-b" style="font-size:10.5px;margin-top:2px">Thanks for your patronage!</div>
+      <div class="rc-c rc-b" style="font-size:13px;margin-top:4px">Thanks for your patronage!</div>
     </div>
   `;
 }
@@ -3264,9 +5105,50 @@ async function loadInstalledPrinters() {
     const res = await r.json();
     if (res.success && Array.isArray(res.printers)) {
       state.installedPrinters = res.printers;
+
+      // Auto-assign thermal default printer if currently generic or unselected
+      const current = state.pp.printer;
+      const exists = res.printers.some(p => p.Name === current);
+      if (!current || current === 'System default printer' || !exists) {
+        const thermalMatch = res.printers.find(p => /xprinter|xp-80|xp80|pos|thermal|receipt|80mm|58mm/i.test(p.Name)) ||
+                             res.printers.find(p => p.IsDefault) ||
+                             res.printers[0];
+        if (thermalMatch) {
+          state.pp.printer = thermalMatch.Name;
+          state.pp.destination = 'direct';
+          state.pp.paper = /58/i.test(thermalMatch.Name) ? '58' : '80';
+          savePrefs();
+          renderSb();
+        }
+      }
     }
   } catch(e) {
     console.warn('Printer discovery:', e);
+  }
+}
+
+function selectDefaultStationPrinter(printerName) {
+  state.pp.printer = printerName;
+  state.pp.destination = 'direct'; // Setting default printer ensures direct silent printing
+  state.pp.autoPrint = true;
+  if (/58/i.test(printerName)) {
+    state.pp.paper = '58';
+  } else {
+    state.pp.paper = '80';
+  }
+  savePrefs();
+  renderSb();
+  toast(`✓ Set "${printerName}" as Default Station Printer (Direct Silent)`);
+  if (state.activePrintSale) {
+    showReceiptModal(state.activePrintSale, true);
+  }
+}
+
+async function refreshAndReopenPrinterModal() {
+  toast('Rescanning Windows printers...');
+  await loadInstalledPrinters();
+  if (state.activePrintSale) {
+    showReceiptModal(state.activePrintSale, true);
   }
 }
 
@@ -3293,8 +5175,8 @@ async function openCashDrawer() {
 
 async function doDirectPrint(sale) {
   try {
-    const isCash = (sale.payment_mode === 'CASH' || (sale.payments && sale.payments.some(p => (p.mode || '').toLowerCase() === 'cash')));
     const targetPrinter = state.pp.printer === 'System default printer' ? '' : state.pp.printer;
+    const numCopies = parseInt(state.pp.copies, 10) || 2;
     const r = await fetch('/api/hardware/print', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -3302,29 +5184,45 @@ async function doDirectPrint(sale) {
         sale: sale,
         printer_name: targetPrinter,
         paper: state.pp.paper || '80',
-        open_drawer: state.pp.autoKickDrawer !== false && isCash
+        copies: numCopies,
+        open_drawer: false
       })
     });
     const res = await r.json();
-    if (res.success) {
-      toast(`Direct thermal receipt printed (${sale.receipt_number || sale.order_id}).`);
+    if (res && res.success) {
+      toast(`⚡ Printed ${numCopies} copies silently to ${targetPrinter || 'thermal printer'} (${sale.receipt_number || sale.order_id}).`);
+      return true;
     } else {
-      console.warn('Silent print note:', res.message);
-      toast('Direct print: ' + (res.message || 'Printer not responding'));
+      console.warn('Direct print note:', res?.message);
+      toast('⚠️ Direct print note: ' + (res?.message || 'Printer busy') + '. Falling back to browser print...');
+      printTerminalReceipt(sale);
+      return false;
     }
   } catch(e) {
-    console.warn('Silent print error:', e);
-    toast('Silent print error: ' + e.message);
+    console.warn('Direct print error:', e);
+    toast('⚠️ Direct print error: ' + e.message + '. Falling back to browser print...');
+    printTerminalReceipt(sale);
+    return false;
   }
 }
 
 function printTerminalReceipt(sale) {
   const p = state.pp;
+  const numCopies = parseInt(p.copies, 10) || 2;
+  const labels = numCopies === 2 ? ['CUSTOMER COPY', 'STORE COPY'] : [];
+  let html = '';
+  for (let i = 0; i < numCopies; i++) {
+    const label = labels[i] || (numCopies > 1 ? `COPY ${i + 1}` : '');
+    html += tickHTML(sale, p, label);
+    if (i < numCopies - 1) {
+      html += '<div style="page-break-after:always;height:24px;border-bottom:1.5px dashed #000;margin:16px 0"></div>';
+    }
+  }
   $('#pgs').textContent = '@page{margin:0;size:' + (p.paper === 'A4' ? 'A4' : p.paper + 'mm auto') + '}';
-  $('#prt').innerHTML = Array(parseInt(p.copies, 10) || 1).fill(tickHTML(sale, p)).join('');
+  $('#prt').innerHTML = html;
   setTimeout(() => {
     window.print();
-    toast(`Receipt dispatched to terminal printer (${sale.receipt_number || sale.order_id}).`);
+    toast(`Receipt dispatched (${numCopies} copies - ${sale.receipt_number || sale.order_id}).`);
   }, 100);
 }
 
@@ -3342,63 +5240,86 @@ function showReceiptModal(sale, isSettings = false) {
       <div class="modal pd" role="dialog" aria-label="Print receipt">
         <div class="pdl" style="max-height:85vh;overflow-y:auto">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <h3 style="margin:0">${isSettings ? 'Printer & Station Hardware' : 'Sale Completed!'}</h3>
-            <button class="btn" style="padding:2px 8px;font-size:12px" onclick="closeModal()">✕</button>
+            <h3 style="margin:0;font-size:18px">${isSettings ? 'Printer & Station Setup' : 'Sale Completed!'}</h3>
+            <button class="btn" style="padding:4px 10px;font-size:13px" onclick="closeModal()">✕</button>
           </div>
-          <p style="margin:0 0 10px;color:var(--mute);font-size:12px">
-            ${isSettings ? 'Configure receipt printing for this register station.' : `Receipt #${sale.receipt_number || sale.order_id} recorded.`}
+          <p style="margin:0 0 10px;color:var(--mute);font-size:12.5px">
+            ${isSettings ? 'Configure receipt printing for this register station.' : `Receipt #${sale.receipt_number || sale.order_id} recorded successfully.`}
           </p>
 
-          <label>Print Destination<select onchange="updatePrintPref('destination', this.value)">
-            <option value="terminal" ${p.destination!=='server'?'selected':''}>🖥️ This Terminal (Print directly to this till's printer)</option>
-            <option value="server" ${p.destination==='server'?'selected':''}>⚡ Central POS Server Hub (Shared machine USB)</option>
-          </select></label>
+          <label>
+            Print Method
+            <select onchange="updatePrintPref('destination', this.value)">
+              <option value="direct" ${p.destination!=='browser'?'selected':''}>⚡ Silent Direct Print (No Dialog - Recommended)</option>
+              <option value="browser" ${p.destination==='browser'?'selected':''}>🖥️ Windows Print Dialog</option>
+            </select>
+          </label>
 
-          <label>Checkout Action<select onchange="updatePrintPref('autoPrint', this.value === 'true')">
-            <option value="true" ${p.autoPrint!==false?'selected':''}>⚡ Print Immediately on Checkout</option>
-            <option value="false" ${p.autoPrint===false?'selected':''}>🖥️ Show Preview Screen First</option>
-          </select></label>
-
-          ${p.destination === 'server' ? `
-            <label>Server Spooler Printer<select id="pp-printer" onchange="updatePrintPref('printer', this.value)">
-              ${printerOptions.map(x => `
-                <option value="${x}" ${x===p.printer?'selected':''}>${x}</option>
-              `).join('')}
-            </select></label>
-          ` : `
-            <small style="color:var(--mute);font-size:11px;display:block;margin:-2px 0 6px">
-              ℹ️ Print jobs will stay on this device and go directly to your terminal's local printer.
-            </small>
-          `}
-
-          <label>Paper Size<select id="pp-paper" onchange="updatePrintPref('paper', this.value)">
-            <option value="80" ${p.paper==='80'?'selected':''}>80 mm Thermal Roll (Standard)</option>
-            <option value="58" ${p.paper==='58'?'selected':''}>58 mm Mini Thermal Roll</option>
-            <option value="A4" ${p.paper==='A4'?'selected':''}>A4 Full Sheet</option>
-          </select></label>
-
-          <div style="display:flex;align-items:center;justify-content:space-between;margin:8px 0;background:var(--soft);padding:8px 10px;border-radius:6px;border:1px solid var(--line)">
-            <label style="font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;margin:0;cursor:pointer">
-              <input type="checkbox" ${p.autoKickDrawer!==false?'checked':''} onchange="updatePrintPref('autoKickDrawer', this.checked)">
-              Auto-kick Cash Drawer on Cash Sales
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px">
+            <label style="font-weight:700;font-size:12.5px;color:var(--mute);margin:0">
+              Select Default Station Printer
             </label>
-            <button class="rs" onclick="openCashDrawer()" title="Test drawer kick pulse" style="font-size:11px;padding:3px 8px">
-              <i class="fa-solid fa-vault"></i> Test Kick
+            <button class="btn" style="padding:2px 8px;font-size:11px" onclick="refreshAndReopenPrinterModal()" title="Rescan for newly connected USB printers">
+              <i class="fa-solid fa-arrows-rotate"></i> Rescan
             </button>
           </div>
 
-          <details style="margin:8px 0;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:6px 8px">
-            <summary style="cursor:pointer;font-weight:600;font-size:11.5px;color:var(--ink)">Edit Receipt Header Info</summary>
-            <div style="display:grid;gap:6px;margin-top:6px">
-              <label style="font-size:11px">Company Name<input type="text" value="${p.companyName || ''}" oninput="updatePrintPref('companyName', this.value)"></label>
-              <label style="font-size:11px">Address<input type="text" value="${p.address || ''}" oninput="updatePrintPref('address', this.value)"></label>
-              <label style="font-size:11px">Phone Numbers<input type="text" value="${p.phones || ''}" oninput="updatePrintPref('phones', this.value)"></label>
+          <div style="display:grid;gap:6px;max-height:160px;overflow-y:auto;padding-right:2px">
+            ${(state.installedPrinters || []).map(pr => {
+              const isSelected = (state.pp.printer === pr.Name) || (!state.pp.printer && pr.IsDefault);
+              const isThermal = /xprinter|xp-80|xp80|pos|thermal|receipt|80mm|58mm/i.test(pr.Name);
+              return `
+                <div onclick="selectDefaultStationPrinter('${escapeHtml(pr.Name)}')" style="cursor:pointer;padding:8px 12px;border:1.5px solid ${isSelected ? 'var(--brand)' : 'var(--line)'};border-radius:8px;background:${isSelected ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg)'};display:flex;align-items:center;justify-content:space-between">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <i class="fa-solid ${isThermal ? 'fa-receipt' : 'fa-print'}" style="color:${isSelected ? 'var(--brand)' : 'var(--mute)'};font-size:15px"></i>
+                    <div>
+                      <b style="font-size:12.5px;color:var(--ink);display:block">${escapeHtml(pr.Name)}</b>
+                      <small style="color:var(--mute);font-size:10.5px">${pr.IsDefault ? 'Windows Default' : 'Installed'}${isThermal ? ' • Thermal 80mm' : ''}</small>
+                    </div>
+                  </div>
+                  <div>
+                    ${isSelected ? `<span class="badge" style="background:var(--brand);color:#fff;font-weight:700;padding:2px 8px;border-radius:10px;font-size:10.5px"><i class="fa-solid fa-check"></i> Default</span>` : `<button class="btn" style="padding:2px 8px;font-size:10.5px" onclick="event.stopPropagation();selectDefaultStationPrinter('${escapeHtml(pr.Name)}')">Set Default</button>`}
+                  </div>
+                </div>
+              `;
+            }).join('') || '<div style="color:var(--mute);font-size:12px;padding:8px">No Windows printers detected. Click Rescan.</div>'}
+          </div>
+
+          <div style="padding:8px 10px;background:rgba(16, 185, 129, 0.08);border:1px solid rgba(16, 185, 129, 0.25);border-radius:7px;font-size:11.5px;color:var(--ink)">
+            <i class="fa-solid fa-bolt" style="color:var(--brand);margin-right:4px"></i>
+            Active default printer: <b>${escapeHtml(state.pp.printer || 'Xprinter XP-80')}</b>. Receipts will spool directly with zero dialogs.
+          </div>
+
+          <label>
+            Paper Size
+            <select id="pp-paper" onchange="updatePrintPref('paper', this.value)">
+              <option value="80" ${p.paper==='80'?'selected':''}>80 mm Thermal Roll (Standard)</option>
+              <option value="58" ${p.paper==='58'?'selected':''}>58 mm Mini Thermal Roll</option>
+              <option value="A4" ${p.paper==='A4'?'selected':''}>A4 Full Sheet</option>
+            </select>
+          </label>
+
+          <label>
+            Print Copies
+            <select id="pp-copies" onchange="updatePrintPref('copies', parseInt(this.value, 10))">
+              <option value="2" ${p.copies==2?'selected':''}>2 Copies (Customer & Store Copy - Default)</option>
+              <option value="1" ${p.copies==1?'selected':''}>1 Single Copy</option>
+              <option value="3" ${p.copies==3?'selected':''}>3 Copies</option>
+            </select>
+          </label>
+
+          <details style="margin:4px 0;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px 12px">
+            <summary style="cursor:pointer;font-weight:600;font-size:12px;color:var(--ink)">Edit Receipt Header Info</summary>
+            <div style="display:grid;gap:8px;margin-top:10px">
+              <label style="font-size:11.5px">Company Name<input type="text" value="${p.companyName || ''}" oninput="updatePrintPref('companyName', this.value)"></label>
+              <label style="font-size:11.5px">Address<input type="text" value="${p.address || ''}" oninput="updatePrintPref('address', this.value)"></label>
+              <label style="font-size:11.5px">Phone Numbers<input type="text" value="${p.phones || ''}" oninput="updatePrintPref('phones', this.value)"></label>
             </div>
           </details>
 
-          <div style="display:flex;gap:8px;margin-top:10px">
-            <button class="btn" style="flex:1" onclick="closeModal()">Close</button>
-            <button class="btn p" style="flex:1.4" onclick="doPrint()"><i class="fa-solid fa-print"></i> ${isSettings ? 'Test Print on This Station' : 'Print Receipt'}</button>
+          <div style="display:flex;gap:10px;margin-top:14px">
+            <button class="btn" style="flex:1;padding:10px 14px;font-weight:600;font-size:13px" onclick="closeModal()">Close</button>
+            <button class="btn p" style="flex:1.5;padding:10px 14px;font-weight:700;font-size:13px" onclick="doPrint()"><i class="fa-solid fa-print"></i> ${isSettings ? 'Test Print on This Station' : 'Print Receipt'}</button>
           </div>
         </div>
         <div class="pv">
@@ -3409,7 +5330,8 @@ function showReceiptModal(sale, isSettings = false) {
   `;
 }
 
-function openPrinterModal() {
+async function openPrinterModal() {
+  await loadInstalledPrinters();
   const p = state.pp;
   const sampleSale = state.sales?.[0] || {
     receipt_number: 'QS-SAMPLE',
@@ -3449,14 +5371,12 @@ async function doPrint(forceBrowser = false) {
 
   closeModal();
 
-  // If server destination chosen
-  if (p.destination === 'server' && !forceBrowser) {
-    await doDirectPrint(s);
+  if (p.destination === 'browser' || forceBrowser) {
+    printTerminalReceipt(s);
     return;
   }
 
-  // Terminal local print directly from this till
-  printTerminalReceipt(s);
+  await doDirectPrint(s);
 }
 
 // Automated Database Backups Modal Engine
@@ -3724,7 +5644,7 @@ function showPriceManagerModal() {
               <input id="pm-retail" type="number" style="width:100%;padding:6px;border:1px solid var(--line);border-radius:6px;font-weight:700">
             </div>
             <div>
-              <label style="font-size:11px;font-weight:700;color:var(--mute)">Carton Bulk Price (₦)</label>
+              <label id="pm-bulk-label" style="font-size:11px;font-weight:700;color:var(--mute)">Bulk Unit Price (₦)</label>
               <input id="pm-carton" type="number" style="width:100%;padding:6px;border:1px solid var(--line);border-radius:6px;font-weight:700">
             </div>
           </div>
@@ -3740,12 +5660,16 @@ function searchPM(q) {
   const div = $('#pm-results');
   if (!query) { div.innerHTML = ''; return; }
   const matches = state.items.filter(it => it.name.toLowerCase().includes(query)).slice(0, 6);
-  div.innerHTML = matches.map(m => `
-    <div class="cust-bar" style="cursor:pointer" onclick="selectPMItem('${m.id}')">
-      <b>${m.name}</b>
-      <span style="font-size:11.5px;color:var(--mute)">Single: ${NGN(m.retail_price)} • Carton: ${NGN(m.carton_price)}</span>
-    </div>
-  `).join('');
+  div.innerHTML = matches.map(m => {
+    const bulkU = (m.units || []).find(u => !u.is_base);
+    const bulkLabel = bulkU ? (bulkU.unit_symbol || bulkU.name).toUpperCase() : 'Bulk';
+    return `
+      <div class="cust-bar" style="cursor:pointer" onclick="selectPMItem('${m.id}')">
+        <b>${m.name}</b>
+        <span style="font-size:11.5px;color:var(--mute)">Single: ${NGN(m.retail_price)} • ${bulkLabel}: ${NGN(m.carton_price)}</span>
+      </div>
+    `;
+  }).join('');
 }
 
 function selectPMItem(id) {
@@ -3755,6 +5679,10 @@ function selectPMItem(id) {
   $('#pm-name').innerText = it.name;
   $('#pm-retail').value = it.retail_price;
   $('#pm-carton').value = it.carton_price;
+  const bulkU = (it.units || []).find(u => !u.is_base);
+  const bulkLabel = bulkU ? `${(bulkU.unit_symbol || bulkU.name).toUpperCase()} Bulk Price (₦)` : 'Bulk Price (₦)';
+  const lbl = $('#pm-bulk-label');
+  if (lbl) lbl.innerText = bulkLabel;
   $('#pm-editor').style.display = 'block';
 }
 
@@ -4343,8 +6271,8 @@ async function printShiftZReport() {
     variance: counted - currentShiftData.expected_cash
   };
 
-  // Direct Thermal Printing if server hub destination configured
-  if (state.pp.destination === 'server') {
+  // Direct Thermal Printing (Silent direct print to thermal printer)
+  if (state.pp.destination !== 'browser') {
     try {
       toast('Sending Z-Report to server receipt printer...');
       const r = await fetch('/api/hardware/print-zreport', {
@@ -4515,9 +6443,24 @@ function tickZReportHTML(report, p) {
   `;
 }
 
-// Keyboard shortcuts (F1 - F12, Ctrl+E)
+// Keyboard shortcuts (F1 - F12, Ctrl+E, Lock screen PIN entry)
 document.addEventListener('keydown', e => {
-  if (state.isLocked) return;
+  if (state.isLocked) {
+    if (e.key >= '0' && e.key <= '9') {
+      e.preventDefault();
+      enterPinDigit(e.key);
+    } else if (e.key === 'Backspace') {
+      e.preventDefault();
+      backspacePin();
+    } else if (e.key === 'Escape' || e.key === 'Delete' || e.key === 'c' || e.key === 'C') {
+      e.preventDefault();
+      clearPin();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (state.pinInput.length === 4) submitPin();
+    }
+    return;
+  }
 
   // Ctrl+E: Open Shift Close & Z-Report
   if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
@@ -4564,7 +6507,7 @@ document.addEventListener('keydown', e => {
     openCustomerModal();
   } else if (k === 'F6') {
     e.preventDefault();
-    const modes = ['Cash', 'Moniepoint POS', 'First Bank Transfer', 'Split'];
+    const modes = ['Cash', 'Moniepoint POS', 'First Bank Transfer', 'Split', 'Credit / On Account'];
     const next = modes[(modes.indexOf(state.pay) + 1) % modes.length];
     setPaymentMode(next);
     toast('Payment Mode: ' + next);
@@ -4660,16 +6603,31 @@ async function refreshCurrentUser() {
 
 // App Bootstrap
 document.addEventListener('DOMContentLoaded', async () => {
-  if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
-    navigator.serviceWorker.register('/sw.js').catch(e => console.warn('PWA SW notice:', e));
-  }
-  await refreshCurrentUser();
+  // Always lock register and enforce fresh PIN entry every time the app opens newly
+  sessionStorage.removeItem('pos_user');
+  state.user = null;
+  state.isLocked = true;
+  state.pinInput = '';
   renderLockScreen();
+
+  if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      reg.update();
+    }).catch(e => console.warn('PWA SW notice:', e));
+  }
   await initTerminal();
   await loadInstalledPrinters();
   renderTop();
   renderNav();
   renderSb();
+  renderMain();
   await loadCatalog();
   await loadCustomers();
   await loadQueueStatus();
