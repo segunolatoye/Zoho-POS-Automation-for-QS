@@ -903,11 +903,14 @@ async function syncOfflineSalesToZoho(targetSaleId = null) {
               quantity: chosenQty,
               rate: chosenRate
             };
+            // Only attach unit and unit_conversion_id when a valid conversion ID exists.
+            // For standard/base units, omitting 'unit' allows Zoho Books to default to the item's
+            // native unit in Zoho, completely eliminating Error 2804 "Invalid unit conversion".
             if (chosenConversionId) {
               itemLine.unit_conversion_id = chosenConversionId;
-            }
-            if (chosenUnit) {
-              itemLine.unit = chosenUnit;
+              if (chosenUnit) {
+                itemLine.unit = chosenUnit;
+              }
             }
             return itemLine;
           })
