@@ -52,12 +52,76 @@ const SYNC_LOG_PATH = path.join(LOGS_DIR, 'zoho_sync.log');
 const UNIT_GROUPS_PATH = path.join(DATA_DIR, 'unit_groups_cache.json');
 const SHIFTS_PATH = path.join(DATA_DIR, 'shift_reports.json');
 const ACTIVE_SHIFTS_PATH = path.join(DATA_DIR, 'active_shifts.json');
+const ORDER_SEQUENCE_PATH = path.join(DATA_DIR, 'order_sequence.json');
+
+// Concurrency mutex lock: serializes checkout processing so simultaneous taps from multiple stations never race
+let saleProcessingLock = Promise.resolve();
+function withSaleLock(fn) {
+  const next = saleProcessingLock.then(() => fn(), () => fn());
+  saleProcessingLock = next.catch(() => {});
+  return next;
+}
+
+// Atomic monotonic sequence counter: guarantees strictly sequential, unique order IDs across all stations
+function getNextOrderId(terminalId = 'TERM-01') {
+  let currentMax = 0;
+  if (fs.existsSync(ORDER_SEQUENCE_PATH)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(ORDER_SEQUENCE_PATH, 'utf8'));
+      if (typeof data.last_order_num === 'number') currentMax = data.last_order_num;
+    } catch (e) {}
+  }
+  if (fs.existsSync(QUEUE_PATH)) {
+    try {
+      const q = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8'));
+      for (const s of q) {
+        const m = (s.order_id || s.receipt_number || '').match(/QS-(\d+)/i);
+        if (m) {
+          const num = parseInt(m[1], 10);
+          if (num > currentMax) currentMax = num;
+        }
+      }
+    } catch (e) {}
+  }
+  const nextNum = currentMax + 1;
+  fs.writeFileSync(ORDER_SEQUENCE_PATH, JSON.stringify({
+    last_order_num: nextNum,
+    updated_at: new Date().toISOString(),
+    last_terminal: terminalId
+  }, null, 2), 'utf8');
+
+  return `QS-${String(nextNum).padStart(5, '0')}`;
+}
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(LOGS_DIR)) fs.mkdirSync(LOGS_DIR, { recursive: true });
 if (!fs.existsSync(QUEUE_PATH)) fs.writeFileSync(QUEUE_PATH, JSON.stringify([], null, 2), 'utf8');
 if (!fs.existsSync(SHIFTS_PATH)) fs.writeFileSync(SHIFTS_PATH, JSON.stringify([], null, 2), 'utf8');
 if (!fs.existsSync(ACTIVE_SHIFTS_PATH)) fs.writeFileSync(ACTIVE_SHIFTS_PATH, JSON.stringify({}, null, 2), 'utf8');
+const USERS_INIT_PATH = path.join(DATA_DIR, 'pos_users.json');
+if (!fs.existsSync(USERS_INIT_PATH)) {
+  fs.writeFileSync(USERS_INIT_PATH, JSON.stringify([
+    { id: "u1", name: "Admin", pin: "1234", role: "admin" }
+  ], null, 2), 'utf8');
+}
+if (!fs.existsSync(CATALOG_PATH)) fs.writeFileSync(CATALOG_PATH, JSON.stringify([], null, 2), 'utf8');
+if (!fs.existsSync(CUSTOMERS_PATH)) fs.writeFileSync(CUSTOMERS_PATH, JSON.stringify([], null, 2), 'utf8');
+if (!fs.existsSync(ORDER_SEQUENCE_PATH)) {
+  let initialMax = 0;
+  if (fs.existsSync(QUEUE_PATH)) {
+    try {
+      const q = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8'));
+      for (const s of q) {
+        const m = (s.order_id || s.receipt_number || '').match(/QS-(\d+)/i);
+        if (m) {
+          const num = parseInt(m[1], 10);
+          if (num > initialMax) initialMax = num;
+        }
+      }
+    } catch (e) {}
+  }
+  fs.writeFileSync(ORDER_SEQUENCE_PATH, JSON.stringify({ last_order_num: initialMax, updated_at: new Date().toISOString() }, null, 2), 'utf8');
+}
 
 function formatLocalTime(d = new Date()) {
   const pad = n => String(n).padStart(2, '0');
@@ -704,13 +768,15 @@ function startSyncScheduler() {
   }, 10 * 1000);
 }
 
-// Background sync function: Push offline sales to Zoho
-async function syncOfflineSalesToZoho() {
+// Background sync function: Push offline sales to Zoho (all pending or single targeted sale)
+async function syncOfflineSalesToZoho(targetSaleId = null) {
   const queue = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8'));
-  const pending = queue.filter(q => q.status === 'PENDING_SYNC');
+  const pending = targetSaleId
+    ? queue.filter(q => q.id === targetSaleId || q.order_id === targetSaleId || q.receipt_number === targetSaleId)
+    : queue.filter(q => q.status === 'PENDING_SYNC');
 
   if (pending.length === 0) {
-    return { count: 0, message: 'All offline sales are already synced with Zoho!' };
+    return { count: 0, message: targetSaleId ? 'Target sale not found or already synced.' : 'All offline sales are already synced with Zoho!' };
   }
 
   console.log(`Starting background sync for ${pending.length} pending sale(s)...`);
@@ -787,6 +853,8 @@ async function syncOfflineSalesToZoho() {
           sale.customer_id = targetCustomerId;
         }
 
+        const catalog = fs.existsSync(CATALOG_PATH) ? JSON.parse(fs.readFileSync(CATALOG_PATH, 'utf8')) : [];
+
         const invPayload = {
           customer_id: targetCustomerId,
           date: sale.date,
@@ -797,17 +865,49 @@ async function syncOfflineSalesToZoho() {
             ? `Customer: ${sale.customer_name} | Tilled By: ${sale.tilled_by || sale.salesperson || ''}`
             : (sale.tilled_by ? `Tilled By: ${sale.tilled_by}` : ''),
           line_items: sale.line_items.map(l => {
+            const item = catalog.find(i => String(i.id) === String(l.item_id));
+            const billedQty = parseFloat(l.quantity) || 1;
+            const billedRate = parseFloat(l.rate) || 0;
+            const billedTotal = Math.round((billedQty * billedRate) * 100) / 100;
+
+            let chosenUnit = l.unit;
+            let chosenQty = billedQty;
+            let chosenRate = billedRate;
+            let chosenConversionId = l.unit_conversion_id;
+
+            if (item) {
+              const baseUnit = (item.units || []).find(u => u.is_base) || item.units?.[0];
+              const bulkUnit = (item.units || []).find(u => !u.is_base) || item.units?.[item.units.length - 1];
+              const bulkRatio = bulkUnit ? (bulkUnit.conversion_ratio > 1 ? bulkUnit.conversion_ratio : (bulkUnit.units_per_bulk || (bulkUnit.conversion_ratio > 0 && bulkUnit.conversion_ratio < 1 ? Math.round(1 / bulkUnit.conversion_ratio) : 1))) : 1;
+
+              const isFractional = billedQty % 1 !== 0;
+              const isBulkUnit = l.unit && bulkUnit && (l.unit.toLowerCase() === (bulkUnit.unit_symbol || '').toLowerCase() || l.unit.toLowerCase() === (bulkUnit.name || '').toLowerCase());
+              
+              // Handle fractional sales (e.g. 0.5 carton) or bulk sales without conversion ID:
+              // Convert directly to whole base units (e.g. 12 pcs) to guarantee Zoho Books never rejects with "Invalid unit conversion"
+              if (isFractional || (isBulkUnit && !chosenConversionId)) {
+                const mult = isBulkUnit ? bulkRatio : 1;
+                const convertedQty = Math.round(billedQty * mult);
+                if (convertedQty > 0 && baseUnit) {
+                  chosenUnit = baseUnit.unit_symbol || baseUnit.name;
+                  chosenQty = convertedQty;
+                  chosenRate = Math.round((billedTotal / convertedQty) * 100) / 100;
+                  chosenConversionId = undefined;
+                }
+              }
+            }
+
             const itemLine = {
               item_id: l.item_id,
               name: l.name,
-              quantity: l.quantity,
-              rate: l.rate
+              quantity: chosenQty,
+              rate: chosenRate
             };
-            if (l.unit_conversion_id) {
-              itemLine.unit_conversion_id = l.unit_conversion_id;
-              itemLine.unit = l.unit;
-            } else if (l.unit) {
-              itemLine.unit = l.unit;
+            if (chosenConversionId) {
+              itemLine.unit_conversion_id = chosenConversionId;
+            }
+            if (chosenUnit) {
+              itemLine.unit = chosenUnit;
             }
             return itemLine;
           })
@@ -1248,278 +1348,337 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 3. POST /api/sales (Save to Offline Outbox with Server Stock Guard & Active Account Order ID)
+  // 3. POST /api/sales (Save to Offline Outbox with Server Stock Guard & Active Account Order ID - Mutex Protected)
   if (req.method === 'POST' && pathname === '/api/sales') {
-    try {
-      const saleData = await parseJsonBody(req);
-      const queue = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8'));
+    return withSaleLock(async () => {
+      try {
+        const saleData = await parseJsonBody(req);
+        const queue = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8'));
 
-      // 0a. Check idempotency for client transaction UUID or emergency standalone re-flushes
-      const clientTxnId = saleData.client_txn_id || saleData.id;
-      const existing = queue.find(s => 
-        (clientTxnId && (s.client_txn_id === clientTxnId || s.id === clientTxnId)) || 
-        (saleData.receipt_number && s.receipt_number === saleData.receipt_number)
-      );
-      if (existing) {
-        return res.end(JSON.stringify({
-          success: true,
-          sale: existing,
-          duplicate_prevented: true,
-          message: 'Sale already recorded in queue.'
-        }));
-      }
+        // 0a. Check idempotency for client transaction UUID or emergency standalone re-flushes
+        const clientTxnId = saleData.client_txn_id || saleData.id;
+        const existing = queue.find(s => {
+          if (clientTxnId && (s.client_txn_id === clientTxnId || s.id === clientTxnId)) return true;
+          if (saleData.receipt_number && s.receipt_number === saleData.receipt_number) {
+            // True duplicate check: must also match customer, total, line item count, and time window
+            const sameCust = s.customer_id === saleData.customer_id || s.customer_name === saleData.customer_name;
+            const sameTotal = Math.abs((s.total || 0) - (saleData.total || 0)) < 0.01;
+            const sameLines = (s.line_items || []).length === (saleData.line_items || []).length;
+            return sameCust && sameTotal && sameLines;
+          }
+          return false;
+        });
 
-      // 0b. Rapid double-tap debounce window (4 seconds)
-      const nowMs = Date.now();
-      const recentDuplicate = queue.slice(-20).find(s => {
-        if (!s.created_at) return false;
-        const sTime = new Date(s.created_at).getTime();
-        const diffMs = nowMs - sTime;
-        if (diffMs < 0 || diffMs > 4000) return false;
-        if (s.terminal_id !== saleData.terminal_id) return false;
-        if (s.user_id !== saleData.user_id && s.tilled_by !== saleData.tilled_by) return false;
-        if (s.customer_id !== saleData.customer_id) return false;
-        if (Math.abs(s.total - saleData.total) > 0.01) return false;
-        if ((s.line_items || []).length !== (saleData.line_items || []).length) return false;
-        const sIds = (s.line_items || []).map(l => `${l.item_id}_${l.quantity}`).sort().join('|');
-        const reqIds = (saleData.line_items || []).map(l => `${l.item_id}_${l.quantity}`).sort().join('|');
-        return sIds === reqIds;
-      });
-      if (recentDuplicate) {
-        console.warn(`[Debounce Guard] Blocked rapid duplicate sale within 4s from terminal ${saleData.terminal_id}`);
-        return res.end(JSON.stringify({
-          success: true,
-          sale: recentDuplicate,
-          duplicate_prevented: true,
-          message: 'Duplicate checkout tap prevented. Sale already recorded.'
-        }));
-      }
-
-      // 0. Enforce PIN Login Security: Reject unauthenticated sales postings
-      const usersPath = path.join(DATA_DIR, 'pos_users.json');
-      const users = fs.existsSync(usersPath)
-        ? JSON.parse(fs.readFileSync(usersPath, 'utf8'))
-        : [
-          { id: 'u1', name: 'Manager / Admin', pin: '9545', role: 'admin' },
-          { id: 'u5', name: 'Finance / Accounts', pin: '6935', role: 'finance' },
-          { id: 'u2', name: 'Cashier 1', pin: '5713', role: 'cashier', terminal_id: 'TERM-01' },
-          { id: 'u3', name: 'Cashier 2', pin: '5917', role: 'cashier', terminal_id: 'TERM-02' }
-        ];
-
-      const activeUser = users.find(u => (saleData.user_id && u.id === saleData.user_id) || 
-                                         (saleData.user_name && u.name.toLowerCase() === saleData.user_name.toLowerCase()) ||
-                                         (saleData.tilled_by && u.name.toLowerCase() === saleData.tilled_by.toLowerCase()) ||
-                                         (saleData.salesperson && u.name.toLowerCase() === saleData.salesperson.toLowerCase()));
-      if (!activeUser) {
-        res.writeHead(401);
-        return res.end(JSON.stringify({
-          success: false,
-          message: 'Unauthorized: You must login with a valid cashier PIN to post sales.'
-        }));
-      }
-      const tillerName = activeUser.name;
-
-      let catalog = [];
-      if (fs.existsSync(CATALOG_PATH)) {
-        catalog = JSON.parse(fs.readFileSync(CATALOG_PATH, 'utf8'));
-      }
-
-      // 0b. RBAC Enforcement: Cashiers cannot apply discounts without Manager or Finance PIN authorization
-      const isCashier = activeUser.role === 'cashier';
-      const hasDiscount = (saleData.discount && parseFloat(saleData.discount) > 0) ||
-                          (saleData.subtotal && saleData.total && parseFloat(saleData.total) < parseFloat(saleData.subtotal));
-
-      if (isCashier && hasDiscount) {
-        const isAuthorized = saleData.manager_override === true && saleData.manager_override_by;
-        if (!isAuthorized) {
-          res.writeHead(403);
+        if (existing) {
+          res.writeHead(200);
           return res.end(JSON.stringify({
-            success: false,
-            message: 'Sale rejected: Cashiers cannot apply discounts without Manager or Finance PIN authorization.'
+            success: true,
+            sale: existing,
+            duplicate_prevented: true,
+            message: 'Sale already recorded in queue.'
           }));
         }
-      }
 
-      // 0c. RBAC Enforcement: Cashiers cannot change price on order without Manager or Finance PIN authorization
-      if (isCashier) {
+        // 0b. Rapid double-tap debounce window (4 seconds)
+        const nowMs = Date.now();
+        const recentDuplicate = queue.slice(-20).find(s => {
+          if (!s.created_at) return false;
+          const sTime = new Date(s.created_at).getTime();
+          const diffMs = nowMs - sTime;
+          if (diffMs < 0 || diffMs > 4000) return false;
+          if (s.terminal_id !== saleData.terminal_id) return false;
+          if (s.user_id !== saleData.user_id && s.tilled_by !== saleData.tilled_by) return false;
+          if (s.customer_id !== saleData.customer_id) return false;
+          if (Math.abs(s.total - saleData.total) > 0.01) return false;
+          if ((s.line_items || []).length !== (saleData.line_items || []).length) return false;
+          const sIds = (s.line_items || []).map(l => `${l.item_id}_${l.quantity}`).sort().join('|');
+          const reqIds = (saleData.line_items || []).map(l => `${l.item_id}_${l.quantity}`).sort().join('|');
+          return sIds === reqIds;
+        });
+        if (recentDuplicate) {
+          console.warn(`[Debounce Guard] Blocked rapid duplicate sale within 4s from terminal ${saleData.terminal_id}`);
+          res.writeHead(200);
+          return res.end(JSON.stringify({
+            success: true,
+            sale: recentDuplicate,
+            duplicate_prevented: true,
+            message: 'Duplicate checkout tap prevented. Sale already recorded.'
+          }));
+        }
+
+        // 0. Enforce PIN Login Security: Reject unauthenticated sales postings
+        const usersPath = path.join(DATA_DIR, 'pos_users.json');
+        const users = fs.existsSync(usersPath)
+          ? JSON.parse(fs.readFileSync(usersPath, 'utf8'))
+          : [
+            { id: 'u1', name: 'Manager / Admin', pin: '9545', role: 'admin' },
+            { id: 'u5', name: 'Finance / Accounts', pin: '6935', role: 'finance' },
+            { id: 'u2', name: 'Cashier 1', pin: '5713', role: 'cashier', terminal_id: 'TERM-01' },
+            { id: 'u3', name: 'Cashier 2', pin: '5917', role: 'cashier', terminal_id: 'TERM-02' }
+          ];
+
+        const activeUser = users.find(u => (saleData.user_id && u.id === saleData.user_id) || 
+                                           (saleData.user_name && u.name.toLowerCase() === saleData.user_name.toLowerCase()) ||
+                                           (saleData.tilled_by && u.name.toLowerCase() === saleData.tilled_by.toLowerCase()) ||
+                                           (saleData.salesperson && u.name.toLowerCase() === saleData.salesperson.toLowerCase()));
+        if (!activeUser) {
+          res.writeHead(401);
+          return res.end(JSON.stringify({
+            success: false,
+            message: 'Unauthorized: You must login with a valid cashier PIN to post sales.'
+          }));
+        }
+        const tillerName = activeUser.name;
+
+        let catalog = [];
+        if (fs.existsSync(CATALOG_PATH)) {
+          catalog = JSON.parse(fs.readFileSync(CATALOG_PATH, 'utf8'));
+        }
+
+        // 0b. RBAC Enforcement: Cashiers cannot apply discounts without Manager or Finance PIN authorization
+        const isCashier = activeUser.role === 'cashier';
+        const hasDiscount = (saleData.discount && parseFloat(saleData.discount) > 0) ||
+                            (saleData.subtotal && saleData.total && parseFloat(saleData.total) < parseFloat(saleData.subtotal));
+
+        if (isCashier && hasDiscount) {
+          const isAuthorized = saleData.manager_override === true && saleData.manager_override_by;
+          if (!isAuthorized) {
+            res.writeHead(403);
+            return res.end(JSON.stringify({
+              success: false,
+              message: 'Sale rejected: Cashiers cannot apply discounts without Manager or Finance PIN authorization.'
+            }));
+          }
+        }
+
+        // 0c. RBAC Enforcement: Cashiers cannot change price on order without Manager or Finance PIN authorization
+        if (isCashier) {
+          for (const line of (saleData.line_items || [])) {
+            const item = catalog.find(i => String(i.id) === String(line.item_id));
+            if (item) {
+              let expectedPrice = item.retail_price || 0;
+              if (line.unit && item.units && item.units.length) {
+                const matchedUnit = item.units.find(u => u.unit_symbol === line.unit || u.name === line.unit);
+                if (matchedUnit && matchedUnit.price !== undefined) {
+                  expectedPrice = matchedUnit.price;
+                }
+              }
+              const soldRate = line.rate !== undefined ? line.rate : (line.unit_price !== undefined ? line.unit_price : null);
+              if (soldRate !== null && Math.round(parseFloat(soldRate)) !== Math.round(parseFloat(expectedPrice))) {
+                const isAuthorized = saleData.manager_override === true && saleData.manager_override_by;
+                if (!isAuthorized) {
+                  res.writeHead(403);
+                  return res.end(JSON.stringify({
+                    success: false,
+                    message: `Sale rejected: Cashiers cannot change price on order for "${item.name}". Expected ₦${expectedPrice.toLocaleString()}, got ₦${parseFloat(soldRate).toLocaleString()}. Requires Manager or Finance PIN.`
+                  }));
+                }
+              }
+            }
+          }
+        }
+
+        // 1. Strict Server Stock Verification: Block sales of out-of-stock items
         for (const line of (saleData.line_items || [])) {
           const item = catalog.find(i => String(i.id) === String(line.item_id));
           if (item) {
-            let expectedPrice = item.retail_price || 0;
-            if (line.unit && item.units && item.units.length) {
-              const matchedUnit = item.units.find(u => u.unit_symbol === line.unit || u.name === line.unit);
-              if (matchedUnit && matchedUnit.price !== undefined) {
-                expectedPrice = matchedUnit.price;
+            const bulkUnit = (item.units || []).find(u => !u.is_base) || item.units?.[item.units.length - 1];
+            const bulkRatio = bulkUnit ? (bulkUnit.conversion_ratio > 1 ? bulkUnit.conversion_ratio : (bulkUnit.units_per_bulk || (bulkUnit.conversion_ratio > 0 && bulkUnit.conversion_ratio < 1 ? Math.round(1 / bulkUnit.conversion_ratio) : 1))) : 1;
+            const currentStockBulk = parseFloat(item.stock) || 0;
+            const currentStockBase = Math.round((currentStockBulk * bulkRatio) * 100) / 100;
+
+            let sellRatio = 1;
+            if (line.unit) {
+              const soldUnit = (item.units || []).find(u => u.unit_symbol === line.unit || u.name === line.unit);
+              if (soldUnit) {
+                sellRatio = soldUnit.is_base ? 1 : (soldUnit.conversion_ratio > 1 ? soldUnit.conversion_ratio : (soldUnit.units_per_bulk || (soldUnit.conversion_ratio > 0 && soldUnit.conversion_ratio < 1 ? Math.round(1 / soldUnit.conversion_ratio) : 1)));
               }
             }
-            const soldRate = line.rate !== undefined ? line.rate : (line.unit_price !== undefined ? line.unit_price : null);
-            if (soldRate !== null && Math.round(parseFloat(soldRate)) !== Math.round(parseFloat(expectedPrice))) {
-              const isAuthorized = saleData.manager_override === true && saleData.manager_override_by;
-              if (!isAuthorized) {
-                res.writeHead(403);
-                return res.end(JSON.stringify({
-                  success: false,
-                  message: `Sale rejected: Cashiers cannot change price on order for "${item.name}". Expected ₦${expectedPrice.toLocaleString()}, got ₦${parseFloat(soldRate).toLocaleString()}. Requires Manager or Finance PIN.`
-                }));
-              }
+            const requestedBase = Math.round((line.quantity * sellRatio) * 100) / 100;
+
+            if (currentStockBase <= 0) {
+              res.writeHead(400);
+              return res.end(JSON.stringify({
+                success: false,
+                message: `Sale blocked: "${item.name}" is OUT OF STOCK.`
+              }));
+            }
+            if (requestedBase > currentStockBase) {
+              res.writeHead(400);
+              return res.end(JSON.stringify({
+                success: false,
+                message: `Sale blocked: Insufficient stock for "${item.name}". Requested ${requestedBase} base units, only ${currentStockBase} available.`
+              }));
             }
           }
         }
-      }
 
-      // 1. Strict Server Stock Verification: Block sales of out-of-stock items
-      for (const line of (saleData.line_items || [])) {
-        const item = catalog.find(i => String(i.id) === String(line.item_id));
-        if (item) {
-          const bulkUnit = (item.units || []).find(u => !u.is_base) || item.units?.[item.units.length - 1];
-          const bulkRatio = bulkUnit ? (bulkUnit.conversion_ratio > 1 ? bulkUnit.conversion_ratio : (bulkUnit.units_per_bulk || (bulkUnit.conversion_ratio > 0 && bulkUnit.conversion_ratio < 1 ? Math.round(1 / bulkUnit.conversion_ratio) : 1))) : 1;
-          const currentStockBulk = parseFloat(item.stock) || 0;
-          const currentStockBase = Math.round((currentStockBulk * bulkRatio) * 100) / 100;
-
-          let sellRatio = 1;
-          if (line.unit) {
-            const soldUnit = (item.units || []).find(u => u.unit_symbol === line.unit || u.name === line.unit);
-            if (soldUnit) {
-              sellRatio = soldUnit.is_base ? 1 : (soldUnit.conversion_ratio > 1 ? soldUnit.conversion_ratio : (soldUnit.units_per_bulk || (soldUnit.conversion_ratio > 0 && soldUnit.conversion_ratio < 1 ? Math.round(1 / soldUnit.conversion_ratio) : 1)));
+        // 2. Decrement stock atomically in server's pos_catalog.json
+        for (const line of (saleData.line_items || [])) {
+          const item = catalog.find(i => String(i.id) === String(line.item_id));
+          if (item) {
+            const bulkUnit = (item.units || []).find(u => !u.is_base) || item.units?.[item.units.length - 1];
+            const bulkRatio = bulkUnit ? (bulkUnit.conversion_ratio > 1 ? bulkUnit.conversion_ratio : (bulkUnit.units_per_bulk || (bulkUnit.conversion_ratio > 0 && bulkUnit.conversion_ratio < 1 ? Math.round(1 / bulkUnit.conversion_ratio) : 1))) : 1;
+            let sellRatio = 1;
+            if (line.unit) {
+              const soldUnit = (item.units || []).find(u => u.unit_symbol === line.unit || u.name === line.unit);
+              if (soldUnit) {
+                sellRatio = soldUnit.is_base ? 1 : (soldUnit.conversion_ratio > 1 ? soldUnit.conversion_ratio : (soldUnit.units_per_bulk || (soldUnit.conversion_ratio > 0 && soldUnit.conversion_ratio < 1 ? Math.round(1 / soldUnit.conversion_ratio) : 1)));
+              }
             }
+            const soldBulk = (line.quantity * sellRatio) / bulkRatio;
+            item.stock = Math.max(0, Math.round(((parseFloat(item.stock) || 0) - soldBulk) * 100) / 100);
           }
-          const requestedBase = Math.round((line.quantity * sellRatio) * 100) / 100;
+        }
+        fs.writeFileSync(CATALOG_PATH, JSON.stringify(catalog, null, 2), 'utf8');
 
-          if (currentStockBase <= 0) {
+        // 3. Issue Sequential Retail Order ID & Explicit Till Tracking (Guaranteed monotonic collision-free)
+        const term = saleData.terminal_id || activeUser.terminal_id || 'TERM-01';
+        let orderId = (saleData.standalone_offline && saleData.receipt_number) ? saleData.receipt_number : null;
+        if (orderId) {
+          const isTaken = queue.some(s => s.order_id === orderId || s.receipt_number === orderId);
+          if (isTaken) {
+            const freshId = getNextOrderId(term);
+            console.warn(`[Collision Guard] Standalone offline receipt #${orderId} was already taken by another sale. Re-assigned to unique serial ${freshId}.`);
+            saleData.original_offline_id = orderId;
+            orderId = freshId;
+          }
+        } else {
+          orderId = getNextOrderId(term);
+        }
+
+        const isCreditSale = (saleData.payment_mode === 'Credit / On Account' || 
+                              saleData.is_credit === true || 
+                              (saleData.amount_paid === 0 && (!saleData.payments || saleData.payments.length === 0 || saleData.payments[0]?.mode === 'Credit / On Account')));
+
+        // Enforce valid customer for on-account / credit sales
+        if (isCreditSale) {
+          const isWalkIn = !saleData.customer_id || saleData.customer_id === '1560234000000095179' || /walk\s*[-]?\s*in/i.test(saleData.customer_name || '');
+          if (isWalkIn) {
             res.writeHead(400);
             return res.end(JSON.stringify({
               success: false,
-              message: `Sale blocked: "${item.name}" is OUT OF STOCK.`
-            }));
-          }
-          if (requestedBase > currentStockBase) {
-            res.writeHead(400);
-            return res.end(JSON.stringify({
-              success: false,
-              message: `Sale blocked: Insufficient stock for "${item.name}". Requested ${requestedBase} base units, only ${currentStockBase} available.`
+              message: 'Credit / On-Account sales require selecting a registered customer to track debt balance.'
             }));
           }
         }
-      }
 
-      // 2. Decrement stock atomically in server's pos_catalog.json
-      for (const line of (saleData.line_items || [])) {
-        const item = catalog.find(i => String(i.id) === String(line.item_id));
-        if (item) {
-          const bulkUnit = (item.units || []).find(u => !u.is_base) || item.units?.[item.units.length - 1];
-          const bulkRatio = bulkUnit ? (bulkUnit.conversion_ratio > 1 ? bulkUnit.conversion_ratio : (bulkUnit.units_per_bulk || (bulkUnit.conversion_ratio > 0 && bulkUnit.conversion_ratio < 1 ? Math.round(1 / bulkUnit.conversion_ratio) : 1))) : 1;
-          let sellRatio = 1;
-          if (line.unit) {
-            const soldUnit = (item.units || []).find(u => u.unit_symbol === line.unit || u.name === line.unit);
-            if (soldUnit) {
-              sellRatio = soldUnit.is_base ? 1 : (soldUnit.conversion_ratio > 1 ? soldUnit.conversion_ratio : (soldUnit.units_per_bulk || (soldUnit.conversion_ratio > 0 && soldUnit.conversion_ratio < 1 ? Math.round(1 / soldUnit.conversion_ratio) : 1)));
-            }
+        const newSale = {
+          id: `sale_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          client_txn_id: saleData.client_txn_id || null,
+          order_id: orderId,
+          receipt_number: orderId,
+          tilled_by: tillerName,
+          user_id: activeUser.id,
+          salesperson: tillerName,
+          cashier_role: activeUser.role,
+          terminal_id: term,
+          customer_id: saleData.customer_id,
+          customer_name: saleData.customer_name,
+          date: saleData.date,
+          payment_mode: isCreditSale ? 'Credit / On Account' : saleData.payment_mode,
+          payments: isCreditSale ? [{ mode: 'Credit / On Account', amount: 0 }] : (saleData.payments || []),
+          amount_paid: isCreditSale ? 0 : (saleData.amount_paid !== undefined ? saleData.amount_paid : saleData.total),
+          change: isCreditSale ? 0 : (saleData.change || 0),
+          subtotal: saleData.subtotal !== undefined ? saleData.subtotal : saleData.total,
+          discount: saleData.discount || 0,
+          manager_override: saleData.manager_override || false,
+          manager_override_by: saleData.manager_override_by || null,
+          total: saleData.total,
+          line_items: saleData.line_items,
+          is_credit: isCreditSale,
+          without_price: !!saleData.without_price,
+          status: 'PENDING_SYNC',
+          created_at: new Date().toISOString()
+        };
+
+        // Atomically update customer outstanding debt balance if credit invoice
+        let updatedCustomer = null;
+        if (isCreditSale) {
+          const custs = fs.existsSync(CUSTOMERS_PATH) ? JSON.parse(fs.readFileSync(CUSTOMERS_PATH, 'utf8')) : [];
+          const cust = custs.find(c => String(c.id) === String(newSale.customer_id) || (c.name && c.name.toLowerCase() === (newSale.customer_name || '').toLowerCase()));
+          if (cust) {
+            cust.outstanding = Math.round(((parseFloat(cust.outstanding) || 0) + parseFloat(newSale.total)) * 100) / 100;
+            fs.writeFileSync(CUSTOMERS_PATH, JSON.stringify(custs, null, 2), 'utf8');
+            updatedCustomer = cust;
+            writeSyncLog('INFO', `Invoice #${orderId} billed to ${cust.name} on account. Added ₦${newSale.total.toLocaleString()} to debt. New owing balance: ₦${cust.outstanding.toLocaleString()}.`);
           }
-          const soldBulk = (line.quantity * sellRatio) / bulkRatio;
-          item.stock = Math.max(0, Math.round(((parseFloat(item.stock) || 0) - soldBulk) * 100) / 100);
         }
+
+        queue.push(newSale);
+        fs.writeFileSync(QUEUE_PATH, JSON.stringify(queue, null, 2), 'utf8');
+
+        res.writeHead(200);
+        return res.end(JSON.stringify({ 
+          success: true, 
+          sale: newSale,
+          customer: updatedCustomer
+        }));
+      } catch (err) {
+        res.writeHead(500);
+        return res.end(JSON.stringify({ success: false, message: err.message }));
       }
-      fs.writeFileSync(CATALOG_PATH, JSON.stringify(catalog, null, 2), 'utf8');
+    });
+  }
 
-      // 3. Issue Sequential Retail Order ID & Explicit Till Tracking (Monotonic counter; preserves emergency standalone receipt numbers)
-      const term = saleData.terminal_id || activeUser.terminal_id || 'TERM-01';
-      let orderId = (saleData.standalone_offline && saleData.receipt_number) ? saleData.receipt_number : null;
-      if (!orderId) {
-        let maxNum = 0;
-        for (const s of queue) {
-          const m = (s.order_id || s.receipt_number || '').match(/QS-(\d+)/i);
-          if (m) {
-            const num = parseInt(m[1], 10);
-            if (num > maxNum) maxNum = num;
-          }
-        }
-        const nextNum = Math.max(maxNum + 1, queue.length + 1);
-        orderId = `QS-${String(nextNum).padStart(5, '0')}`;
+  // 3b. POST /api/sales/sync-single (Targeted Sync / Retry for a specific sale)
+  if (req.method === 'POST' && pathname === '/api/sales/sync-single') {
+    try {
+      const { id } = await parseJsonBody(req);
+      if (!id) {
+        res.writeHead(400);
+        return res.end(JSON.stringify({ success: false, message: 'Missing sale id' }));
       }
-
-      const isCreditSale = (saleData.payment_mode === 'Credit / On Account' || 
-                            saleData.is_credit === true || 
-                            (saleData.amount_paid === 0 && (!saleData.payments || saleData.payments.length === 0 || saleData.payments[0]?.mode === 'Credit / On Account')));
-
-      // Enforce valid customer for on-account / credit sales
-      if (isCreditSale) {
-        const isWalkIn = !saleData.customer_id || saleData.customer_id === '1560234000000095179' || /walk\s*[-]?\s*in/i.test(saleData.customer_name || '');
-        if (isWalkIn) {
-          res.writeHead(400);
-          return res.end(JSON.stringify({
-            success: false,
-            message: 'Credit / On-Account sales require selecting a registered customer to track debt balance.'
-          }));
-        }
-      }
-
-      const newSale = {
-        id: `sale_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-        client_txn_id: saleData.client_txn_id || null,
-        order_id: orderId,
-        receipt_number: orderId,
-        tilled_by: tillerName,
-        user_id: activeUser.id,
-        salesperson: tillerName,
-        cashier_role: activeUser.role,
-        terminal_id: term,
-        customer_id: saleData.customer_id,
-        customer_name: saleData.customer_name,
-        date: saleData.date,
-        payment_mode: isCreditSale ? 'Credit / On Account' : saleData.payment_mode,
-        payments: isCreditSale ? [{ mode: 'Credit / On Account', amount: 0 }] : (saleData.payments || []),
-        amount_paid: isCreditSale ? 0 : (saleData.amount_paid !== undefined ? saleData.amount_paid : saleData.total),
-        change: isCreditSale ? 0 : (saleData.change || 0),
-        subtotal: saleData.subtotal !== undefined ? saleData.subtotal : saleData.total,
-        discount: saleData.discount || 0,
-        manager_override: saleData.manager_override || false,
-        manager_override_by: saleData.manager_override_by || null,
-        total: saleData.total,
-        line_items: saleData.line_items,
-        is_credit: isCreditSale,
-        without_price: !!saleData.without_price,
-        status: 'PENDING_SYNC',
-        created_at: new Date().toISOString()
-      };
-
-      // Atomically update customer outstanding debt balance if credit invoice
-      let updatedCustomer = null;
-      if (isCreditSale) {
-        const custs = fs.existsSync(CUSTOMERS_PATH) ? JSON.parse(fs.readFileSync(CUSTOMERS_PATH, 'utf8')) : [];
-        const cust = custs.find(c => String(c.id) === String(newSale.customer_id) || (c.name && c.name.toLowerCase() === (newSale.customer_name || '').toLowerCase()));
-        if (cust) {
-          cust.outstanding = Math.round(((parseFloat(cust.outstanding) || 0) + parseFloat(newSale.total)) * 100) / 100;
-          fs.writeFileSync(CUSTOMERS_PATH, JSON.stringify(custs, null, 2), 'utf8');
-          updatedCustomer = cust;
-          writeSyncLog('INFO', `Invoice #${orderId} billed to ${cust.name} on account. Added ₦${newSale.total.toLocaleString()} to debt. New owing balance: ₦${cust.outstanding.toLocaleString()}.`);
-        }
-      }
-
-      queue.push(newSale);
-      fs.writeFileSync(QUEUE_PATH, JSON.stringify(queue, null, 2), 'utf8');
-
+      const syncResult = await syncOfflineSalesToZoho(id);
       res.writeHead(200);
-      return res.end(JSON.stringify({ 
-        success: true, 
-        sale: newSale,
-        customer: updatedCustomer
-      }));
+      return res.end(JSON.stringify({ success: true, ...syncResult }));
     } catch (err) {
       res.writeHead(500);
       return res.end(JSON.stringify({ success: false, message: err.message }));
     }
   }
 
-  // 4. GET /api/queue
+  // 4. GET /api/queue (View Outbox with limit, search & status filter)
   if (req.method === 'GET' && pathname === '/api/queue') {
     const queue = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8'));
-    const pending = queue.filter(q => q.status === 'PENDING_SYNC').length;
+    const pending = queue.filter(q => q.status !== 'SYNCED').length;
+    const limit = parseInt(parsedUrl.searchParams.get('limit') || '1000', 10);
+    const search = (parsedUrl.searchParams.get('search') || '').trim().toLowerCase();
+    const filter = (parsedUrl.searchParams.get('status') || 'all').toLowerCase();
+
+    let filtered = queue;
+    if (filter === 'pending') {
+      filtered = filtered.filter(s => s.status !== 'SYNCED');
+    } else if (filter === 'synced') {
+      filtered = filtered.filter(s => s.status === 'SYNCED');
+    } else if (filter === 'credit') {
+      filtered = filtered.filter(s => s.is_credit || (s.payment_mode || '').toLowerCase().includes('credit'));
+    }
+
+    if (search) {
+      filtered = filtered.filter(s => {
+        const text = [
+          s.order_id,
+          s.receipt_number,
+          s.zoho_invoice_number,
+          s.customer_name,
+          s.tilled_by,
+          s.terminal_id,
+          s.payment_mode,
+          s.date,
+          String(s.total),
+          ...(s.line_items || []).map(li => li.name)
+        ].filter(Boolean).join(' ').toLowerCase();
+        return text.includes(search);
+      });
+    }
+
     res.writeHead(200);
     return res.end(JSON.stringify({
       total_sales: queue.length,
       pending_count: pending,
       synced_count: queue.length - pending,
-      sales: queue.slice(-20).reverse()
+      sales: filtered.slice(-limit).reverse()
     }));
   }
 

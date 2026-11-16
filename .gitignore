@@ -92,4 +92,6 @@ apply_*.js
 analyze_*.js
 test_*.js
 !scripts/test_*.js
-data/active_shifts.json
+# POS Live Store Database & Runtime Files (Never commit or overwrite live sales/debtors)
+data/*.json
+!data/*.example.json

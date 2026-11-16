@@ -153,11 +153,6 @@ function applyUpdate(branch = 'dev') {
       execGit('git checkout HEAD -- public/ pos_server.js modules/ scripts/');
     } catch (_) {}
 
-    // Discard local changes to tracked data files temporarily (we hold exact memory snapshot)
-    try {
-      execGit('git checkout HEAD -- data/');
-    } catch (_) {}
-
     // Pull latest code
     execGit(`git pull origin ${branch}`);
     const newCommit = execGit('git rev-parse HEAD');

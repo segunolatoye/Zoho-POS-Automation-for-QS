@@ -1518,6 +1518,8 @@ let state = {
   customer: { id: '1560234000000095179', name: 'Walk-in Customer' },
   cat: 'All',
   q: '',
+  ordersSearch: '',
+  ordersFilter: 'all',
   cart: {}, // id: { qty, unitIndex, customPrice }
   heldCarts: JSON.parse(localStorage.getItem('qs_held_carts') || '[]'),
   disc: 0,
@@ -1751,7 +1753,7 @@ async function loadCustomers() {
 async function loadQueueStatus() {
   try {
     const [qRes, sRes] = await Promise.all([
-      fetch('/api/queue').then(r => r.json()).catch(() => null),
+      fetch('/api/queue?limit=1000').then(r => r.json()).catch(() => null),
       fetch('/api/status').then(r => r.json()).catch(() => null)
     ]);
     if (qRes || sRes) {
@@ -3456,7 +3458,8 @@ function saveEmergencyStandaloneSale(payload) {
   let seq = parseInt(localStorage.getItem(seqKey) || '0', 10) + 1;
   localStorage.setItem(seqKey, String(seq));
 
-  const orderId = `QS-EMG-${termClean}-${String(seq).padStart(4, '0')}`;
+  const timeStamp = Date.now().toString(36).slice(-4).toUpperCase();
+  const orderId = `QS-EMG-${termClean}-${timeStamp}-${String(seq).padStart(3, '0')}`;
   const tiller = state.user?.name || 'Staff';
 
   const emgSale = {
@@ -3914,19 +3917,197 @@ function clearAllHeldCarts() {
 }
 
 // Orders View
+function setOrdersSearch(val) {
+  state.ordersSearch = val;
+  updateOrdersTableRows();
+}
+
+function setOrdersFilter(filt) {
+  state.ordersFilter = filt;
+  renderOrdersView();
+}
+
+function clearOrdersSearch() {
+  state.ordersSearch = '';
+  state.ordersFilter = 'all';
+  renderOrdersView();
+}
+
+async function syncSingleSale(saleId) {
+  const s = state.sales.find(x => x.id === saleId);
+  const name = s ? (s.order_id || s.receipt_number) : saleId;
+  toast(`🔄 Syncing order ${name} to Zoho Cloud...`);
+  try {
+    const res = await fetch('/api/sales/sync-single', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: saleId })
+    }).then(r => r.json());
+
+    if (res && res.success) {
+      toast(`✅ Order ${name} synced! ${res.message || ''}`);
+      playSound('success');
+    } else {
+      toast(`❌ Sync failed for ${name}: ${res?.message || 'Unable to sync'}`);
+    }
+  } catch(e) {
+    toast(`❌ Error syncing ${name}: ${e.message}`);
+  }
+  await loadQueueStatus();
+  renderOrdersView();
+}
+
+function getFilteredSales() {
+  const qStr = (state.ordersSearch || '').trim().toLowerCase();
+  const filter = state.ordersFilter || 'all';
+
+  return state.sales.filter(s => {
+    // Status filter
+    if (filter === 'pending' && s.status === 'SYNCED') return false;
+    if (filter === 'synced' && s.status !== 'SYNCED') return false;
+    if (filter === 'credit' && !s.is_credit && !(s.payment_mode || '').toLowerCase().includes('credit')) return false;
+
+    // Search query
+    if (qStr) {
+      const matchText = [
+        s.order_id,
+        s.receipt_number,
+        s.zoho_invoice_number,
+        s.customer_name,
+        s.tilled_by,
+        s.salesperson,
+        s.terminal_id,
+        s.payment_mode,
+        s.date,
+        s.total ? String(s.total) : '',
+        ...(s.line_items || []).map(li => li.name)
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      return matchText.includes(qStr);
+    }
+    return true;
+  });
+}
+
+function updateOrdersTableRows() {
+  const tbody = document.getElementById('orders-table-body');
+  const countEl = document.getElementById('orders-filtered-count');
+  if (!tbody) return;
+
+  const filtered = getFilteredSales();
+  if (countEl) {
+    countEl.innerText = `${filtered.length} of ${state.sales.length} order(s)`;
+  }
+
+  if (!filtered.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="11" style="text-align:center;color:var(--mute);padding:36px">
+          <i class="fa-solid fa-magnifying-glass" style="font-size:24px;color:var(--line);margin-bottom:8px;display:block"></i>
+          No orders match "<b>${escapeHtml(state.ordersSearch || '')}</b>".
+          <div style="margin-top:10px">
+            <button class="btn" style="padding:4px 12px;font-size:12px" onclick="clearOrdersSearch()">Clear Search</button>
+          </div>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(s => {
+    const timeDisplay = s.created_at
+      ? new Date(s.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+      : (s.time || '–');
+    const isSynced = s.status === 'SYNCED';
+    const isCredit = s.is_credit || (s.payment_mode || '').toLowerCase().includes('credit');
+    const hasSyncError = !isSynced && s.last_sync_error;
+
+    return `
+      <tr style="cursor:pointer" onclick="viewOrderDetails('${s.id}')" title="Click to view full contents of this order">
+        <td><b style="color:var(--brand)">${s.order_id || s.receipt_number}</b></td>
+        <td>
+          <span class="user-chip" style="font-weight:700;font-size:11.5px">
+            <i class="fa-solid fa-circle-user" style="color:var(--brand)"></i>
+            ${s.tilled_by || s.salesperson || 'Staff'}
+          </span>
+        </td>
+        <td><kbd class="kk">${s.terminal_id || 'TERM-01'}</kbd></td>
+        <td>${s.date}</td>
+        <td><b style="font-size:12px;color:var(--ink);white-space:nowrap"><i class="fa-regular fa-clock" style="color:var(--mute);font-size:11px;margin-right:4px"></i>${timeDisplay}</b></td>
+        <td><b>${s.customer_name || 'Walk in Customer'}</b></td>
+        <td>
+          ${s.payment_mode || 'Cash'}
+          ${isCredit ? '<span class="pill" style="background:#f3f0ff;color:#7950f2;font-size:10px;margin-left:4px">Credit</span>' : ''}
+        </td>
+        <td><b>${NGN(s.total)}</b></td>
+        <td>
+          ${isSynced ? `
+            <span class="st ok" style="white-space:nowrap"><i class="fa-solid fa-check"></i> Synced</span>
+          ` : hasSyncError ? `
+            <span class="st" style="background:#ffe3e3;color:#c92a2a;border:1px solid #ffa8a8;white-space:nowrap" title="${escapeHtml(s.last_sync_error)}">
+              <i class="fa-solid fa-triangle-exclamation"></i> Sync Error
+            </span>
+          ` : `
+            <span class="st" style="background:#fff3bf;color:#d9480f;border:1px solid #ffd43b;white-space:nowrap">
+              <i class="fa-regular fa-clock"></i> Pending Sync
+            </span>
+          `}
+        </td>
+        <td>${s.zoho_invoice_number ? `<b style="color:var(--ink)">${s.zoho_invoice_number}</b>` : '<span style="color:var(--mute)">–</span>'}</td>
+        <td onclick="event.stopPropagation()">
+          <div style="display:flex;gap:4px">
+            <button class="rs" onclick="viewOrderDetails('${s.id}')" title="View order items breakdown"><i class="fa-solid fa-eye"></i> View</button>
+            <button class="rs" onclick="previewPrintReceipt('${s.id}')" title="Print receipt"><i class="fa-solid fa-print"></i></button>
+            ${!isSynced ? `
+              <button class="rs" onclick="syncSingleSale('${s.id}')" title="Push this order to Zoho now" style="color:#d9480f;border-color:#ffd43b">
+                <i class="fa-solid fa-rotate"></i> Sync
+              </button>
+            ` : ''}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
 function renderOrdersView() {
   const p = state.pendingCount;
   const tot = state.sales.reduce((a, s) => a + (s.total || 0), 0);
   const sy = state.sales.filter(s => s.status === 'SYNCED').length;
+  const cr = state.sales.filter(s => s.is_credit || (s.payment_mode || '').toLowerCase().includes('credit')).length;
+  const emgQueue = (typeof getEmergencySalesQueue === 'function' ? getEmergencySalesQueue() : []) || [];
+  const currentFilter = state.ordersFilter || 'all';
 
   $('#main').innerHTML = `
     <div class="page">
-      <h1>Sales & Cloud Outbox</h1>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h1 style="margin:0">Sales & Cloud Outbox</h1>
+        <button class="btn" onclick="loadQueueStatus().then(() => renderOrdersView())" title="Reload queue from server">
+          <i class="fa-solid fa-arrows-rotate"></i> Refresh Orders
+        </button>
+      </div>
+
+      ${emgQueue.length > 0 ? `
+        <div style="background:#fff9db;border:1px solid #fcc419;padding:12px 16px;border-radius:8px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+          <div style="display:flex;align-items:center;gap:10px">
+            <i class="fa-solid fa-triangle-exclamation" style="color:#e67700;font-size:18px"></i>
+            <div>
+              <b style="color:#e67700;font-size:13.5px">⚡ ${emgQueue.length} Standalone Offline Sale(s) on this Station</b>
+              <div style="font-size:12px;color:#854800">These sales were saved while offline from the Hub Server and are queued in your browser.</div>
+            </div>
+          </div>
+          <button class="btn p" style="background:#e67700;border-color:#e67700" onclick="flushEmergencySalesToHub()">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Upload to Hub Now
+          </button>
+        </div>
+      ` : ''}
+
       <div class="stats">
         <div class="stat"><small>Waiting to Sync</small><div style="color:var(--warn)">${p}</div></div>
         <div class="stat"><small>Synced to Zoho</small><div style="color:var(--brand)">${sy}</div></div>
         <div class="stat"><small>Total Queue Sales</small><div>${NGN(tot)}</div></div>
       </div>
+
       <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center">
         <button class="btn p" onclick="triggerSync()" ${state.syncing?'disabled':''}>
           ${state.syncing ? '<span class="spin"></span>Pushing Sales to Zoho…' : '<i class="fa-solid fa-cloud-arrow-up"></i> Push Sales to Zoho'}
@@ -3937,6 +4118,44 @@ function renderOrdersView() {
         <div style="flex:1"></div>
         <small style="color:var(--mute)">Two-way sync keeps offline terminal fully in lockstep with Zoho Cloud</small>
       </div>
+
+      <!-- Orders Search & Filter Toolbar -->
+      <div style="background:var(--card);padding:12px;border:1px solid var(--line);border-radius:8px;margin-bottom:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <div style="position:relative;flex:1;min-width:260px">
+          <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--mute);font-size:13px"></i>
+          <input 
+            id="orders-search-input" 
+            type="search" 
+            placeholder="🔍 Search Order #, Customer, Cashier, Item, Zoho Invoice #, Amount..." 
+            style="padding-left:34px;width:100%;height:38px;font-size:13px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" 
+            value="${escapeHtml(state.ordersSearch || '')}" 
+            oninput="setOrdersSearch(this.value)"
+          >
+          ${state.ordersSearch ? `
+            <button onclick="clearOrdersSearch()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--mute);cursor:pointer;padding:4px 6px">✕</button>
+          ` : ''}
+        </div>
+
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn ${currentFilter==='all'?'p':''}" style="font-size:12px;padding:6px 12px" onclick="setOrdersFilter('all')">
+            All (${state.sales.length})
+          </button>
+          <button class="btn ${currentFilter==='pending'?'p':''}" style="font-size:12px;padding:6px 12px;${p>0?'color:#d9480f;font-weight:700':''}" onclick="setOrdersFilter('pending')">
+            ⏳ Pending (${p})
+          </button>
+          <button class="btn ${currentFilter==='synced'?'p':''}" style="font-size:12px;padding:6px 12px" onclick="setOrdersFilter('synced')">
+            ✓ Synced (${sy})
+          </button>
+          <button class="btn ${currentFilter==='credit'?'p':''}" style="font-size:12px;padding:6px 12px" onclick="setOrdersFilter('credit')">
+            Credit (${cr})
+          </button>
+        </div>
+
+        <div id="orders-filtered-count" style="font-size:12px;color:var(--mute);margin-left:auto">
+          ${state.sales.length} order(s)
+        </div>
+      </div>
+
       <div class="tw">
         <table>
           <thead>
@@ -3954,44 +4173,15 @@ function renderOrdersView() {
               <th>Action</th>
             </tr>
           </thead>
-          <tbody>
-            ${state.sales.length ? state.sales.map(s => {
-              const timeDisplay = s.created_at
-                ? new Date(s.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
-                : (s.time || '–');
-              return `
-              <tr style="cursor:pointer" onclick="viewOrderDetails('${s.id}')" title="Click to view full contents of this order">
-                <td><b style="color:var(--brand)">${s.order_id || s.receipt_number}</b></td>
-                <td>
-                  <span class="user-chip" style="font-weight:700;font-size:11.5px">
-                    <i class="fa-solid fa-circle-user" style="color:var(--brand)"></i>
-                    ${s.tilled_by || s.salesperson || 'Staff'}
-                  </span>
-                </td>
-                <td><kbd class="kk">${s.terminal_id || 'TERM-01'}</kbd></td>
-                <td>${s.date}</td>
-                <td><b style="font-size:12px;color:var(--ink);white-space:nowrap"><i class="fa-regular fa-clock" style="color:var(--mute);font-size:11px;margin-right:4px"></i>${timeDisplay}</b></td>
-                <td><b>${s.customer_name || 'Walk in Customer'}</b></td>
-                <td>${s.payment_mode || 'Cash'}</td>
-                <td><b>${NGN(s.total)}</b></td>
-                <td><span class="st ${s.status==='SYNCED'?'ok':''}">${s.status==='SYNCED'?'Synced':'Pending Sync'}</span></td>
-                <td>${s.zoho_invoice_number || '–'}</td>
-                <td onclick="event.stopPropagation()">
-                  <div style="display:flex;gap:4px">
-                    <button class="rs" onclick="viewOrderDetails('${s.id}')" title="View order items breakdown"><i class="fa-solid fa-eye"></i> View</button>
-                    <button class="rs" onclick="previewPrintReceipt('${s.id}')" title="Print receipt"><i class="fa-solid fa-print"></i></button>
-                  </div>
-                </td>
-              </tr>
-            `;
-            }).join('') : `
-              <tr><td colspan="11" style="text-align:center;color:var(--mute);padding:30px">No sales recorded yet.</td></tr>
-            `}
+          <tbody id="orders-table-body">
+            <!-- Rendered by updateOrdersTableRows() -->
           </tbody>
         </table>
       </div>
     </div>
   `;
+
+  updateOrdersTableRows();
 }
 
 // Order History Item Inspector Modal

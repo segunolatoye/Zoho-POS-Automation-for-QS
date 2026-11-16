@@ -1,5 +1,5 @@
 // Quality Superstores POS - Offline-First Service Worker
-const CACHE_NAME = 'qs-pos-v3.7';
+const CACHE_NAME = 'qs-pos-v3.8';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
