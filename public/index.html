@@ -1907,6 +1907,9 @@ function renderTop() {
       </div>
     </div>
     <div class="sp"></div>
+    <button class="btn ${state.view === 'orders' ? 'p' : ''}" onclick="goView('orders')" title="Search Orders & View History (F3)" style="font-weight:700">
+      <i class="fa-solid fa-receipt"></i> Order History ${p ? `<span class="badge" style="background:#e67700;color:#fff">${p}</span>` : ''}
+    </button>
     <span class="pill ${p>0?'off':''}"><i></i>${p>0 ? `${p} Offline Queued` : 'Online & Ready'}</span>
     <button class="btn p" onclick="triggerSync()" ${state.syncing?'disabled':''} title="Sync pending offline sales to Zoho">
       ${state.syncing ? '<span class="spin"></span>Syncing…' : `<i class="fa-solid fa-rotate"></i> Sync${p ? ' ('+p+')' : ''}`}
@@ -2163,9 +2166,9 @@ function renderNav() {
       <span>Sell Register</span>
       <kbd>F2</kbd>
     </button>
-    <button class="${state.view==='orders'?'on':''}" onclick="goView('orders')" title="View recent orders and reprint receipts (F3)">
+    <button class="${state.view==='orders'?'on':''}" onclick="goView('orders')" title="View recent orders, search by ID, and reprint receipts (F3)">
       <i class="fa-solid fa-receipt" style="font-size:13px;width:16px;text-align:center"></i>
-      <span>Orders</span>
+      <span>Order History</span>
       ${p ? `<span class="badge">${p}</span>` : ''}
       <kbd>F3</kbd>
     </button>
@@ -2805,6 +2808,20 @@ function renderCatalogHTML() {
   });
 
   if (!filtered.length) {
+    const matchingSale = q ? (state.sales || []).find(s => matchesOrderId(s, q)) : null;
+    if (matchingSale || /^qs[-0-9]/i.test(q) || /^rec/i.test(q) || /^emg/i.test(q)) {
+      const matchId = matchingSale ? (matchingSale.order_id || matchingSale.receipt_number) : q.toUpperCase();
+      return `
+        <div class="empty" style="grid-column:1/-1;padding:48px 20px;text-align:center">
+          <i class="fa-solid fa-receipt" style="font-size:36px;color:var(--brand);margin-bottom:12px;display:block"></i>
+          <h3 style="margin:0 0 6px;color:var(--ink);font-size:16px">Looking for Order #${matchId}?</h3>
+          <p style="margin:0 0 16px;color:var(--mute);font-size:12.5px">This search box is for items & products. Click below to view and inspect this receipt in Order History.</p>
+          <button class="btn p" onclick="goView('orders'); setOrdersSearchId('${escapeHtml(q)}')" style="padding:8px 18px;font-size:13px">
+            <i class="fa-solid fa-arrow-right"></i> Open in Order History
+          </button>
+        </div>
+      `;
+    }
     return `<div class="empty" style="grid-column:1/-1">No items match your search.</div>`;
   }
 
@@ -6594,6 +6611,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderLockScreen();
 
   if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
     navigator.serviceWorker.register('/sw.js').then(reg => {
       reg.update();
     }).catch(e => console.warn('PWA SW notice:', e));
