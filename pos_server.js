@@ -78,7 +78,7 @@ function safeReadJson(filePath, fallback = null) {
 let saleProcessingLock = Promise.resolve();
 function withSaleLock(fn) {
   const next = saleProcessingLock.then(() => fn(), () => fn());
-  saleProcessingLock = next.catch(() => {});
+  saleProcessingLock = next.catch(() => { });
   return next;
 }
 
@@ -218,7 +218,7 @@ function cleanStaleProfileLocks(userDataDir) {
   for (const f of locks) {
     const p = path.join(userDataDir, f);
     if (fs.existsSync(p)) {
-      try { fs.unlinkSync(p); } catch (e) {}
+      try { fs.unlinkSync(p); } catch (e) { }
     }
   }
 }
@@ -239,7 +239,7 @@ function killOrphanBrowserProfileProcesses() {
   try {
     const { execSync } = require('child_process');
     execSync('powershell -NoProfile -Command "Get-Process -Name chrome,msedge -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue"', { stdio: 'ignore', timeout: 6000 });
-  } catch (e) {}
+  } catch (e) { }
 }
 
 // Helper to launch Zoho Playwright session (Off-screen, zero cashier interruption)
@@ -333,7 +333,7 @@ async function createZohoSession() {
 async function closeZohoSession(session) {
   try {
     if (session && session.context) {
-      await session.context.close().catch(() => {});
+      await session.context.close().catch(() => { });
     }
   } finally {
     isZohoSessionBusy = false;
@@ -896,7 +896,7 @@ async function syncOfflineSalesToZoho(targetSaleId = null) {
 
               const isFractional = billedQty % 1 !== 0;
               const isBulkUnit = l.unit && bulkUnit && (l.unit.toLowerCase() === (bulkUnit.unit_symbol || '').toLowerCase() || l.unit.toLowerCase() === (bulkUnit.name || '').toLowerCase());
-              
+
               // Handle fractional sales (e.g. 0.5 carton) or bulk sales without conversion ID:
               // Convert directly to whole base units (e.g. 12 pcs) to guarantee Zoho Books never rejects with "Invalid unit conversion"
               if (isFractional || (isBulkUnit && !chosenConversionId)) {
@@ -942,10 +942,34 @@ async function syncOfflineSalesToZoho(targetSaleId = null) {
 
         if (!inv) {
           // Create Invoice if not already in Zoho
-          const invRes = await frame.evaluate(async ({ url, h, b }) => {
+          let invRes = await frame.evaluate(async ({ url, h, b }) => {
             const r = await fetch(url, { method: 'POST', headers: h, body: JSON.stringify(b) });
             return await r.json();
           }, { url: `/posapi/api/v1/invoices?organization_id=${invOrgId}`, h: headers, b: invPayload });
+
+          // Self-healing fallback: If Zoho rejects due to Error 2804 "Invalid unit conversion",
+          // sanitize all line items by stripping custom unit conversions and retry immediately.
+          if (invRes.code !== 0 && (invRes.code === 2804 || /unit conversion/i.test(invRes.message || ''))) {
+            console.log(`  ⚠️ Unit conversion rejected for ${sale.receipt_number} (${invRes.message}). Retrying with sanitized native units...`);
+            const fallbackPayload = {
+              ...invPayload,
+              line_items: invPayload.line_items.map(li => ({
+                item_id: li.item_id,
+                name: li.name,
+                quantity: li.quantity,
+                rate: li.rate
+              }))
+            };
+            const retryRes = await frame.evaluate(async ({ url, h, b }) => {
+              const r = await fetch(url, { method: 'POST', headers: h, body: JSON.stringify(b) });
+              return await r.json();
+            }, { url: `/posapi/api/v1/invoices?organization_id=${invOrgId}`, h: headers, b: fallbackPayload });
+
+            if (retryRes.code === 0 && retryRes.invoice) {
+              invRes = retryRes;
+              console.log(`  ✓ Fallback sync succeeded for ${sale.receipt_number}!`);
+            }
+          }
 
           if (invRes.code === 0 && invRes.invoice) {
             inv = invRes.invoice;
@@ -968,10 +992,10 @@ async function syncOfflineSalesToZoho(targetSaleId = null) {
         }
 
         // 3. Record Payment(s) (supports single or multi-account split payments)
-        const isCreditSale = sale.is_credit || 
-                             (sale.payment_mode || '').toLowerCase().includes('credit') || 
-                             (sale.payment_mode || '').toLowerCase().includes('account') || 
-                             (sale.amount_paid === 0 && (!sale.payments || sale.payments.length === 0 || sale.payments[0]?.mode?.includes('Credit') || sale.payments[0]?.mode?.includes('Account')));
+        const isCreditSale = sale.is_credit ||
+          (sale.payment_mode || '').toLowerCase().includes('credit') ||
+          (sale.payment_mode || '').toLowerCase().includes('account') ||
+          (sale.amount_paid === 0 && (!sale.payments || sale.payments.length === 0 || sale.payments[0]?.mode?.includes('Credit') || sale.payments[0]?.mode?.includes('Account')));
 
         const recordedPaymentIds = [];
 
@@ -1345,7 +1369,7 @@ const server = http.createServer(async (req, res) => {
               fs.writeFileSync(CUSTOMERS_PATH, JSON.stringify(custs, null, 2), 'utf8');
               writeSyncLog('SUCCESS', `Synced customer "${name}" to Zoho Books (Contact ID: ${res.contact.contact_id}).`);
             }
-          } catch(e) {
+          } catch (e) {
             writeSyncLog('WARN', `Customer "${name}" will be synced to Zoho on next scheduled cycle: ${e.message}`);
           } finally {
             await closeZohoSession(session);
@@ -1430,10 +1454,10 @@ const server = http.createServer(async (req, res) => {
             { id: 'u3', name: 'Cashier 2', pin: '5917', role: 'cashier', terminal_id: 'TERM-02' }
           ];
 
-        const activeUser = users.find(u => (saleData.user_id && u.id === saleData.user_id) || 
-                                           (saleData.user_name && u.name.toLowerCase() === saleData.user_name.toLowerCase()) ||
-                                           (saleData.tilled_by && u.name.toLowerCase() === saleData.tilled_by.toLowerCase()) ||
-                                           (saleData.salesperson && u.name.toLowerCase() === saleData.salesperson.toLowerCase()));
+        const activeUser = users.find(u => (saleData.user_id && u.id === saleData.user_id) ||
+          (saleData.user_name && u.name.toLowerCase() === saleData.user_name.toLowerCase()) ||
+          (saleData.tilled_by && u.name.toLowerCase() === saleData.tilled_by.toLowerCase()) ||
+          (saleData.salesperson && u.name.toLowerCase() === saleData.salesperson.toLowerCase()));
         if (!activeUser) {
           res.writeHead(401);
           return res.end(JSON.stringify({
@@ -1451,7 +1475,7 @@ const server = http.createServer(async (req, res) => {
         // 0b. RBAC Enforcement: Cashiers cannot apply discounts without Manager or Finance PIN authorization
         const isCashier = activeUser.role === 'cashier';
         const hasDiscount = (saleData.discount && parseFloat(saleData.discount) > 0) ||
-                            (saleData.subtotal && saleData.total && parseFloat(saleData.total) < parseFloat(saleData.subtotal));
+          (saleData.subtotal && saleData.total && parseFloat(saleData.total) < parseFloat(saleData.subtotal));
 
         if (isCashier && hasDiscount) {
           const isAuthorized = saleData.manager_override === true && saleData.manager_override_by;
@@ -1560,9 +1584,9 @@ const server = http.createServer(async (req, res) => {
           orderId = getNextOrderId(term);
         }
 
-        const isCreditSale = (saleData.payment_mode === 'Credit / On Account' || 
-                              saleData.is_credit === true || 
-                              (saleData.amount_paid === 0 && (!saleData.payments || saleData.payments.length === 0 || saleData.payments[0]?.mode === 'Credit / On Account')));
+        const isCreditSale = (saleData.payment_mode === 'Credit / On Account' ||
+          saleData.is_credit === true ||
+          (saleData.amount_paid === 0 && (!saleData.payments || saleData.payments.length === 0 || saleData.payments[0]?.mode === 'Credit / On Account')));
 
         // Enforce valid customer for on-account / credit sales
         if (isCreditSale) {
@@ -1622,8 +1646,8 @@ const server = http.createServer(async (req, res) => {
         fs.writeFileSync(QUEUE_PATH, JSON.stringify(queue, null, 2), 'utf8');
 
         res.writeHead(200);
-        return res.end(JSON.stringify({ 
-          success: true, 
+        return res.end(JSON.stringify({
+          success: true,
           sale: newSale,
           customer: updatedCustomer
         }));
@@ -2126,12 +2150,12 @@ const server = http.createServer(async (req, res) => {
 // Global Process Watchdog: Guarantee POS Hub never crashes due to cloud sync or Playwright glitches
 process.on('uncaughtException', (err) => {
   console.error('⚠️ [POS Server Watchdog] Uncaught exception safely handled:', err.message);
-  try { writeSyncLog('ERROR', `Watchdog caught uncaught exception: ${err.message}`); } catch (e) {}
+  try { writeSyncLog('ERROR', `Watchdog caught uncaught exception: ${err.message}`); } catch (e) { }
 });
 
 process.on('unhandledRejection', (reason) => {
   console.error('⚠️ [POS Server Watchdog] Unhandled promise rejection safely handled:', reason?.message || reason);
-  try { writeSyncLog('WARN', `Watchdog caught unhandled rejection: ${reason?.message || reason}`); } catch (e) {}
+  try { writeSyncLog('WARN', `Watchdog caught unhandled rejection: ${reason?.message || reason}`); } catch (e) { }
 });
 
 function startServer() {
