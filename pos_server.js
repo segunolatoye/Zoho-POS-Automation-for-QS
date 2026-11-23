@@ -1969,9 +1969,85 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+// Automatic 11:00 PM Daily Shift Close & Startup Reconciliation
+function checkAndAutoCloseShifts() {
+  try {
+    const activeShifts = safeReadJson(ACTIVE_SHIFTS_PATH, {});
+    if (!activeShifts || typeof activeShifts !== 'object') return;
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const isPast11PM = now.getHours() >= 23;
+    let modified = false;
+
+    for (const [term, shift] of Object.entries(activeShifts)) {
+      if (!shift || !shift.opened_at) continue;
+      const shiftDate = shift.opened_at.split('T')[0];
+      const isPreviousDay = shiftDate < todayStr;
+
+      // Auto close if shift belongs to a previous calendar day, OR if today past 11:00 PM
+      if (isPreviousDay || (isPast11PM && shiftDate === todayStr)) {
+        console.log(`[Auto Shift Close] Auto-finalizing shift for ${term} (Opened: ${shift.opened_at}, PreviousDay: ${isPreviousDay}, Past11PM: ${isPast11PM})`);
+        const queue = safeReadJson(QUEUE_PATH, []);
+        const shiftStart = new Date(shift.opened_at);
+        const shiftSales = queue.filter(s => {
+          const saleDate = new Date(s.created_at || s.date);
+          return saleDate >= shiftStart && (!s.terminal_id || s.terminal_id === term);
+        });
+
+        let cashTotal = 0, cardTotal = 0, transferTotal = 0, creditTotal = 0, grossRev = 0;
+        for (const s of shiftSales) {
+          grossRev += (parseFloat(s.total) || 0);
+          const mode = (s.payment_mode || 'CASH').toLowerCase();
+          if (mode === 'cash') cashTotal += (parseFloat(s.total) || 0);
+          else if (mode.includes('moniepoint') || mode.includes('card') || mode.includes('pos')) cardTotal += (parseFloat(s.total) || 0);
+          else if (mode.includes('transfer') || mode.includes('bank')) transferTotal += (parseFloat(s.total) || 0);
+          else if (mode.includes('credit') || mode.includes('account')) creditTotal += (parseFloat(s.total) || 0);
+        }
+
+        const openingFloat = parseFloat(shift.opening_float) || 0;
+        const expectedCash = openingFloat + cashTotal;
+        const report = {
+          report_id: `Z-AUTO-${Date.now().toString(36).toUpperCase()}`,
+          shift_id: shift.shift_id,
+          terminal_id: term,
+          cashier_id: shift.cashier_id || 'system',
+          cashier_name: shift.cashier_name || 'System Auto-Close',
+          opened_at: shift.opened_at_local || shift.opened_at,
+          closed_at: formatLocalTime(),
+          opening_float: openingFloat,
+          total_sales: shiftSales.length,
+          gross_revenue: grossRev,
+          cash_total: cashTotal,
+          card_total: cardTotal,
+          transfer_total: transferTotal,
+          credit_total: creditTotal,
+          expected_cash: expectedCash,
+          counted_cash: expectedCash,
+          variance: 0,
+          variance_status: isPreviousDay ? 'AUTO_CLOSED_NEXT_DAY_CATCHUP' : 'AUTO_CLOSED_AT_11PM'
+        };
+
+        const reports = safeReadJson(SHIFTS_PATH, []);
+        reports.push(report);
+        fs.writeFileSync(SHIFTS_PATH, JSON.stringify(reports, null, 2), 'utf8');
+
+        delete activeShifts[term];
+        modified = true;
+      }
+    }
+
+    if (modified) {
+      fs.writeFileSync(ACTIVE_SHIFTS_PATH, JSON.stringify(activeShifts, null, 2), 'utf8');
+    }
+  } catch (err) {
+    console.error('[checkAndAutoCloseShifts] Error:', err.message);
+  }
+}
+
   // 10b. GET /api/shifts/active (Get current active shift for terminal/cashier)
   if (req.method === 'GET' && pathname === '/api/shifts/active') {
     try {
+      checkAndAutoCloseShifts();
       const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
       const term = parsedUrl.searchParams.get('terminal_id') || 'TERM-01';
       const activeShifts = safeReadJson(ACTIVE_SHIFTS_PATH, {});
@@ -2176,6 +2252,10 @@ function startServer() {
 
     // Start background sync scheduler
     startSyncScheduler();
+
+    // Start 11:00 PM auto-shift closure & next-day startup reconciliation
+    checkAndAutoCloseShifts();
+    setInterval(checkAndAutoCloseShifts, 60000);
 
     // Start nightly auto-backup scheduler (11:59 PM)
     backupManager.startNightlyScheduler();
